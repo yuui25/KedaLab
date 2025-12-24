@@ -213,10 +213,86 @@ repo-root/
 │  │      05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md
 │  │      05_input_01_入力→実行境界（テンプレート注入_SSTI）.md
 │  │      05_input_02_入力→実行境界（デシリアライズ_型混乱_ガジェット前提）.md
+│  │      05_input_03_sql_injection_01_oracle（境界_プレースホルダ_ORM）.md
+│  │      05_input_03_sql_injection_02_mysql（境界_プレースホルダ_動的組立）.md
+│  │      05_input_03_sql_injection_03_postgre（境界_プレースホルダ_型キャスト）.md
+│  │      05_input_03_sql_injection_04_mssql（境界_プレースホルダ_バッチ境界）.md
+│  │      05_input_04_nosql_injection_01_mongodb_01_operator（$ne_$gt_$regex）.md
+│  │      05_input_04_nosql_injection_01_mongodb_02_where_eval（$where_js）.md
+│  │      05_input_04_nosql_injection_01_mongodb_03_aggregation（pipeline_$lookup）.md
+│  │      05_input_04_nosql_injection_01_mongodb_04_bson_type（型混乱_配列オブジェクト）.md
+│  │      05_input_04_nosql_injection_02_elasticsearch_01_query_string（lucene_querystring）.md
+│  │      05_input_04_nosql_injection_02_elasticsearch_02_dsl（bool_filter_script）.md
+│  │      05_input_04_nosql_injection_02_elasticsearch_03_painless（script_injection）.md
+│  │      05_input_04_nosql_injection_02_elasticsearch_04_template（mustache_stored_template）.md
+│  │      05_input_04_nosql_injection_03_neo4j_cypher_01_query（cypher_injection）.md
+│  │      05_input_04_nosql_injection_03_neo4j_cypher_02_apoc（procedure_security）.md
+│  │      05_input_04_nosql_injection_03_neo4j_cypher_03_authz（graph_traversal_scope）.md
+│  │      05_input_05_command_injection_01_shell（metachar_pipeline）.md
+│  │      05_input_05_command_injection_02_args（option_injection）.md
+│  │      05_input_05_command_injection_03_env（path_ld_preload）.md
+│  │      05_input_06_xss_01_反射_境界モデル.md
+│  │      05_input_06_xss_02_格納_境界モデル.md
+│  │      05_input_06_xss_03_DOM_境界モデル.md
+│  │      05_input_07_csrf_01_token（synchronizer_double_submit）.md
+│  │      05_input_07_csrf_02_samesite（cookie_credential）.md
+│  │      05_input_07_csrf_03_api（cors_json_csrf）.md
+│  │      05_input_08_xxe_01_parser（doctype_entity）.md
+│  │      05_input_08_xxe_02_blind（oob）.md
+│  │      05_input_08_xxe_03_to_ssrf（internal_reachability）.md
+│  │      05_input_09_ssrf_01_reachability（internal_localhost_metadata）.md
+│  │      05_input_09_ssrf_02_url_tricks（redirect_dns_idn_ip）.md
+│  │      05_input_09_ssrf_03_protocol（http_gopher_file）.md
+│  │      05_input_09_ssrf_04_saas_features（webhook_preview_pdf）.md
+│  │      05_input_09_ssrf_05_dns_rebinding（time_based_reachability）.md
+│  │      05_input_09_ssrf_06_parser_differential（url_parse_smuggling）.md
+│  │      05_input_10_open_redirect（遷移先信頼境界）.md
+│  │      05_input_11_path_traversal_01_normalization（dotdot_encoding）.md
+│  │      05_input_11_path_traversal_02_join_root（allowlist_basedir）.md
+│  │      05_input_12_file_upload_01_validation（mime_magic_polyglot）.md
+│  │      05_input_12_file_upload_02_storage_path（bucket_acl_traversal）.md
+│  │      05_input_12_file_upload_03_execution_chain（preview_processor_rce）.md
+│  │      05_input_12_file_upload_04_image_processor（imagemagick_exif_svg）.md
+│  │      05_input_12_file_upload_05_archive_processor（zip_tar_7z）.md
+│  │      05_input_13_deserialization_01_json（polymorphism_typehint）.md
+│  │      05_input_13_deserialization_02_yaml（anchors_tags）.md
+│  │      05_input_13_deserialization_03_xml（object_mapping）.md
+│  │      05_input_14_prototype_pollution_01_sources（merge_parse）.md
+│  │      05_input_14_prototype_pollution_02_sinks（authz_template_rce）.md
+│  │      05_input_15_regex_dos（ReDoS_検証）.md
+│  │      05_input_16_csv_formula_injection（export境界）.md
+│  │      05_input_17_email_header_injection（SMTP境界）.md
+│  │      05_input_18_http_request_smuggling_01_te_cl（proxy_desync）.md
+│  │      05_input_18_http_request_smuggling_02_cl_te（proxy_desync）.md
+│  │      05_input_18_http_request_smuggling_03_http2_frontend（h2_to_h1）.md
+│  │      05_input_18_http_request_smuggling_04_observable_signals（timing_error_cache）.md
+│  │      05_input_19_cache_poisoning_01_keying（vary_normalization）.md
+│  │      05_input_19_cache_poisoning_02_unkeyed（headers_params）.md
+│  │      05_input_19_cache_poisoning_03_poisoned_object（stored_response）.md
+│  │      05_input_20_crlf_injection_01_response_splitting（header_body）.md
+│  │      05_input_20_crlf_injection_02_downstream（proxy_log_cache）.md
 │  │      06_config_00_設定・運用境界（CORS ヘッダ Secrets）.md
 │  │      06_config_01_CORSと信頼境界（Origin_資格情報_プリフライト）.md
 │  │      06_config_02_Secrets管理と漏えい経路（JS_ログ_設定_クラウド）.md
-│  │      06_config_03_セキュリティヘッダ（CSP_HSTS_Frame_Referrer）.md
+│  │      06_config_03_security_headers（CSP_HSTS_XFO等）.md
+│  │      06_config_04_csp_実務設計（report-only_違反収集）.md
+│  │      06_config_05_cache_control_機微レスポンスの境界.md
+│  │      06_config_06_debug_endpoints（actuator_swagger）露出.md
+│  │      06_config_07_error_pages_詳細表示と環境切替.md
+│  │      06_config_08_logging_pii_secret（マスキング_相関）.md
+│  │      06_config_09_cors_プリフライトcacheと例外.md
+│  │      06_config_10_cdn_waf_運用境界（ルール例外_バイパス）.md
+│  │      06_config_11_secrets_rotation_運用（回収_失効）.md
+│  │      06_config_12_s3_presigned_url_期限と権限境界.md
+│  │      07_browser_security_境界（SOP_CORS_CSP）.md
+│  │      08_clickjacking_境界（XFO_CSP-frame-ancestors）.md
+│  │      09_mixed_content_境界（HTTPS移行）.md
+│  │      10_authn_to_authz_接続（claims_権限伝播）.md
+│  │      11_logging_tracing_相関IDと証跡設計.md
+│  │      12_rate-limit_設計（API_key_user_ip）.md
+│  │      13_session_replay_再利用と検知（ua_ip_binding）.md
+│  │      14_cryptography_境界（hash_kdf_sign_encrypt）.md
+│  │      15_payment_重要操作境界（3DS_返金）.md
 │  │      README.md
 │  │
 │  ├─03_network
@@ -225,11 +301,48 @@ repo-root/
 │  │      02_post_侵入後の前提（権限 経路 横展開の入口）.md
 │  │      03_creds_認証情報の所在と扱い（攻撃 検知の両面）.md
 │  │      04_ad_ドメイン環境の基礎（ペンテスト視点の地図）.md
+│  │      05_scanning_到達性把握（nmap_masscan）.md
+│  │      06_service_fingerprint（banner_tls_alpn）.md
+│  │      07_pivot_tunneling（ssh_socks_chisel）.md
+│  │      08_firewall_waf_検知と回避の境界（観測中心）.md
+│  │      09_smb_enum_共有・権限・匿名（null_session）.md
+│  │      10_ntlm_relay_成立条件（SMB署名_LLMNR）.md
+│  │      11_ldap_enum_ディレクトリ境界（匿名_bind）.md
+│  │      12_kerberos_asrep_kerberoast_成立条件.md
+│  │      13_adcs_証明書サービス悪用の境界.md
+│  │      14_delegation（unconstrained_constrained_RBCD）.md
+│  │      15_acl_abuse（AD権限グラフ）.md
+│  │      16_gpo_永続化と権限境界.md
+│  │      17_laps_ローカル管理者パスワード境界.md
+│  │      18_winrm_psremoting_到達性と権限.md
+│  │      19_rdp_設定と認証（NLA）.md
+│  │      20_mssql_横展開（xp_cmdshell_linkedserver）.md
+│  │      21_nfs_共有とroot_squash境界.md
+│  │      22_snmp_情報収集（community_v3）.md
+│  │      23_dns_internal_委譲とゾーン転送（AXFR）.md
+│  │      24_linux_priv-esc_入口（sudo_capabilities）.md
+│  │      25_windows_priv-esc_入口（サービス権限_UAC）.md
+│  │      26_credential_dumping_所在（LSA_DPAPI）.md
+│  │      27_persistence_永続化（schtasks_services_wmi）.md
+│  │      28_exfiltration_持ち出し経路（DNS_HTTP_SMB）.md
 │  │
 │  └─04_saas
 │          00_index.md
 │          01_idp_連携（SAML OIDC OAuth）と信頼境界.md
 │          02_saas_共有・外部連携・監査ログの勘所.md
+│          03_m365_権限境界（アプリ登録_Consent）.md
+│          04_azuread_条件付きアクセス（CA）と例外パス.md
+│          05_okta_サインオンポリシーとトークン境界.md
+│          06_google_workspace_oauth_スコープ境界.md
+│          07_github_組織権限境界（PAT_App_Actions）.md
+│          08_slack_トークン境界（xox_署名検証）.md
+│          09_atlassian_外部連携と権限境界.md
+│          10_saas_oauth_consent_phishing_成立条件.md
+│          11_scim_jit_provisioning_境界（権限初期値）.md
+│          12_audit_logs_取得と相関（誰が何をいつ）.md
+│          13_shadow_it_発見（DNS_CASB_ログ）.md
+│          14_sso_bypass_パス（ローカルログイン残存）.md
+│          15_token_lifetime_更新と失効（SaaS側）.md
 │
 ├─02_playbooks
 │      00_index.md
@@ -346,47 +459,6 @@ repo-root/
 ## 11. 今後作成予定ファイル候補（タイトル一覧：ぶれ防止）
 ※この一覧は「候補バックログ」。以降の提案・生成は原則ここから選び、命名規則（2.10.4）に従う。
 ※“厳選（約30）/推奨（80+）/最大（200）”の粒度を想定し、必要に応じて増減・整理する（重複・陳腐化は随時差し替え）。
-
-### 01_topics/03_network（追加候補）
-- 01_topics/03_network/05_scanning_到達性把握（nmap_masscan）.md
-- 01_topics/03_network/06_service_fingerprint（banner_tls_alpn）.md
-- 01_topics/03_network/07_pivot_tunneling（ssh_socks_chisel）.md
-- 01_topics/03_network/08_firewall_waf_検知と回避の境界（観測中心）.md
-- 01_topics/03_network/09_smb_enum_共有・権限・匿名（null_session）.md
-- 01_topics/03_network/10_ntlm_relay_成立条件（SMB署名_LLMNR）.md
-- 01_topics/03_network/11_ldap_enum_ディレクトリ境界（匿名_bind）.md
-- 01_topics/03_network/12_kerberos_asrep_kerberoast_成立条件.md
-- 01_topics/03_network/13_adcs_証明書サービス悪用の境界.md
-- 01_topics/03_network/14_delegation（unconstrained_constrained_RBCD）.md
-- 01_topics/03_network/15_acl_abuse（AD権限グラフ）.md
-- 01_topics/03_network/16_gpo_永続化と権限境界.md
-- 01_topics/03_network/17_laps_ローカル管理者パスワード境界.md
-- 01_topics/03_network/18_winrm_psremoting_到達性と権限.md
-- 01_topics/03_network/19_rdp_設定と認証（NLA）.md
-- 01_topics/03_network/20_mssql_横展開（xp_cmdshell_linkedserver）.md
-- 01_topics/03_network/21_nfs_共有とroot_squash境界.md
-- 01_topics/03_network/22_snmp_情報収集（community_v3）.md
-- 01_topics/03_network/23_dns_internal_委譲とゾーン転送（AXFR）.md
-- 01_topics/03_network/24_linux_priv-esc_入口（sudo_capabilities）.md
-- 01_topics/03_network/25_windows_priv-esc_入口（サービス権限_UAC）.md
-- 01_topics/03_network/26_credential_dumping_所在（LSA_DPAPI）.md
-- 01_topics/03_network/27_persistence_永続化（schtasks_services_wmi）.md
-- 01_topics/03_network/28_exfiltration_持ち出し経路（DNS_HTTP_SMB）.md
-
-### 01_topics/04_saas（追加候補）
-- 01_topics/04_saas/03_m365_権限境界（アプリ登録_Consent）.md
-- 01_topics/04_saas/04_azuread_条件付きアクセス（CA）と例外パス.md
-- 01_topics/04_saas/05_okta_サインオンポリシーとトークン境界.md
-- 01_topics/04_saas/06_google_workspace_oauth_スコープ境界.md
-- 01_topics/04_saas/07_github_組織権限境界（PAT_App_Actions）.md
-- 01_topics/04_saas/08_slack_トークン境界（xox_署名検証）.md
-- 01_topics/04_saas/09_atlassian_外部連携と権限境界.md
-- 01_topics/04_saas/10_saas_oauth_consent_phishing_成立条件.md
-- 01_topics/04_saas/11_scim_jit_provisioning_境界（権限初期値）.md
-- 01_topics/04_saas/12_audit_logs_取得と相関（誰が何をいつ）.md
-- 01_topics/04_saas/13_shadow_it_発見（DNS_CASB_ログ）.md
-- 01_topics/04_saas/14_sso_bypass_パス（ローカルログイン残存）.md
-- 01_topics/04_saas/15_token_lifetime_更新と失効（SaaS側）.md
 
 ### 02_playbooks（追加候補）
 - 02_playbooks/07_input_to_rce_入力→実行の導線（最小差分）.md
