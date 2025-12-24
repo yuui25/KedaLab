@@ -1,4 +1,3 @@
-<<<BEGIN>>>
 # 02_saas_共有・外部連携・監査ログの勘所.md
 
 （先頭要約：ガイドライン対応の位置づけ）
@@ -141,4 +140,3 @@
 - `01_topics/02_web/03_authz_認可（IDOR BOLA BFLA）境界モデル化.md`
 - `01_topics/02_web/06_config_設定・運用境界（CORS ヘッダ Secrets）.md`
 
-<<<END>>>

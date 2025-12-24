@@ -1,4 +1,3 @@
-<<<BEGIN>>>
 # 06_config_02_Secrets管理と漏えい経路（JS_ログ_設定_クラウド）.md
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
@@ -149,5 +148,3 @@
   - `06_config_02_Secrets管理と漏えい経路（JS_ログ_設定_クラウド）.md`
 
 ---
-
-<<<END>>>

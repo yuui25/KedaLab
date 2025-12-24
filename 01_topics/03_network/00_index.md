@@ -1,4 +1,3 @@
-<<<BEGIN>>>
 # 00_index.md
 
 （先頭要約：ガイドライン対応の位置づけ）
@@ -103,5 +102,3 @@
 - `01_topics/03_network/04_ad_ドメイン環境の基礎（ペンテスト視点の地図）.md`
 - `04_labs/02_virtualization/03_networking_nat_hostonly_bridge.md`
 - `04_labs/01_local/03_capture_証跡取得（pcap har log）.md`
-
-<<<END>>>

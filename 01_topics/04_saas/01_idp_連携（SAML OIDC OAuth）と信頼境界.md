@@ -1,4 +1,3 @@
-<<<BEGIN>>>
 # 01_idp_連携（SAML OIDC OAuth）と信頼境界.md
 
 （先頭要約：ガイドライン対応の位置づけ）
@@ -141,5 +140,3 @@
 - `01_topics/02_web/03_authz_認可（IDOR BOLA BFLA）境界モデル化.md`
 - `01_topics/03_network/03_creds_認証情報の所在と扱い（攻撃 検知の両面）.md`
 - `01_topics/04_saas/02_saas_共有・外部連携・監査ログの勘所.md`
-
-<<<END>>>

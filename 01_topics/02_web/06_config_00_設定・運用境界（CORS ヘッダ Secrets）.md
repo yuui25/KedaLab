@@ -1,4 +1,3 @@
-<<<BEGIN>>>
 # 06_config_設定・運用境界（CORS ヘッダ Secrets）.md
 
 （先頭要約：ガイドライン対応の位置づけ）
@@ -174,4 +173,3 @@ curl -i -H "Origin: https://attacker.example" "https://example.com/api/me"
 - `01_topics/02_web/04_api_権限伝播・入力・バックエンド連携.md`
 - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
 
-<<<END>>>

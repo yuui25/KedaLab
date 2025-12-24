@@ -1,4 +1,3 @@
-<<<BEGIN>>>
 # 06_config_01_CORSと信頼境界（Origin_資格情報_プリフライト）.md
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
@@ -146,5 +145,3 @@
   - `06_config_01_CORSと信頼境界（Origin_資格情報_プリフライト）.md`
 
 ---
-
-<<<END>>>

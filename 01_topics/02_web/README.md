@@ -1,4 +1,3 @@
-<<<BEGIN>>>
 # 02_web/README.md（入口：このフォルダをどう読むか）
 
 ## 目的（この技術で到達する状態）
@@ -168,4 +167,3 @@ git ls-files 01_topics/02_web | grep "^01_topics/02_web/02_authn_"
 - 関連 labs / cases：`../../04_labs/01_local/00_index.md`
 
 ---
-<<END>>>

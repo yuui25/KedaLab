@@ -1,4 +1,3 @@
-<<<BEGIN>>>
 # 00_index.md
 
 （先頭要約：ガイドライン対応の位置づけ）
@@ -94,5 +93,3 @@
 - `01_topics/02_web/02_authn_認証・セッション・トークン.md`
 - `01_topics/02_web/06_config_設定・運用境界（CORS ヘッダ Secrets）.md`
 - `01_topics/03_network/03_creds_認証情報の所在と扱い（攻撃 検知の両面）.md`
-
-<<<END>>>

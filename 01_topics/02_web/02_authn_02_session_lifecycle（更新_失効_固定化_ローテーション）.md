@@ -1,4 +1,3 @@
-<<<BEGIN>>>
 # 02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）
 セッションの挙動（発行・更新・失効）を、**通信差分で yes/no/unknown** まで落として説明する
 
@@ -245,5 +244,3 @@ curl -i https://example.com/api/me -b cookies.txt
 - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ---
-
-<<<END>>>

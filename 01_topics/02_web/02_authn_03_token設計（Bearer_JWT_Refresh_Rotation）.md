@@ -1,4 +1,3 @@
-<<<BEGIN>>>
 # 02_authn_03_token設計（Bearer_JWT_Refresh_Rotation）
 「JWTっぽい」「Bearerっぽい」を雰囲気で扱わず、**どのトークンが、どの境界（資産/信頼/権限）を越えて、どこで検証されているか**を説明する
 
@@ -230,5 +229,3 @@ curl -i https://api.example.com/refresh -H "Authorization: Bearer <refresh_token
 - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ---
-
-<<<END>>>

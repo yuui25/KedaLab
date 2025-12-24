@@ -1,4 +1,3 @@
-<<<BEGIN>>>
 # 01_web_00_recon_入口・境界・攻め筋の確定
 Webアプリの「入口・境界・攻め筋」を、ツール操作ではなく **観測→解釈→優先度付け** で確定する
 
@@ -198,5 +197,3 @@ curl -i -H "Origin: https://example.com" https://api.example.com/endpoint
 - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ---
-
-<<<END>>>
