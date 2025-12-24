@@ -77,12 +77,27 @@
     - 失敗：状態S-IDN：表示・正規化・比較の不一致で"同一視/別物扱い"が揺れる、状態S-IPFORMAT：IP表現の同値性が判定と接続でズレる
 
 ## 手を動かす検証（Labs連動：観測点を明確に）
-- 検証環境（関連する `04_labs/` ）：
+- 検証環境（関連する `04_labs/`）
   - 参照ファイル：`04_labs/02_web/05_input/09_ssrf_url_tricks_redirect_dns_idn_ip/`
 - 取得する証跡（目的ベースで最小限）：
-  - parsed host（A/Bそれぞれ）、DNS問い合わせログ（A/AAAA）、実際のソケット接続先（IP:port）、redirectホップ列（Locationの連鎖）、取得したいログ（最低限）、parsed host / port / scheme（正規化後）、正規化前の raw input（比較用）、IDN変換後（A-label/Punycode）の値、解決したA/AAAAレコード（タイムスタンプ付）、実際に接続したソケット宛先（IP:port）、redirect追従の有無、ホップごとの Location と最終URL、各ホップで再検証が走っているか（ログで確定）
+  - parsed host（A/Bそれぞれ）、DNS問い合わせログ（A/AAAA）、実際のソケット接続先（IP:port）、redirectホップ列（Locationの連鎖）
+  - 取得したいログ（最低限）：parsed host / port / scheme（正規化後）、正規化前の raw input（比較用）、IDN変換後（A-label/Punycode）の値、解決したA/AAAAレコード（タイムスタンプ付）、実際に接続したソケット宛先（IP:port）、redirect追従の有無、ホップごとの Location と最終URL、各ホップで再検証が走っているか（ログで確定）
 - 観測の取り方（どの視点で差分を見るか）：
-  - 目的：ValidatorとFetcherの差分が、どの条件で"接続先のズレ"になるかを再現し、観測点（ログ）を固定する、設計差分：URLパーサ差：A（厳格）/B（別仕様 or legacy）、DNS差：検証時に解決→接続時に再解決、などタイミング差を作る、redirect差：追従なし/あり（ホップ再検証なし/あり）、IDN差：U-label入力→A-label比較、TR46処理あり/なし、IP差：v4/v6の両方を扱うallowlistの有無
+  - 目的：ValidatorとFetcherの差分が、どの条件で"接続先のズレ"になるかを再現し、観測点（ログ）を固定する
+  - 設計差分：URLパーサ差：A（厳格）/B（別仕様 or legacy）、DNS差：検証時に解決→接続時に再解決、などタイミング差を作る、redirect差：追従なし/あり（ホップ再検証なし/あり）、IDN差：U-label入力→A-label比較、TR46処理あり/なし、IP差：v4/v6の両方を扱うallowlistの有無
+- 実施方法（最高に具体的）：観測の準備と相関キー
+  - 証跡ディレクトリ（必須）
+    ~~~~
+    mkdir -p ~/keda_evidence/ssrf_url_tricks 2>/dev/null
+    cd ~/keda_evidence/ssrf_url_tricks
+    ~~~~
+  - 検証の前提を固定（スコープ事故を防ぐ）
+    - 必須で決める（レポート先頭に書く）
+      - 対象は **許可されたスコープ** のみ
+      - 観測は **代表点の抽出** のみ
+      - 高負荷/外部到達/大量出力は避ける
+  - 相関キー（最低限）を作る（後で必ず効く）
+    - request_id, raw_url, normalized_url, parsed_host, resolved_ips, destination_ip, redirect_chain
 
 ## コマンド/リクエスト例（例示は最小限・意味の説明が主）
 > 例示は"手段"であり"結論"ではない。必ず「何を観測している例か」を添える。
@@ -130,41 +145,18 @@
 - Node.js URL docs（WHATWGとlegacyの差分が明文化）
 
 ## リポジトリ内リンク（最大3つまで）
-- `01_topics/02_web/05_input_09_ssrf_01_reachability（internal_localhost_metadata）.md`
-- `01_topics/02_web/05_input_09_ssrf_03_protocol（http_gopher_file）.md`
-- `01_topics/02_web/05_input_09_ssrf_04_saas_features（webhook_preview_pdf）.md`
+- 関連 topics：`05_input_09_ssrf_01_reachability（internal_localhost_metadata）.md`
+- 関連 topics：`05_input_09_ssrf_03_protocol（http_gopher_file）.md`
+- 関連 topics：`05_input_09_ssrf_04_saas_features（webhook_preview_pdf）.md`
 
 ---
 
 ## 深掘りリンク（最大8）
-- `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
-- `01_topics/02_web/05_input_09_ssrf_01_reachability（internal_localhost_metadata）.md`
-- `01_topics/02_web/05_input_09_ssrf_03_protocol（http_gopher_file）.md`
-- `01_topics/02_web/05_input_09_ssrf_04_saas_features（webhook_preview_pdf）.md`
-- `01_topics/02_web/05_input_09_ssrf_05_dns_rebinding（time_based_reachability）.md`
-- `01_topics/02_web/05_input_09_ssrf_06_parser_differential（url_parse_smuggling）.md`
+- `05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+- `05_input_09_ssrf_01_reachability（internal_localhost_metadata）.md`
+- `05_input_09_ssrf_03_protocol（http_gopher_file）.md`
+- `05_input_09_ssrf_04_saas_features（webhook_preview_pdf）.md`
+- `05_input_09_ssrf_05_dns_rebinding（time_based_reachability）.md`
+- `05_input_09_ssrf_06_parser_differential（url_parse_smuggling）.md`
 - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
 - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
-
-## 参考（一次情報に近いもの中心）
-- OWASP SSRF Prevention Cheat Sheet（IP allowlist、v4/v6、ライブラリ出力利用）:contentReference[oaicite:24]{index=24}
-- OWASP Top 10 2021 A10 SSRF（定義と影響）:contentReference[oaicite:25]{index=25}
-- PortSwigger SSRF（SSRFの概念と典型）:contentReference[oaicite:26]{index=26}
-- PortSwigger Research：URL validation bypass cheat sheet（解析不一致が根）:contentReference[oaicite:27]{index=27}
-- PortSwigger Lab：open redirect経由のSSRF回避（redirect境界の教材）:contentReference[oaicite:28]{index=28}
-- RFC 3986（URI分解の基礎）:contentReference[oaicite:29]{index=29}
-- RFC 5890 / RFC 3492（IDN：A-label/U-label、Punycode）:contentReference[oaicite:30]{index=30}
-- Unicode TR46（IDNA互換処理の代表）:contentReference[oaicite:31]{index=31}
-- Node.js URL docs（WHATWGとlegacyの差分が明文化）:contentReference[oaicite:32]{index=32}
-
----
-
-## リポジトリ内リンク（最大3つまで）
-- `01_topics/02_web/05_input_09_ssrf_01_reachability（internal_localhost_metadata）.md`
-- `01_topics/02_web/05_input_09_ssrf_03_protocol（http_gopher_file）.md`
-- `01_topics/02_web/05_input_09_ssrf_04_saas_features（webhook_preview_pdf）.md`
-
----
-
-## 次（作成候補順）
-- `01_topics/02_web/05_input_09_ssrf_03_protocol（http_gopher_file）.md`
