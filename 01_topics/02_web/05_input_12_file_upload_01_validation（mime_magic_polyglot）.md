@@ -1,31 +1,4 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS
-  - この技術で満たす/破れる点：
-    - アップロードは「入力→保存」ではなく、**入力→（分類）→（解釈）→（処理）→保存**の連鎖で事故る。検査（validation）は、その連鎖の“入口での受理可否”を決める最重要コントロール。
-    - 破れる典型は「クライアント申告（Content-Type/拡張子/ファイル名）を信じる」「検査の層が1つだけ」「検査と実処理の“解釈器”が違う（differential parsing）」。
-    - 強い設計は、(1) allowlist（業務要件に基づく許可集合）+(2) サーバ側の内容検査（magic/構文）+(3) 正規化（再エンコード/再レンダリング）+(4) 例外時の安全な失敗（拒否・隔離・監査ログ）をセットにする。
-- WSTG
-  - 該当テスト観点：
-    - 「想定外ファイルタイプのアップロード」および「悪性ファイルのアップロード」を対象に、許可/拒否の挙動、処理パス、例外時の安全性を観測する（Business Logic Testing の該当項）。  
-    - 重要なのは “アップロードできた/できない” ではなく、**どの検査が働いているか（差分）** と **受理後に何が起きるか（処理連鎖）** の切り分け。
-- PTES
-  - 位置づけ：
-    - Information Gathering：アップロード機能の棚卸し（画面/内部API/バッチ/連携/Webhook添付/インポート/モバイル）と、受理後の処理（サムネ/AV/変換/OCR/プレビュー/ワークフロー）を列挙。
-    - Vulnerability Analysis：検査ロジックを「申告値」「拡張子」「マジック」「構文パース」「再生成」のどれでやっているかモデル化。
-    - Exploitation：ゴールは“RCE”固定ではない。まず **受理条件の突破（mime/magic/polyglot）** を確定し、次に **実行連鎖（別ファイルで扱う）** に接続する。
-    - Reporting：対策は「受理可否（本ファイル）」「保存先と到達性」「実行連鎖」の3点セットで提案する。
-- MITRE ATT&CK
-  - 初期侵入：T1190（公開アプリの脆弱性悪用）
-  - 実行/永続化/収集への接続（成立条件つき）：
-    - Upload経路で“危険ファイルが受理される”と、後段の処理器（画像/Office/PDF/アーカイブ/テンプレ等）で別の脆弱性を踏める。つまり検査突破は **後段攻撃面へのゲート突破**。
-    - 収集（Collection）：アップロード領域が配信される/共有されると、利用者端末側（XSS/CSRF/マクロ等）に飛び火する。
-
----
-
-## タイトル
-file_upload_検査：MIME・マジックバイト・ポリグロットで「受理の境界」を崩す差分を確定する
-
----
+# 05_input_12_file_upload_01_validation（mime_magic_polyglot）
 
 ## 目的（このファイルで到達する状態）
 - アップロード検査を「拡張子を見ている」程度で終わらせず、次を説明できる状態になる：
@@ -40,13 +13,25 @@ file_upload_検査：MIME・マジックバイト・ポリグロットで「受�
 
 ---
 
-## 扱う範囲と分割（このファイルの守備範囲）
-- 本ファイル：**受理可否（validation）** に集中
-  - MIME/Content-Type、拡張子、マジックバイト、ファイル構文の検証、ポリグロット、メタデータ、サイズ/寸法、AV/サニタイズの位置づけ
-- 別ファイルへ接続（本ファイルでは“入口”まで）：
-  - `05_input_12_file_upload_02_storage_path（bucket_acl_traversal）.md`：保存先・到達性・ACL・パス設計
-  - `05_input_12_file_upload_03_execution_chain（preview_processor_rce）.md`：プレビュー/変換/外部連携が作る実行連鎖
-  - `05_input_11_path_traversal_03_archive（zip_slip）.md`：アーカイブ展開（受理後の処理）でのFS逸脱
+## 前提（対象・範囲・想定）
+- 対象：許可範囲のWeb/API（必要なら検証環境）に限定。
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - アップロード機能を持つWebアプリ（画面/内部API/バッチ/連携/Webhook添付/インポート/モバイル）
+  - 各種判定者（ブラウザ/プロキシ/WAF/アプリ/ライブラリ/AV/ストレージ/CDN）が存在
+  - 後段処理器（画像変換、PDFレンダラ、Office変換、AV、OCR）が存在
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：検査の層（申告MIME・拡張子・magic・構文パース・再生成）を差分で確定する
+  - やらないこと：破壊的なファイル操作、本番環境での過度な試行
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - 受理可否（validation）に集中
+    - MIME/Content-Type、拡張子、マジックバイト、ファイル構文の検証、ポリグロット、メタデータ、サイズ/寸法、AV/サニタイズの位置づけ
+  - 扱わない（別ユニットへ接続）：
+    - 保存先・到達性・ACL・パス設計 → `05_input_12_file_upload_02_storage_path（bucket_acl_traversal）.md`
+    - プレビュー/変換/外部連携が作る実行連鎖 → `05_input_12_file_upload_03_execution_chain（preview_processor_rce）.md`
+    - アーカイブ展開（受理後の処理）でのFS逸脱 → `05_input_11_path_traversal_03_archive（zip_slip）.md`
 
 ---
 
@@ -196,8 +181,27 @@ reject_reason (rule_id)
 
 ---
 
-## 現実の攻撃導線（攻撃寄り：ただし条件分解で評価する）
-アップロード検査突破が意味を持つのは、次の“どれか”が成立するとき。
+## 結果の意味（その出力が示す状態：何が言える/言えない）
+### 何が"確定"できるか：
+- どの検査層が働いているか（申告MIME・拡張子・magic・構文パース・再生成のどれか）
+- 検査の強度（単層か多層か、再生成までしているか）
+
+### 何が"推定"できるか（推定の根拠/前提）：
+- 後段処理器の種類（検査突破後の処理連鎖の可能性）
+- 攻撃者の意図（どの処理器に到達させたいか）
+
+### 何は"言えない"か（不足情報・観測限界）：
+- 具体的な脆弱性の存在（検査突破は成立条件の一部に過ぎない）
+- 影響範囲の確定（保存先・到達性・実行連鎖の詳細は別ファイルで扱う）
+
+### よくある状態パターン（正常/異常/境界がズレている等）：
+- パターンA：クライアント申告のみを信頼している → 最短で回避可能
+- パターンB：magicチェックだけで、ポリグロット/解釈差分に弱い
+- パターンC：再生成（decode→encode）している → 回避困難
+- パターンD：検査は強いが、実行連鎖（別ファイル）で危険が残る
+
+## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
+アップロード検査突破が意味を持つのは、次の"どれか"が成立するとき：
 
 1) 公開配信される（ユーザ/管理者がブラウザで見る）
 - MIME sniffingや誤ったContent-Typeで、クライアント側攻撃（XSS等）に波及し得る
@@ -207,29 +211,9 @@ reject_reason (rule_id)
 - 検査が弱いと、危険形式が処理器に到達して攻撃面が増える（後段は `execution_chain` で深掘り）
 
 3) 共有・転送される（メール添付・外部連携・SaaS保存）
-- “受理できた”だけで第三者へ拡散し、端末側リスクになるケースがある（業務影響が大きい）
+- "受理できた"だけで第三者へ拡散し、端末側リスクになるケースがある（業務影響が大きい）
 
 結論：検査は「RCE防止」だけでなく、**処理連鎖に危険形式を入れないゲート**として評価する。
-
----
-
-## 防御（設計としての優先順位：validationの責務）
-### 1) 許可集合（allowlist）を業務要件で最小化
-- 何でも許す設計をやめる（検査が難しくなるだけ）
-- “できればPDFだけ”のように、形式を絞るほど検査は強くなる
-
-### 2) 申告値（Content-Type/filename）を“参考情報”に落とす
-- 申告はログ・UX（エラーメッセージ）には使えるが、受理可否の根拠にしない
-
-### 3) サーバ側判定は「magic→構文パース→再生成」を段階化
-- magic：粗い入口フィルタ
-- 構文パース：妥当性の最低保証
-- 再生成：余剰構造を落とす最強手
-- ただし再生成はコストがあるため、対象（画像/特定doc）を絞って適用する
-
-### 4) 例外時の安全な失敗（拒否・隔離・監査）
-- “拒否できない業務”があるなら、隔離（quarantine）と監査ログが最低ライン
-- WSTGの観点でも、悪性/想定外ファイルの扱いが安全かを確認することが強調される
 
 ---
 
@@ -254,11 +238,32 @@ reject_reason (rule_id)
 
 ---
 
-## 手を動かす検証（Labs：手順ではなく設計）
-- 追加候補Lab（例）
-  - `04_labs/02_web/05_input/12_file_upload_validation_mime_magic_polyglot/`
+## 手を動かす検証（Labs連動：観測点を明確に）
+- 検証環境（関連する `04_labs/`）
+  - 追加候補Lab（例）
+    - `04_labs/02_web/05_input/12_file_upload_validation_mime_magic_polyglot/`
+- 取得する証跡（目的ベースで最小限）：
+  - アプリログ（declared_mime, detected_mime, parse_decision, sanitize_decision, final_decision, reject_reason）
+  - HTTPリクエスト/レスポンス（Proxyログ/HAR）
+- 観測の取り方（どの視点で差分を見るか）：
+  - パートContent-Typeやfilename変更だけで受理結果が変わるか
+  - magic判定の有無、構文パース/再生成の有無
+- 実施方法（最高に具体的）：観測の準備と相関キー
+  - 証跡ディレクトリ（必須）
+    ~~~~
+    mkdir -p ~/keda_evidence/file_upload_validation 2>/dev/null
+    cd ~/keda_evidence/file_upload_validation
+    ~~~~
+  - 検証の前提を固定（スコープ事故を防ぐ）
+    - 必須で決める（レポート先頭に書く）
+      - 対象は **許可されたスコープ** のみ
+      - 観測は **代表点の抽出** のみ
+      - 破壊的なファイル操作は行わない
+  - 相関キー（最低限）を作る（後で必ず効く）
+    - request_id、user_id、original_filename、declared_part_mime、detected_mime、extension_decision、magic_decision、parse_decision、sanitize_decision、final_decision、reject_reason
+
 - 設計要件（観測→解釈→利用）
-  - 実装パターンを4つ作り、差分で“どの層が効くか”を体感できること：
+  - 実装パターンを4つ作り、差分で"どの層が効くか"を体感できること：
     1) 申告MIME信頼（弱い）
     2) 拡張子allowlistのみ（弱い）
     3) magic判定（中）
@@ -266,7 +271,65 @@ reject_reason (rule_id)
   - ログに `declared_mime / detected_mime / parse / sanitize / decision / rule_id` を残す
   - 受理後に「配信」「変換」を別々のルートで用意し、validationの役割と限界を観測できるようにする
 
----
+## コマンド/リクエスト例（例示は最小限・意味の説明が主）
+~~~~
+# ログ最小フィールド（再現性の核）
+request_id
+user_id / role
+upload_purpose
+original_filename
+declared_part_mime
+detected_mime
+extension_decision
+magic_decision
+parse_decision
+sanitize_decision
+final_decision (accept|reject|quarantine)
+reject_reason (rule_id)
+~~~~
+
+- この例で観測していること：
+  - 検査の各層（申告MIME・拡張子・magic・構文パース・再生成）での判定結果を追跡し、どの層が効いているかを特定する
+- 出力のどこを見るか（注目点）：
+  - declared_part_mime と detected_mime の差分（クライアント申告を信頼しているか）
+  - extension_decision、magic_decision、parse_decision、sanitize_decision の有無（どの検査層が存在するか）
+  - final_decision と reject_reason（どの検証で拒否/許可されたか）
+- この例が使えないケース（前提が崩れるケース）：
+  - アプリログが取得できない場合（HTTP観測のみに依存）
+
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS
+  - この技術で満たす/破れる点：
+    - アップロードは「入力→保存」ではなく、**入力→（分類）→（解釈）→（処理）→保存**の連鎖で事故る。検査（validation）は、その連鎖の"入口での受理可否"を決める最重要コントロール。
+    - 破れる典型は「クライアント申告（Content-Type/拡張子/ファイル名）を信じる」「検査の層が1つだけ」「検査と実処理の"解釈器"が違う（differential parsing）」。
+    - 強い設計は、(1) allowlist（業務要件に基づく許可集合）+(2) サーバ側の内容検査（magic/構文）+(3) 正規化（再エンコード/再レンダリング）+(4) 例外時の安全な失敗（拒否・隔離・監査ログ）をセットにする。
+- WSTG
+  - 該当テスト観点：
+    - 「想定外ファイルタイプのアップロード」および「悪性ファイルのアップロード」を対象に、許可/拒否の挙動、処理パス、例外時の安全性を観測する（Business Logic Testing の該当項）。  
+    - 重要なのは "アップロードできた/できない" ではなく、**どの検査が働いているか（差分）** と **受理後に何が起きるか（処理連鎖）** の切り分け。
+- PTES
+  - 位置づけ：
+    - Information Gathering：アップロード機能の棚卸し（画面/内部API/バッチ/連携/Webhook添付/インポート/モバイル）と、受理後の処理（サムネ/AV/変換/OCR/プレビュー/ワークフロー）を列挙。
+    - Vulnerability Analysis：検査ロジックを「申告値」「拡張子」「マジック」「構文パース」「再生成」のどれでやっているかモデル化。
+    - Exploitation：ゴールは"RCE"固定ではない。まず **受理条件の突破（mime/magic/polyglot）** を確定し、次に **実行連鎖（別ファイルで扱う）** に接続する。
+    - Reporting：対策は「受理可否（本ファイル）」「保存先と到達性」「実行連鎖」の3点セットで提案する。
+- MITRE ATT&CK
+  - 初期侵入：T1190（公開アプリの脆弱性悪用）
+  - 実行/永続化/収集への接続（成立条件つき）：
+    - Upload経路で"危険ファイルが受理される"と、後段の処理器（画像/Office/PDF/アーカイブ/テンプレ等）で別の脆弱性を踏める。つまり検査突破は **後段攻撃面へのゲート突破**。
+    - 収集（Collection）：アップロード領域が配信される/共有されると、利用者端末側（XSS/CSRF/マクロ等）に飛び火する。
+  - 参照：https://attack.mitre.org/techniques/T1190/
+
+## 参考（必要最小限）
+- OWASP Cheat Sheet Series: File Upload Cheat Sheet
+- PortSwigger Web Security Academy: File uploads
+- OWASP WSTG: Test Upload of Unexpected File Types / Test Upload of Malicious Files
+- CWE-434: Unrestricted Upload of File with Dangerous Type
+
+## リポジトリ内リンク（最大3つまで）
+- 関連 topics：`05_input_12_file_upload_02_storage_path（bucket_acl_traversal）.md`
+- 関連 topics：`05_input_12_file_upload_03_execution_chain（preview_processor_rce）.md`
+- 関連 labs：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
 
 ## 深掘りリンク（最大8）
 - `05_input_12_file_upload_02_storage_path（bucket_acl_traversal）.md`
@@ -279,9 +342,3 @@ reject_reason (rule_id)
 - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
 
 ---
-
-## 参考（一次情報：短く）
-- OWASP Cheat Sheet Series: File Upload Cheat Sheet
-- PortSwigger Web Security Academy: File uploads
-- OWASP WSTG: Test Upload of Unexpected File Types / Test Upload of Malicious Files
-- CWE-434: Unrestricted Upload of File with Dangerous Type

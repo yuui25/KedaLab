@@ -1,28 +1,4 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS
-  - この技術で満たす/破れる点：
-    - アーカイブ展開は「ファイルアップロード」ではなく **任意パスへのファイル作成（＝FS書込み）** に等しい。したがって、入力検査（拡張子/MIME）ではなく、**展開先境界（base dir）・正規化・リンク追従・権限分離・リソース制限**が要件の中心。
-    - “展開結果を後段で処理（import/preview/build）する”場合、展開＝実行連鎖の入口になり、RCE/情報漏えい/破壊に繋がる。
-- WSTG
-  - 該当テスト観点：
-    - アップロード機能の「想定外形式」「悪性コンテンツ」を、受理可否だけでなく **受理後の処理（展開、変換、検査）** まで含めて確認する。
-- PTES
-  - 位置づけ：
-    - 情報収集：アーカイブが使われる機能（インポート、テーマ/テンプレ導入、ログ/証跡アップロード、バルク登録、エクスポート復元）を棚卸し。
-    - 脆弱性分析：展開器（zip/tar/7z、OSコマンド、ライブラリ）と設定（リンク追従、overwrite、base dir判定、上限）をモデル化。
-    - 侵害評価：Zip Slip/リンク系/爆弾の成立条件を“差分”で固め、実害（任意ファイル作成、設定改ざん、DoS、後段RCE）へ接続。
-- MITRE ATT&CK
-  - 初期侵入：T1190（公開アプリの脆弱性悪用：アップロード→展開）
-  - 影響：DoS（リソース枯渇）、改ざん（任意ファイル作成/置換）
-  - 実行/永続化（成立条件つき）：
-    - 展開先が webroot / 実行パス / 設定パスに近い場合、後段の実行連鎖（スクリプト読込、テンプレ解釈、ジョブ設定）に接続し得る。
-
----
-
-## タイトル
-file_upload_アーカイブ処理（zip/tar/7z）：展開＝FS境界破り（Zip Slip/リンク/爆弾）を“成立根拠（差分）”で確定する
-
----
+# 05_input_12_file_upload_05_archive_processor（zip_tar_7z）
 
 ## 目的（このファイルで到達する状態）
 - アーカイブ機能を見たときに、次を説明できる：
@@ -34,16 +10,26 @@ file_upload_アーカイブ処理（zip/tar/7z）：展開＝FS境界破り（Zi
 
 ---
 
-## 扱う範囲（このファイルの守備範囲）
-- 本ファイル：アーカイブの **展開処理（processor）** に集中
-  - zip/tar/7z の差分
-  - Zip Slip（パストラバーサル）、リンク追従、絶対パス、ドライブレター、UNC、区切り差分
-  - “tar bomb / zip bomb / 7z bomb” のリソース枯渇
-  - 外部コマンド展開（unzip/tar/7z）に伴うオプション注入/パス注入の設計論点
-- 別ファイルへ接続：
+## 前提（対象・範囲・想定）
+- 対象：許可範囲のWeb/API（必要なら検証環境）に限定。
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - アーカイブが使われる機能（インポート、テーマ/テンプレ導入、ログ/証跡アップロード、バルク登録、エクスポート復元）を持つWebアプリ
+  - 展開器（zip/tar/7z、OSコマンド、ライブラリ）が存在
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：Zip Slip/リンク系/爆弾の成立条件を差分で固める
+  - やらないこと：破壊的なファイル操作、本番環境での過度な試行
+- 依存する前提知識（必要最小限）：
   - `05_input_11_path_traversal_01_normalization（dotdot_encoding）.md`：正規化一般
-  - `05_input_12_file_upload_02_storage_path（bucket_acl_traversal）.md`：保存/到達性/ACL
-  - `05_input_12_file_upload_03_execution_chain（preview_processor_rce）.md`：展開後の処理連鎖（import/build/preview）
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - アーカイブの **展開処理（processor）** に集中
+    - zip/tar/7z の差分
+    - Zip Slip（パストラバーサル）、リンク追従、絶対パス、ドライブレター、UNC、区切り差分
+    - "tar bomb / zip bomb / 7z bomb" のリソース枯渇
+    - 外部コマンド展開（unzip/tar/7z）に伴うオプション注入/パス注入の設計論点
+  - 扱わない（別ユニットへ接続）：
+    - 保存/到達性/ACL → `05_input_12_file_upload_02_storage_path（bucket_acl_traversal）.md`
+    - 展開後の処理連鎖（import/build/preview） → `05_input_12_file_upload_03_execution_chain（preview_processor_rce）.md`
 
 ---
 
@@ -270,7 +256,7 @@ cli_command (sanitized) / exit_code
 
 ---
 
-## コマンド/リクエスト例（例示は最小限・意味中心）
+## コマンド/リクエスト例（例示は最小限・意味の説明が主）
 ~~~~
 # 擬似コード：安全な展開の骨格（概念）
 base = make_new_dir(uuid)
@@ -285,12 +271,46 @@ for entry in list_entries(archive):
   enforce_limits(entry)  # count/size/depth/pathlen
 extract_entries_to(base)
 ~~~~
-- ここでの判断点：
-  - “joinだけ”で終わらず、canonicalize後に base配下判定しているか
-  - リンクを入口で落としているか
-  - 上限が “事前見積り＋実測” で二重化されているか
 
----
+- この例で観測していること：
+  - 安全な展開の実装パターン（正規化＋base判定＋リンク拒否＋上限＋隔離）を示す
+- 出力のどこを見るか（注目点）：
+  - "joinだけ"で終わらず、canonicalize後に base配下判定しているか
+  - リンクを入口で落としているか
+  - 上限が "事前見積り＋実測" で二重化されているか
+- この例が使えないケース（前提が崩れるケース）：
+  - 外部コマンド展開（unzip/tar/7z）の場合、別の設計論点（オプション注入/パス注入）が存在
+
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS
+  - この技術で満たす/破れる点：
+    - アーカイブ展開は「ファイルアップロード」ではなく **任意パスへのファイル作成（＝FS書込み）** に等しい。したがって、入力検査（拡張子/MIME）ではなく、**展開先境界（base dir）・正規化・リンク追従・権限分離・リソース制限**が要件の中心。
+    - "展開結果を後段で処理（import/preview/build）する"場合、展開＝実行連鎖の入口になり、RCE/情報漏えい/破壊に繋がる。
+- WSTG
+  - 該当テスト観点：
+    - アップロード機能の「想定外形式」「悪性コンテンツ」を、受理可否だけでなく **受理後の処理（展開、変換、検査）** まで含めて確認する。
+- PTES
+  - 位置づけ：
+    - 情報収集：アーカイブが使われる機能（インポート、テーマ/テンプレ導入、ログ/証跡アップロード、バルク登録、エクスポート復元）を棚卸し。
+    - 脆弱性分析：展開器（zip/tar/7z、OSコマンド、ライブラリ）と設定（リンク追従、overwrite、base dir判定、上限）をモデル化。
+    - 侵害評価：Zip Slip/リンク系/爆弾の成立条件を"差分"で固め、実害（任意ファイル作成、設定改ざん、DoS、後段RCE）へ接続。
+- MITRE ATT&CK
+  - 初期侵入：T1190（公開アプリの脆弱性悪用：アップロード→展開）
+  - 影響：DoS（リソース枯渇）、改ざん（任意ファイル作成/置換）
+  - 実行/永続化（成立条件つき）：
+    - 展開先が webroot / 実行パス / 設定パスに近い場合、後段の実行連鎖（スクリプト読込、テンプレ解釈、ジョブ設定）に接続し得る。
+  - 参照：https://attack.mitre.org/techniques/T1190/
+
+## 参考（必要最小限）
+- CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')
+  - https://cwe.mitre.org/data/definitions/22.html
+- OWASP Path Traversal
+  - https://owasp.org/www-community/attacks/Path_Traversal
+
+## リポジトリ内リンク（最大3つまで）
+- 関連 topics：`05_input_11_path_traversal_01_normalization（dotdot_encoding）.md`
+- 関連 topics：`05_input_12_file_upload_02_storage_path（bucket_acl_traversal）.md`
+- 関連 labs：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
 
 ## 深掘りリンク（最大8）
 - `05_input_12_file_upload_01_validation（mime_magic_polyglot）.md`

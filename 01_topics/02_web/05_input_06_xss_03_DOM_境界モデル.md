@@ -1,21 +1,4 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS：
-  - 破れる点：サーバで安全に見える（入力検証・出力エンコード済み）にも関わらず、クライアント側JSが「信頼できないデータ（source）」を「危険なDOM操作（sink）」へ渡し、ブラウザで“実行”へ変換する（信頼境界がサーバ外へ移る）
-  - 守る設計：危険sinkの禁止（innerHTML等）、安全sink（textContent等）への統一、クライアント側サニタイズの標準化、CSP（可能ならnonce運用）＋第三者JSの統制
-- WSTG：
-  - Client-side Testing の「Testing for DOM-Based Cross Site Scripting」を対象に含める（サーバ応答だけ見ていると抜ける）
-- PTES：
-  - Vulnerability Analysis：source/sinkの棚卸し（コード＋ランタイム）→成立根拠（データフロー）→影響（どの権限で何ができるか）
-  - Exploitation：PoCは「実行境界を跨いだ」根拠（DOM上の解釈差分）まで。データ窃取や持続化は不要
-  - Reporting：原因を「危険sink」「サニタイズ欠如/誤用」「第三者JS/テンプレ」「CSP/Trusted Types未導入」に分解して再発防止へ
-- MITRE ATT&CK：
-  - Drive-by Compromise（T1189）＝“Web閲覧を起点にクライアントで実行”として位置づけ（DOM XSSはその実装バグ経路の一種として説明できる）
-  - 目的：被害者権限での操作代行（アカウント/ワークフロー乗っ取り）へ接続
-
----
-
-## タイトル
-DOM XSS（DOM-based Cross-site Scripting）境界モデル
+# 05_input_06_xss_03_DOM_境界モデル
 
 ## 目的（この技術で到達する状態）
 - DOM XSSを「payloadが通る/通らない」ではなく、次の“境界モデル”で説明できる
@@ -61,29 +44,30 @@ DOM XSS（DOM-based Cross-site Scripting）境界モデル
 
 ---
 
-## 結果の意味（何が言える/言えない：状態として説明）
-### 言える（確定できる）
-- “source →（加工）→ sink” のデータフローが存在し、適切なエスケープ/サニタイズがない（または誤用）ため、ブラウザでDOM再解釈が起きる状態
-- サーバ側の出力エスケープが正しくても、クライアントのsinkが危険なら成立する（サーバ防御だけでは完結しない）
+## 結果の意味（その出力が示す状態：何が言える/言えない）
+- 何が"確定"できるか：
+  - Source：どこから信頼できないデータが入るか（URL、postMessage、Storage、Referrer等）、Transform：どの正規化/デコード/テンプレ処理が入るか（ここで"再解釈"が起きる）、Sink：どのDOM APIへ流れるか（innerHTML等の危険sink／textContent等の安全sink）、Execution：最終的にブラウザが"コード実行"または"意味のあるDOM解釈"を行う、"source →（加工）→ sink" のデータフローが存在し、適切なエスケープ/サニタイズがない（または誤用）ため、ブラウザでDOM再解釈が起きる状態
+- 何が"推定"できるか（推定の根拠/前提）：
+  - まず Boolean oracle（DOM構造の差分、属性構造の差分）で確定する（推奨）
+  - サーバ側の出力エスケープが正しくても、クライアントのsinkが危険なら成立する（サーバ防御だけでは完結しない）
+  - sourceが本当に攻撃者制御か（URLで再現する／保存値として後で再現する／messageで再現する）
+- 何は"言えない"か（不足情報・観測限界）：
+  - 直ちに「任意JS実行が誰でも可能」とは限らない（どのsourceが攻撃者に制御可能か（URLだけか、保存値か、postMessageか）、CSPやアプリの防御（nonce等）で"実行"の形が制約される可能性）、影響（何ができるか）は、被害者権限・画面の機能・CSRF/認可境界と複合して決まる
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：危険sink（innerHTML等）の使用 → HTML解釈：`innerHTML` / `outerHTML` / `insertAdjacentHTML`、文字列→コード：`eval` / `Function()` / `setTimeout(string)`（コード注入に直結）
+  - パターンB：sourceが攻撃者制御可能 → URL系：`location.href/search/hash`（hashはサーバへ送られないことが多く、ログに残らない）、ブラウザ状態：`document.referrer`、`window.name`、メッセージング：`postMessage`（origin検証・スキーマ検証がなければ危険）
+  - パターンC：サニタイズ欠如/誤用 → クライアント側JSが「信頼できないデータ（source）」を「危険なDOM操作（sink）」へ渡し、ブラウザで"実行"へ変換する（信頼境界がサーバ外へ移る）
 
-### 言えない（追加観測が必要）
-- 直ちに「任意JS実行が誰でも可能」とは限らない
-  - どのsourceが攻撃者に制御可能か（URLだけか、保存値か、postMessageか）
-  - CSPやアプリの防御（nonce等）で“実行”の形が制約される可能性
-- 影響（何ができるか）は、被害者権限・画面の機能・CSRF/認可境界と複合して決まる
-
----
-
-## 攻撃者視点での利用（優先度・攻め筋・現実の動き）
-### 1) 優先度付け（攻撃者はここを見る）
-- 被害者が高権限（運用/管理）で必ず閲覧する導線（監査、モデレーション、問い合わせ）がある画面
-- URL hash / postMessage のように“サーバに残りにくいsource”がある画面（検知されにくい）
-- 第三者JSやDOM操作が多い画面（sinkが増える）
-
-### 2) “成立根拠”として何を取りに来るか（CTFではなく実務想定）
-- 文字列が「HTMLとして解釈された」ことの根拠（DOM構造の差分、属性構造の差分）
-- sourceが本当に攻撃者制御か（URLで再現する／保存値として後で再現する／messageで再現する）
-- 影響：その画面での操作代行（状態変更）に接続できるか（窃取の実証は不要）
+## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
+- この状態が示す"狙い目"：
+  - 認証後ページ、管理/運用UI、重要操作（送金/権限変更/承認）に近い画面は優先度が上がる、第三者JSが多い画面（タグ、分析SDK、ウィジェット）は source/sinkが増えやすい、被害者が高権限（運用/管理）で必ず閲覧する導線（監査、モデレーション、問い合わせ）がある画面、URL hash / postMessage のように"サーバに残りにくいsource"がある画面（検知されにくい）
+- 優先度の付け方（時間制約がある場合の順序）：
+  - まず"危険sink"を棚卸し（静的）、対象：自社コード＋テンプレ＋ビルド成果物（minify後も検索）、方針：payload探索ではなく、危険sinkがどこにあるかを起点にする（再現性が高い）
+- 代表的な攻め筋（この観測から自然に繋がるもの）：
+  - 攻め筋1：source/sinkの棚卸し → URL、postMessage、Storage、Referrer、外部API結果、設定値（second-order）を列挙
+  - 攻め筋2："成立根拠"として何を取りに来るか → 文字列が「HTMLとして解釈された」ことの根拠（DOM構造の差分、属性構造の差分）、影響：その画面での操作代行（状態変更）に接続できるか（窃取の実証は不要）
+- 「見える/見えない」による戦略変更（例：CDN配下、SSO前提、外部委託先など）：
+  - サーバ側ログやWAFだけでは捕まえにくい理由（source/sinkがクライアント内）を説明できる、どのページ/機能が危険かを「source/sink/影響権限」で優先度付けできる、修正が「入力フィルタ」ではなく「危険sinkの排除＋安全API統一＋標準サニタイズ＋CSP強化」であることを提示できる
 
 ---
 
@@ -192,7 +176,9 @@ DOM XSS（DOM-based Cross-site Scripting）境界モデル
 
 ---
 
-## コマンド/例（例示は最小限：判断に必要な観測だけ）
+## コマンド/リクエスト例（例示は最小限・意味の説明が主）
+> 例示は"手段"であり"結論"ではない。必ず「何を観測している例か」を添える。
+
 ~~~~
 # 目的：DOM XSSはサーバ応答に出ない場合があるため、ブラウザ上でsource/sinkを観測する
 # 1) 対象ページを開く
@@ -200,16 +186,33 @@ DOM XSS（DOM-based Cross-site Scripting）境界モデル
 # 3) URL hash や画面操作で値を変え、innerHTML代入の有無とスタックを取る
 ~~~~
 
----
+- この例で観測していること：source/sinkのデータフロー、DOM操作の観測、URL hash / postMessage のように"サーバに残りにくいsource"の特定
+- 出力のどこを見るか（注目点）：DOM構造の差分、属性構造の差分、innerHTML代入の有無とスタック、CSPヘッダ（有無、強度）
+- この例が使えないケース（前提が崩れるケース）：サーバ応答に既にXSSが含まれている場合（反射/格納XSS）、または完全に静的なページのみを使用している場合
 
-## 参考（一次情報に近いもの中心）
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：V5 Validation, Sanitization and Encoding、V7 Error Handling and Logging
+  - 該当要件（可能ならID）：V5.3.1、V5.3.2、V7.4.1
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 破れる点：サーバで安全に見える（入力検証・出力エンコード済み）にも関わらず、クライアント側JSが「信頼できないデータ（source）」を「危険なDOM操作（sink）」へ渡し、ブラウザで"実行"へ変換する（信頼境界がサーバ外へ移る）
+    - 守る設計：危険sinkの禁止（innerHTML等）、安全sink（textContent等）への統一、クライアント側サニタイズの標準化、CSP（可能ならnonce運用）＋第三者JSの統制
+- WSTG：
+  - 該当カテゴリ/テスト観点：WSTG-CLNT-01 Client-side Testing
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：
+    - Client-side Testing の「Testing for DOM-Based Cross Site Scripting」を対象に含める（サーバ応答だけ見ていると抜ける）
+- PTES：
+  - 該当フェーズ：Vulnerability Analysis、Exploitation、Reporting
+  - 前後フェーズとの繋がり（1行）：source/sinkの棚卸し（コード＋ランタイム）→成立根拠（データフロー）→影響（どの権限で何ができるか）、PoCは「実行境界を跨いだ」根拠（DOM上の解釈差分）まで。データ窃取や持続化は不要、原因を「危険sink」「サニタイズ欠如/誤用」「第三者JS/テンプレ」「CSP/Trusted Types未導入」に分解して再発防止へ
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：Initial Access / Execution
+  - 攻撃者の目的（この技術が支える意図）：Drive-by Compromise（T1189）＝"Web閲覧を起点にクライアントで実行"として位置づけ（DOM XSSはその実装バグ経路の一種として説明できる）、被害者権限での操作代行（アカウント/ワークフロー乗っ取り）へ接続
+
+## 参考（必要最小限）
 - OWASP Cheat Sheet：DOM based XSS Prevention（安全sinkの選択が対策の核）
 - MDN：Element.innerHTML の Security considerations（innerHTMLがXSSの主要ベクタ、script以外でも成立し得る）
 - OWASP WSTG：Client-side Testing に DOM-Based XSS が含まれる（対象に入れる根拠）
 - MITRE ATT&CK：Drive-by Compromise（T1189）
-- PortSwigger：DOM-based XSS の概説（source→DOMへのunsafe書き戻し）
-
----
 
 ## リポジトリ内リンク（最大3つまで）
 - `01_topics/02_web/05_input_06_xss_01_反射_境界モデル.md`
@@ -218,5 +221,10 @@ DOM XSS（DOM-based Cross-site Scripting）境界モデル
 
 ---
 
-## 次（作成候補順）
-- `01_topics/02_web/05_input_07_csrf_01_token（synchronizer_double_submit）.md`
+## 深掘りリンク（最大8）
+- `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+- `01_topics/02_web/05_input_06_xss_01_反射_境界モデル.md`
+- `01_topics/02_web/05_input_06_xss_02_格納_境界モデル.md`
+- `01_topics/02_web/06_config_03_セキュリティヘッダ（CSP_HSTS_Frame_Referrer）.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+- `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`

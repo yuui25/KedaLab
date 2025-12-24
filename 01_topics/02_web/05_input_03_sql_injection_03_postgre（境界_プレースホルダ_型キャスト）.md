@@ -1,25 +1,4 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-- ASVS
-  - 満たす/破れる点
-    - パラメータ化（プレースホルダ）で「値→SQL」を遮断できているか（ただし識別子/構文は別問題）
-    - 例外・エラーの統一で“差分（oracle）”を潰せているか（型キャスト/関数エラーが漏れると推定器になる）
-    - 認可・テナント分離（tenant_id等の条件付与）がSQLiで崩れないか（越境混入の前提）
-    - DB権限最小化（接続ユーザの権限・search_path・関数実行権限）で爆発半径を縮めているか
-    - 監査（失敗頻度・遅延・エラー種別の相関）でブラインドSQLiを検知できるか
-- WSTG
-  - SQLiテスト（入力点のコンテキスト確定：文字列/数値/識別子/式/JSON/全文検索）
-  - エラーハンドリング（型変換・キャスト・関数エラーが差分として漏れていないか）
-  - 認可（SQL改変でBOLA/越境混入が起きる前提で観測点を持つ）
-- PTES
-  - Vulnerability Analysis：sink分類→Postgre方言差分（成立根拠）→最小差分セットで再現性確保
-  - Exploitation：影響実証は必要最小限（過剰抽出や破壊的操作を避け、越境混入/読める範囲の確定に留める）
-  - Reporting：根本原因を「動的組立」「ORM/raw」「型キャスト境界」「DB権限/設定境界」に分解し、修正を設計として提示
-- MITRE ATT&CK
-  - TA0001 Initial Access（公開アプリ入口）/ TA0009 Collection / TA0006 Credential Access（DB内に資格情報がある場合）/ TA0005 Defense Evasion（エラー統一下でブラインド化）
-  - 代表：T1190 Exploit Public-Facing Application（SQLiは典型）
-
-## タイトル
-sql_injection_03_postgre（境界_プレースホルダ_型キャスト）
+# 05_input_03_sql_injection_03_postgre（境界_プレースホルダ_型キャスト）
 
 ## 目的（この技術で到達する状態）
 - PostgreSQL 方言のSQLiを、次の“境界”として説明・証跡化できる
@@ -31,15 +10,21 @@ sql_injection_03_postgre（境界_プレースホルダ_型キャスト）
 
 ## 前提（対象・範囲・想定）
 - 対象：PostgreSQL をバックエンドに持つWeb/API（検索/一覧/ソート/ページング/レポート/エクスポート/管理UI）
-- 想定実装
-  - ドライバ：psycopg/pgx/node-postgres/Sequelize/TypeORM/Prisma 等
-  - ORM/Query Builderでも、raw断片（literal/sql fragment）や識別子の動的組立があると境界が破れる
-- 本ファイルの焦点
-  - PostgreSQL方言の“差分＝成立根拠”を **型キャスト（:: / CAST）** を軸に整理する
-  - 併せて、JSON/全文検索/正規表現/配列など、PostgreSQLで頻出の“式コンテキスト”を境界として扱う
-- 安全配慮（実務）
-  - 高負荷・長時間遅延・外部通信（OOB）は原則避ける
-  - 最小差分（baseline + true/false）で成立根拠を取る
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - 想定実装：ドライバ（psycopg/pgx/node-postgres/Sequelize/TypeORM/Prisma 等）、ORM/Query Builderでも、raw断片（literal/sql fragment）や識別子の動的組立があると境界が破れる
+  - 本ファイルの焦点：PostgreSQL方言の"差分＝成立根拠"を **型キャスト（:: / CAST）** を軸に整理する、併せて、JSON/全文検索/正規表現/配列など、PostgreSQLで頻出の"式コンテキスト"を境界として扱う
+  - パラメータ化（プレースホルダ）で「値→SQL」を遮断できているか（ただし識別子/構文は別問題）、例外・エラーの統一で"差分（oracle）"を潰せているか（型キャスト/関数エラーが漏れると推定器になる）、認可・テナント分離（tenant_id等の条件付与）がSQLiで崩れないか（越境混入の前提）、DB権限最小化（接続ユーザの権限・search_path・関数実行権限）で爆発半径を縮めているか、監査（失敗頻度・遅延・エラー種別の相関）でブラインドSQLiを検知できるか
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：値はプレースホルダで守れているか（守れていない箇所の特定）、守れない領域（識別子/構文/断片）を動的組立していないか（allowlist欠落の特定）、PostgreSQL特有の「型キャスト/演算子/関数/JSON/全文検索」による差分（oracle）で成立根拠を固める、影響範囲（越境混入/列過剰/書込み可能性/二次注入）を最小限の検証で確定し、修正設計へ落とす
+  - やらないこと：高負荷・長時間遅延・外部通信（OOB）は原則避ける、最小差分（baseline + true/false）で成立根拠を取る、DB内部権限の断定（GRANT/ROLE等）、大量データ抽出の可否（契約範囲・権限・設計に依存）、"PostgreSQLだ"の断定（証跡が単発なら互換/抽象化の可能性を残す）
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+  - `01_topics/02_web/05_input_03_sql_injection_01_oracle（境界_プレースホルダ_ORM）.md`
+  - `01_topics/02_web/05_input_03_sql_injection_02_mysql（境界_プレースホルダ_動的組立）.md`
+  - `01_topics/02_web/04_api_03_rest_filters_検索・ソート・ページング境界.md`
+  - `01_topics/02_web/04_api_09_error_model_情報漏えい（例外_スタック）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ## 観測ポイント（何を見ているか：入力→組立→実行→反応）
 
@@ -120,15 +105,23 @@ PostgreSQLは“語彙”よりも **型・演算・式** の差分が成立根�
   - “便利機能の例外パス”に入力が流入していないかを、入力点（検索/フィルタ/ソート）から逆算して当てる
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言える（確定できる）
+- 何が"確定"できるか：
   - 入力がどのsink（値/識別子/式）に入っている可能性が高いか
   - PostgreSQL方言の差分（型キャスト/演算子/式）のどれが成立根拠（oracle）か
   - エラーモデルが統一されているか、差分がどこに現れるか（件数/長さ/時間）
   - 越境混入（tenant/row境界）が起き得る入口か（観測設計として）
-- 断定しない（追加根拠が必要）
+- 何が"推定"できるか（推定の根拠/前提）：
+  - 型キャスト差分が強い：まず値コンテキストのバインド漏れ/文字列連結の可能性を詰める
+  - 演算子/式差分が強い：JSON/全文検索/正規表現/配列の"式組立"を疑い、識別子/断片のallowlist欠落へ落とす
+  - エラー統一が強い：Boolean→Time→Second-orderの順で観測点を変える（エラーを無理に引き出さない）
+- 何は"言えない"か（不足情報・観測限界）：
   - DB内部権限の断定（GRANT/ROLE等）
   - 大量データ抽出の可否（契約範囲・権限・設計に依存）
-  - “PostgreSQLだ”の断定（証跡が単発なら互換/抽象化の可能性を残す）
+  - "PostgreSQLだ"の断定（証跡が単発なら互換/抽象化の可能性を残す）
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：値（data）でバインド漏れ/文字列連結がある → 同一入力点で、入力の形を変えたときに型変換/キャスト起因の差分が安定して出る
+  - パターンB：識別子/構文/断片で動的組立がある → ORDER BY列、SELECT列、テーブル名、スキーマ名（原則バインド不可）が動的に組立されている
+  - パターンC：型キャスト/演算子/式差分が成立根拠（oracle）になる → PostgreSQL特有の「型キャスト/演算子/関数/JSON/全文検索」による差分で成立根拠を固める
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・想定パス）
 - 優先度が上がる入口（実務）
@@ -177,7 +170,7 @@ PostgreSQLは“語彙”よりも **型・演算・式** の差分が成立根�
   - サーバログ：trace_id、例外分類（型変換/演算子/構文）、実行時間
   - DBログ（Labsのみ）：実行SQLがバインドか連結かの判定材料
 
-## 例（最小限：設計の違いを理解するための形）
+## コマンド/リクエスト例（例示は最小限・意味の説明が主）
 ~~~~
 # 危険：識別子（列名）を入力で組立（プレースホルダ化できない）
 ORDER BY {user_sort} {user_dir}
@@ -188,9 +181,7 @@ createdAt -> created_at
 name     -> name
 price    -> price
 に変換して ORDER BY を生成（入力値を列名として使わない）
-~~~~
 
-~~~~
 # 危険：フィルタを式文字列として組立（断片が混ざる）
 WHERE {user_filter_fragment}
 
@@ -198,8 +189,48 @@ WHERE {user_filter_fragment}
 例：filter=[{"field":"status","op":"eq","value":"active"}] のように受け、
 field/op はallowlist、value はバインド
 ~~~~
+- この例で観測していること：
+  - 値はプレースホルダで守れているか（守れていない箇所の特定）、守れない領域（識別子/構文/断片）を動的組立していないか（allowlist欠落の特定）、PostgreSQL特有の「型キャスト/演算子/関数/JSON/全文検索」による差分（oracle）で成立根拠を固める
+- 出力のどこを見るか（注目点）：
+  - 入力がどのsink（値/識別子/式）に入っている可能性が高いか、PostgreSQL方言の差分（型キャスト/演算子/式）のどれが成立根拠（oracle）か、エラーモデルが統一されているか、差分がどこに現れるか（件数/長さ/時間）
+- この例が使えないケース（前提が崩れるケース）：
+  - PostgreSQL以外のDBを使用している場合：この観測はPostgreSQL特有の差分に依存するため適用できない
+
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：V5（入力検証、サニタイズ、エンコーディング）、V7（ログとモニタリング）、V9（データ保護）、V12（ファイルとリソース）
+  - 該当要件（可能ならID）：V5.1（入力検証）、V7.1（ログ要件）、V9.1（データ保護）、V12.1（ファイルアップロード）
+  - このファイルの内容が「満たす/破れる」ポイント：パラメータ化（プレースホルダ）で「値→SQL」を遮断できているか（ただし識別子/構文は別問題）、例外・エラーの統一で"差分（oracle）"を潰せているか（型キャスト/関数エラーが漏れると推定器になる）、認可・テナント分離（tenant_id等の条件付与）がSQLiで崩れないか（越境混入の前提）、DB権限最小化（接続ユーザの権限・search_path・関数実行権限）で爆発半径を縮めているか、監査（失敗頻度・遅延・エラー種別の相関）でブラインドSQLiを検知できるか
+- WSTG：
+  - 該当カテゴリ/テスト観点：Injection Testing（SQLi）、Error Handling Testing、Authorization Testing、Business Logic Testing、Logging Testing
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：SQLiテスト（入力点のコンテキスト確定：文字列/数値/識別子/式/JSON/全文検索）、エラーハンドリング（型変換・キャスト・関数エラーが差分として漏れていないか）、認可（SQL改変でBOLA/越境混入が起きる前提で観測点を持つ）
+- PTES：
+  - 該当フェーズ：Information Gathering、Vulnerability Analysis、Exploitation
+  - 前後フェーズとの繋がり（1行）：Vulnerability Analysis（sink分類→Postgre方言差分（成立根拠）→最小差分セットで再現性確保）→ Exploitation（影響実証は必要最小限（過剰抽出や破壊的操作を避け、越境混入/読める範囲の確定に留める））→ Reporting（根本原因を「動的組立」「ORM/raw」「型キャスト境界」「DB権限/設定境界」に分解し、修正を設計として提示）
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：TA0001（Initial Access）、TA0009（Collection）、TA0006（Credential Access）、TA0005（Defense Evasion）
+  - 攻撃者の目的（この技術が支える意図）：TA0001 Initial Access（公開アプリ入口）/ TA0009 Collection / TA0006 Credential Access（DB内に資格情報がある場合）/ TA0005 Defense Evasion（エラー統一下でブラインド化）。代表：T1190 Exploit Public-Facing Application（SQLiは典型）。
+
+## 参考（必要最小限）
+- OWASP Web Security Testing Guide - Testing for SQL Injection
+- OWASP Cheat Sheet Series - SQL Injection Prevention Cheat Sheet
+- OWASP Top 10 2021 - A03 Injection
 
 ## リポジトリ内リンク（最大3つまで）
 - `01_topics/02_web/04_api_03_rest_filters_検索・ソート・ページング境界.md`
 - `01_topics/02_web/04_api_09_error_model_情報漏えい（例外_スタック）.md`
 - `01_topics/02_web/04_api_08_file_export_エクスポート境界（CSV_PDF）.md`
+
+---
+
+## 深掘りリンク（最大8）
+- 関連 topics：
+  - `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+  - `01_topics/02_web/05_input_03_sql_injection_01_oracle（境界_プレースホルダ_ORM）.md`
+  - `01_topics/02_web/05_input_03_sql_injection_02_mysql（境界_プレースホルダ_動的組立）.md`
+  - `01_topics/02_web/05_input_03_sql_injection_04_mssql（境界_プレースホルダ_バッチ境界）.md`
+  - `01_topics/02_web/04_api_03_rest_filters_検索・ソート・ページング境界.md`
+  - `01_topics/02_web/04_api_09_error_model_情報漏えい（例外_スタック）.md`
+- 関連 labs / cases：
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`

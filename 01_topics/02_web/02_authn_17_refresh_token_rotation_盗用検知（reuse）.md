@@ -1,19 +1,7 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS：
-  - この技術で満たす/破れる点：Refresh Token の安全管理（回転・失効・最小権限スコープ）、盗用検知（reuse）と対応（全失効/再認証）、トークン保護（保管場所、バインディング）、ログアウト時のrevoke（14と接続）、同時セッション管理（15と接続）
-  - 支える前提：アクセス・トークンが短命でも、refresh が漏洩すると長期の不正利用が成立し、ログアウト/パスワード変更でも遮断できない設計が起き得る
-- WSTG：
-  - 該当テスト観点：Session Management / Authentication Testing（Token-based auth、Refresh token handling、Logout/Revocation、Anomalous token use）
-  - どの観測に対応するか：/token（refresh grant）、回転（refresh更新）、失効、reuse検知、例外パス（mobile/api）が一貫しているかを観測する
-- PTES：
-  - 該当フェーズ：Vulnerability Analysis（長期トークンの欠陥、遮断不能の発見）、Post-Exploitation（持続性評価：遮断のしやすさ）
-  - 前後フェーズとの繋がり（1行）：14（logout）で“終わる”か、15（concurrency）で“切れる”か、16（step-up）で“重要操作を守る”かと結合し、侵害後の被害抑止の実効性を評価する
-- MITRE ATT&CK：
-  - 戦術：Persistence / Defense Evasion / Credential Access
-  - 目的：refresh token を利用して継続アクセス、盗用が検知されない/遮断されない条件を作る（※手順ではなく成立条件の判断）
+# 02_authn_17_refresh_token_rotation_盗用検知（reuse）
+refresh token を「長期セッション資産」として扱い、回転（rotation）・失効（revocation）・盗用検知（reuse）の設計が閉じているかを証跡つきで評価する
 
-## タイトル
-refresh_token_rotation_盗用検知（reuse）
+---
 
 ## 目的（この技術で到達する状態）
 - refresh token を「長期セッション資産」として扱い、回転（rotation）・失効（revocation）・盗用検知（reuse）の設計が閉じているかを証跡つきで評価できる
@@ -27,14 +15,29 @@ refresh_token_rotation_盗用検知（reuse）
   - refresh token の保管場所（ブラウザ/モバイル/バックエンド）
   - ログアウト/全端末ログアウト/パスワード変更時のトークン失効（14/15と接続）
   - 監査ログ（token発行/回転/失敗/reuse検知）
-- 想定する境界：
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
   - public client（SPA/モバイル）と confidential client（サーバ）で refresh の扱いが異なる
-  - 複数デバイス/同時セッション（15）があると、refresh の“並行”が発生する
+  - 複数デバイス/同時セッション（15）があると、refresh の"並行"が発生する
   - IdP（外部）を使う場合、RP側でrefreshを持たないこともある（責任分界が必要）
-- 安全な範囲（最小検証の基本方針）：
-  - 盗用（第三者利用）そのものを行わず、テストアカウントで “再利用の扱い” を少数回観測する
-  - 回転の成立条件は、同一端末/同一セッション内の手順で確認し、過度な試行は避ける
-  - 本番での検証は遮断（全失効）を誘発し得るため、許可と巻き戻しが前提
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：盗用（第三者利用）そのものを行わず、テストアカウントで "再利用の扱い" を少数回観測する、回転の成立条件は、同一端末/同一セッション内の手順で確認し、過度な試行は避ける
+  - やらないこと：本番での検証は遮断（全失効）を誘発し得るため、許可と巻き戻しが前提
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/02_authn_14_logout_設計（RP_IdP_フロントチャネル）.md`
+  - `01_topics/02_web/02_authn_15_session_concurrency（多端末_同時ログイン制御）.md`
+  - `01_topics/02_web/02_authn_03_token設計（Bearer_JWT_Refresh_Rotation）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - refresh rotation を「3要素」で定義する（refresh token が更新される、古い refresh token が無効化される、古い refresh token の再利用（reuse）を検知し、適切な対応が走る）
+    - "単回性" のモデル：どの単位で single-use なのか
+    - reuse検知（盗用検知）の"発火条件"を観測する
+    - token family（系列）概念：どこまで巻き込んで失効するか
+    - refresh の保管境界（どこに置くか）が盗用耐性を決める
+    - 例外パス：mobile/api/SSOで回転が崩れる
+  - 扱わない（別ユニットへ接続）：
+    - 実際の盗用経路（XSS/端末侵害等）※ここでは"盗用された場合にどうなるか"の耐性を見る → 別ユニット
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 ### 1) refresh rotation を「3要素」で定義する（“回っている”の誤解を潰す）
@@ -111,16 +114,21 @@ Aだけ満たしてB/Cが無い場合、「実質回転していない」（複�
   - action_priority（P0/P1/P2）
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言える（確定できる）：
+- 何が"確定"できるか：
   - refreshが回転しているか（A）、古いrefreshが無効化されるか（B）、reuseが検知され対応するか（C）
   - 失効範囲（tokenのみ/系列/ユーザ全体）の兆候（挙動とログから）
   - logout/全端末logout/パスワード変更とrefresh失効が整合しているか（14/15と接続）
   - client種別や入口で例外パスがあるか（web/mobile/api）
-- 推定（根拠付きで言える）：
+- 何が"推定"できるか（推定の根拠/前提）：
   - refreshがブラウザに露出している場合、XSS等で盗用される前提が強くなる（設計上の境界）
   - reuse検知が無い/弱い場合、長期不正利用の抑止が困難（侵害時の遮断が効きにくい）
-- 言えない（この段階では断定しない）：
-  - 実際の盗用経路（XSS/端末侵害等）※ここでは“盗用された場合にどうなるか”の耐性を見る
+- 何は"言えない"か（不足情報・観測限界）：
+  - 実際の盗用経路（XSS/端末侵害等）※ここでは"盗用された場合にどうなるか"の耐性を見る
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：回転していない（固定refresh） → refresh実行のたびに new_refresh が返るか（同一値が継続していないか）を観測
+  - パターンB：回転はするが、単回性が弱い（古いrefreshがまだ使える） → refresh→新refresh発行→直前refreshの再利用がどう扱われるかを観測（invalid_grant等）
+  - パターンC：reuse検知はあるが、対応範囲が弱い/不明 → 再利用時に、現行refreshやセッションがどうなるか（全失効か、当該だけか）を観測
+  - パターンD：例外パス（mobile/api/SSO）で回転が崩れる → client_id別（web/mobile）に回転挙動を比較し、統一されているかを観測
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
 - 優先度（P0/P1/P2）
@@ -201,12 +209,49 @@ POST /oauth/token
 - この例が使えないケース（前提が崩れるケース）：
   - refreshがブラウザに露出せず、サーバが保持する（→サーバログ/監査ログ中心で評価する）
 
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：Refresh Token の安全管理（回転・失効・最小権限スコープ）、盗用検知（reuse）と対応（全失効/再認証）、トークン保護（保管場所、バインディング）、ログアウト時のrevoke（14と接続）、同時セッション管理（15と接続）
+  - 該当要件（可能ならID）：V3（Session Management）、V13（API）
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 満たす：アクセス・トークンが短命でも、refresh が漏洩すると長期の不正利用が成立し、ログアウト/パスワード変更でも遮断できない設計が起き得ることを観測で確定し、以後の検証観点を外さないための基盤。
+  - 参照：https://github.com/OWASP/ASVS
+- WSTG：
+  - 該当カテゴリ/テスト観点：Session Management / Authentication Testing（Token-based auth、Refresh token handling、Logout/Revocation、Anomalous token use）
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：/token（refresh grant）、回転（refresh更新）、失効、reuse検知、例外パス（mobile/api）が一貫しているかを観測する
+  - 参照：https://owasp.org/www-project-web-security-testing-guide/
+- PTES：
+  - 該当フェーズ：Vulnerability Analysis（長期トークンの欠陥、遮断不能の発見）、Post-Exploitation（持続性評価：遮断のしやすさ）
+  - 前後フェーズとの繋がり（1行）：14（logout）で"終わる"か、15（concurrency）で"切れる"か、16（step-up）で"重要操作を守る"かと結合し、侵害後の被害抑止の実効性を評価する。
+  - 参照：https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：Persistence / Defense Evasion / Credential Access
+  - 攻撃者の目的（この技術が支える意図）：refresh token を利用して継続アクセス、盗用が検知されない/遮断されない条件を作る（※手順ではなく成立条件の判断）。
+  - 参照：https://attack.mitre.org/tactics/TA0003/（Persistence）、https://attack.mitre.org/tactics/TA0005/（Defense Evasion）、https://attack.mitre.org/tactics/TA0006/（Credential Access）
+
 ## 参考（必要最小限）
-- OWASP ASVS（トークン管理、失効、長期セッション、盗用検知）
-- OWASP WSTG（Token-based auth、Logout/Revocation）
-- OAuth 2.0 / OIDC（refresh token rotation と盗用検知（reuse）概念）
+- OWASP Application Security Verification Standard: https://github.com/OWASP/ASVS
+- OWASP Web Security Testing Guide: https://owasp.org/www-project-web-security-testing-guide/
+- OAuth 2.0 Security Best Current Practice: https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics
+- OAuth 2.0 Token Revocation: https://datatracker.ietf.org/doc/html/rfc7009
+- PTES (Penetration Testing Execution Standard): https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK: https://attack.mitre.org/
 
 ## リポジトリ内リンク（最大3つまで）
+- 関連 topics：`01_topics/02_web/02_authn_03_token設計（Bearer_JWT_Refresh_Rotation）.md`
+- 関連 topics：`01_topics/02_web/02_authn_14_logout_設計（RP_IdP_フロントチャネル）.md`
+- 関連 topics：`01_topics/02_web/02_authn_15_session_concurrency（多端末_同時ログイン制御）.md`
+
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
+- `01_topics/02_web/02_authn_03_token設計（Bearer_JWT_Refresh_Rotation）.md`
 - `01_topics/02_web/02_authn_14_logout_設計（RP_IdP_フロントチャネル）.md`
 - `01_topics/02_web/02_authn_15_session_concurrency（多端末_同時ログイン制御）.md`
+- `01_topics/02_web/02_authn_16_step-up_再認証境界（重要操作_再確認）.md`
 - `01_topics/02_web/02_authn_18_token_binding（DPoP_mTLS）観測.md`
+- `01_topics/02_web/02_authn_19_webauthn_passkeys_登録・回復境界.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+
+---

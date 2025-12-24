@@ -1,23 +1,4 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-
-- ASVS
-  - 入力→実行境界：ユーザ入力が「集約パイプライン（aggregation pipeline）」の **ステージ構造** を形成できていないか（SQLiの“動的SQL”相当）
-  - 認可境界：tenant/org/owner 条件が `$match` 以外の経路（$lookup / $facet / $unionWith 等）で迂回されない設計になっているか
-  - 型・語彙制約：フィールド名、演算子、ステージ種別を allowlist で拘束できているか（ブラックリスト依存は崩れる）
-  - DoS境界：$lookup / $group / $sort / $facet / allowDiskUse による計算量増大を、上限（limit/timeout/maxTimeMS）と設計で抑えられているか
-  - 監査：危険ステージ（$lookup/$function/$where相当/正規表現/広範囲$match）の出現をログ相関で検知できるか
-- WSTG
-  - Injection testing として、SQLi同様に「入力点→sink（パイプライン生成点）→差分観測→成立根拠」を取る
-  - エラー誘発より、**Boolean oracle（件数/長さ）** と **構造差分** を主証拠にする（Mongoは“構文エラー”が表に出ないことが多い）
-- PTES
-  - Vulnerability Analysis：filter/aggregate/advanced search の入口を同定→パイプライン生成点（直渡し/マージ/テンプレ）を特定→$lookup を“成立根拠”として境界破壊を確定
-  - Exploitation：影響実証は必要最小限（越境混入/他コレクション参照の成立を示す。高負荷や大量抽出は避ける）
-  - Reporting：根本原因を「パイプライン直受け」「ステージallowlist不在」「権限条件の付与位置誤り」「計算量制限不在」に分解して提示
-- MITRE ATT&CK
-  - TA0001 Initial Access（公開アプリ入口）/ TA0009 Collection（集約で横断収集）/ TA0005 Defense Evasion（エラー統一下でブラインド化）
-  - 代表：T1190 Exploit Public-Facing Application（NoSQLiも入口）
-
-# NoSQL Injection（MongoDB）：aggregation（pipeline_$lookup）
+# 05_input_04_nosql_injection_01_mongodb_03_aggregation（pipeline_$lookup）
 
 ## 目的（この技術で到達する状態）
 - MongoDB の aggregation pipeline を「入力→実行境界」の中でも **動的クエリ生成（SQLiの動的SQL相当）** として整理し、
@@ -28,18 +9,21 @@
   状態になる。
 
 ## 前提（対象・範囲・想定）
-- 対象
-  - 検索・一覧・分析（ダッシュボード）・レポート・エクスポート・監査ログ閲覧等で aggregation を用いるWeb/API
-  - “柔軟検索” “集計” “絞り込み + join” がある機能（UI都合で pipeline を使いがち）
-- 成立しやすい設計
-  - `pipeline`（配列JSON）をクライアントから受け、サーバでほぼそのまま `aggregate()` に渡している
-  - “汎用フィルタ”として JSON を受け、既定条件と **deep merge** している（ステージ混入）
-  - GraphQL/REST で “fields/expand/include” を受け、裏で `$lookup` を組立している（識別子・参照先が入力由来）
-- 本ファイルの焦点
-  - `$lookup` を中心に、**他コレクション参照（横断）** と **権限条件の適用漏れ** を境界として扱う
-- 非スコープ（ただし関連として言及する）
-  - `$where`（JS評価）は別ファイル
-  - BSON型混乱は別ファイル
+- 対象：検索・一覧・分析（ダッシュボード）・レポート・エクスポート・監査ログ閲覧等で aggregation を用いるWeb/API、"柔軟検索" "集計" "絞り込み + join" がある機能（UI都合で pipeline を使いがち）
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - 成立しやすい設計：`pipeline`（配列JSON）をクライアントから受け、サーバでほぼそのまま `aggregate()` に渡している、"汎用フィルタ"として JSON を受け、既定条件と **deep merge** している（ステージ混入）、GraphQL/REST で "fields/expand/include" を受け、裏で `$lookup` を組立している（識別子・参照先が入力由来）
+  - 本ファイルの焦点：`$lookup` を中心に、**他コレクション参照（横断）** と **権限条件の適用漏れ** を境界として扱う
+  - 非スコープ（ただし関連として言及する）：`$where`（JS評価）は別ファイル、BSON型混乱は別ファイル
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：入力が pipeline 構造（ステージ配列）として解釈され、クエリ/処理の境界が破れている可能性が高い、`$lookup` により参照先コレクションが処理に組み込まれ、権限条件の適用範囲が設計上複雑化している、oracle（件数/長さ/フィールド出現/時間）として何が再現性のある根拠か、根本原因の候補（直受け・allowlist不在・付与位置誤り・上限不在）を、観測から説明できる
+  - やらないこと："参照先の機微データが漏れる"の断定（投影/マスキング/権限で変わる）、"DoSが可能"の断定（性能試験は別枠、契約と安全配慮が必要）、DBが必ずMongoである断定（互換/抽象化がある）
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+  - `01_topics/02_web/05_input_04_nosql_injection_01_mongodb_01_operator（$ne_$gt_$regex）.md`
+  - `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+  - `01_topics/02_web/04_api_03_rest_filters_検索・ソート・ページング境界.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ## 概念整理：aggregation pipeline は “クエリ” ではなく “実行計画” に近い
 - find（通常クエリ）
@@ -121,18 +105,24 @@
   - limit/skipの上限、索引設計、maxTimeMS、allowDiskUseの取り扱い、結果サイズ上限
   - “ユーザ入力でパイプラインが肥大化しない”よう、DSLで表現力を制限
 
-## 結果の意味（何が言える/言えない）
-
-### 言える（確定できる）
-- 入力が pipeline 構造（ステージ配列）として解釈され、クエリ/処理の境界が破れている可能性が高い
-- `$lookup` により参照先コレクションが処理に組み込まれ、権限条件の適用範囲が設計上複雑化している
-- oracle（件数/長さ/フィールド出現/時間）として何が再現性のある根拠か
-- 根本原因の候補（直受け・allowlist不在・付与位置誤り・上限不在）を、観測から説明できる
-
-### 断定しない（追加根拠が必要）
-- “参照先の機微データが漏れる”の断定（投影/マスキング/権限で変わる）
-- “DoSが可能”の断定（性能試験は別枠、契約と安全配慮が必要）
-- DBが必ずMongoである断定（互換/抽象化がある）
+## 結果の意味（その出力が示す状態：何が言える/言えない）
+- 何が"確定"できるか：
+  - 入力が pipeline 構造（ステージ配列）として解釈され、クエリ/処理の境界が破れている可能性が高い
+  - `$lookup` により参照先コレクションが処理に組み込まれ、権限条件の適用範囲が設計上複雑化している
+  - oracle（件数/長さ/フィールド出現/時間）として何が再現性のある根拠か
+  - 根本原因の候補（直受け・allowlist不在・付与位置誤り・上限不在）を、観測から説明できる
+- 何が"推定"できるか（推定の根拠/前提）：
+  - まず Boolean oracle（件数/長さ）で確定する（推奨）
+  - 時間差分は最後（短時間・少回数で、他指標と組み合わせる）
+  - エラーが見えるなら、無効なステージ、型不一致、フィールド未存在など（ただし本来はエラー統一されるべき）
+- 何は"言えない"か（不足情報・観測限界）：
+  - "参照先の機微データが漏れる"の断定（投影/マスキング/権限で変わる）
+  - "DoSが可能"の断定（性能試験は別枠、契約と安全配慮が必要）
+  - DBが必ずMongoである断定（互換/抽象化がある）
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：pipeline直受け（クライアント定義をそのまま実行） → 入力が"処理"を定義できる（SQLiの動的SQLと同じ）
+  - パターンB：ステージallowlist不在（危険ステージが混ざる） → `$lookup` 自体が危険というより、「何が許されるか」が不明確で混入できる点が問題
+  - パターンC：権限条件の付与位置が誤っている（適用範囲が狭い） → 主コレクションのみに tenant $match、参照先は $lookup で無条件結合
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋）
 ※悪用手順ではなく、優先度付けとして整理。
@@ -169,30 +159,7 @@
   - 上限（pageSize最大、maxTimeMS、結果サイズ上限）の有無を確認し、欠如を原因として報告
   - DoS検証は“成立根拠”より“設計不備の指摘”を優先（過負荷試験を避ける）
 
-## 防御設計（修正を“設計”として提示する）
-
-### 1) サーバ側生成（入力をパイプライン構造にしない）
-- クライアントは “意図” を送る（例：groupBy, sortKey, period, filters）
-- サーバは固定テンプレから pipeline を生成（受理するステージは固定 or allowlist）
-
-### 2) ステージallowlist / 参照先固定（$lookupを許すなら）
-- $lookup を許す場合でも
-  - 参照先コレクション（from）を固定
-  - 結合キー（local/foreign）を固定
-  - 参照先への権限条件（tenant/owner）と投影（必要最小限）を必ず適用
-- 入力は “on/off” や “選択肢” に落とす（入力値を from/field 名にしない）
-
-### 3) 計算量境界（DoS対策）
-- limit/pageSize上限、結果サイズ上限、maxTimeMS、allowDiskUseの扱いを明示
-- 索引前提のパターンのみ許可（自由な正規表現や無制限joinを許さない）
-- 監査：$lookup/$facet/$group などの高コストステージの頻度監視
-
-### 4) 認可境界（BOLA接続）を設計で閉じる
-- “主コレクションでのtenant match”だけで安心しない
-- join先にも必ず境界条件を適用し、投影で情報を縮退
-- 可能なら join 自体をサーバ側の権限制御層でラップ（共通部品化）する
-
-## 手を動かす検証（Labs連動：安全に差分を再現）
+## 手を動かす検証（Labs連動：観測点を明確に）
 - 目的：pipeline直受け/allowlist/権限条件付与位置/計算量上限の差分を、同じ画面・同じAPIで比較できるようにする
 - 最小構成（推奨）
   - (1) 安全：DSL→サーバ生成（$lookup固定・参照先にtenant付与）
@@ -204,13 +171,15 @@
   - サーバログ：trace_id、受理したDSL/入力要約、生成したステージ種別（機微はマスク）、実行時間
   - DBログ（Labsのみ）：実際に $lookup が実行された痕跡
 
-## 例（最小限：設計の違いを理解するための形）
+## コマンド/リクエスト例（例示は最小限・意味の説明が主）
+> 例示は"手段"であり"結論"ではない。必ず「何を観測している例か」を添える。
+
 ~~~~
 # 危険：クライアントのpipelineをほぼそのまま実行（構造注入の余地）
 pipeline = JSON.parse(req.query.pipeline)
 db.collection.aggregate(pipeline)
 
-# 安全：クライアントは“意図”のみ、サーバが固定テンプレから生成（allowlist）
+# 安全：クライアントは"意図"のみ、サーバが固定テンプレから生成（allowlist）
 - allowedGroupToggle = ["status", "day", "owner"]
 - allowedSortKey     = ["createdAt", "score"]
 - filters はフィールド/演算子/型のallowlistで拘束
@@ -218,21 +187,66 @@ pipeline = buildPipelineFromIntent(intent)   # ステージを入力にしない
 db.collection.aggregate(pipeline, { maxTimeMS: ... })
 ~~~~
 
+- この例で観測していること：pipelineの処理方法、allowlistの有無、ステージの混入可能性
+- 出力のどこを見るか（注目点）：pipelineの生成方法、allowlistの有無、ステージの受理方法
+- この例が使えないケース（前提が崩れるケース）：固定数のpipelineのみを使用している場合、または完全に静的なpipelineのみを使用している場合
+
 ~~~~
 # 危険：主にtenant条件があっても、$lookup先が無条件（適用範囲漏れ）
 [ { $match: { tenant_id: t } },
   { $lookup: { from: "other", localField: "x", foreignField: "y", as: "joined" } } ]
 
 # 安全：join先にも境界条件と投影を適用（設計として）
-- $lookup を許すなら “from/keys” は固定
+- $lookup を許すなら "from/keys" は固定
 - join先は tenant/owner 条件を必ず適用
 - joined は必要最小限のフィールドだけ返す
 ~~~~
+
+- この例で観測していること：$lookupの処理方法、権限条件の適用範囲、参照先の条件付与
+- 出力のどこを見るか（注目点）：$lookupの生成方法、権限条件の適用範囲、参照先の条件付与
+- この例が使えないケース（前提が崩れるケース）：$lookupを使用していない場合、または完全に静的なpipelineのみを使用している場合
+
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：V5 Validation, Sanitization and Encoding、V7 Error Handling and Logging
+  - 該当要件（可能ならID）：V5.3.1、V5.3.2、V7.4.1
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 入力→実行境界：ユーザ入力が「集約パイプライン（aggregation pipeline）」の **ステージ構造** を形成できていないか（SQLiの"動的SQL"相当）
+    - 認可境界：tenant/org/owner 条件が `$match` 以外の経路（$lookup / $facet / $unionWith 等）で迂回されない設計になっているか
+    - 型・語彙制約：フィールド名、演算子、ステージ種別を allowlist で拘束できているか（ブラックリスト依存は崩れる）
+    - DoS境界：$lookup / $group / $sort / $facet / allowDiskUse による計算量増大を、上限（limit/timeout/maxTimeMS）と設計で抑えられているか
+    - 監査：危険ステージ（$lookup/$function/$where相当/正規表現/広範囲$match）の出現をログ相関で検知できるか
+- WSTG：
+  - 該当カテゴリ/テスト観点：WSTG-INPV-05 SQL Injection、WSTG-ERRH-01 Error Handling
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：
+    - Injection testing として、SQLi同様に「入力点→sink（パイプライン生成点）→差分観測→成立根拠」を取る
+    - エラー誘発より、**Boolean oracle（件数/長さ）** と **構造差分** を主証拠にする（Mongoは"構文エラー"が表に出ないことが多い）
+- PTES：
+  - 該当フェーズ：Vulnerability Analysis、Exploitation、Reporting
+  - 前後フェーズとの繋がり（1行）：filter/aggregate/advanced search の入口を同定→パイプライン生成点（直渡し/マージ/テンプレ）を特定→$lookup を"成立根拠"として境界破壊を確定し、影響実証は必要最小限（越境混入/他コレクション参照の成立を示す。高負荷や大量抽出は避ける）、根本原因を「パイプライン直受け」「ステージallowlist不在」「権限条件の付与位置誤り」「計算量制限不在」に分解して提示
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：TA0001 Initial Access（公開アプリ入口）/ TA0009 Collection（集約で横断収集）/ TA0005 Defense Evasion（エラー統一下でブラインド化）
+  - 攻撃者の目的（この技術が支える意図）：T1190 Exploit Public-Facing Application（NoSQLiも入口）
+
+## 参考（必要最小限）
+- MongoDB Documentation: https://docs.mongodb.com/
+- MongoDB Aggregation Pipeline: https://docs.mongodb.com/manual/core/aggregation-pipeline/
+- MongoDB $lookup Operator: https://docs.mongodb.com/manual/reference/operator/aggregation/lookup/
+- OWASP NoSQL Injection: https://owasp.org/www-community/attacks/NoSQL_Injection
 
 ## リポジトリ内リンク（最大3つまで）
 - `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
 - `01_topics/02_web/04_api_03_rest_filters_検索・ソート・ページング境界.md`
 - `01_topics/02_web/05_input_04_nosql_injection_01_mongodb_01_operator（$ne_$gt_$regex）.md`
 
-## 次（作成候補順）
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+- `01_topics/02_web/05_input_04_nosql_injection_01_mongodb_01_operator（$ne_$gt_$regex）.md`
+- `01_topics/02_web/05_input_04_nosql_injection_01_mongodb_02_where_eval（$where_js）.md`
+- `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+- `01_topics/02_web/04_api_03_rest_filters_検索・ソート・ページング境界.md`
 - `01_topics/02_web/05_input_04_nosql_injection_01_mongodb_04_bson_type（型混乱_配列オブジェクト）.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+- `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`

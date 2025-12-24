@@ -1,26 +1,4 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-
-- ASVS
-  - 満たす/破れる点
-    - パラメータ化（値のバインド）で「入力→SQL」を遮断できているか（ただし識別子/構文/断片は別）
-    - 動的SQL（EXEC / sp_executesql）に入力が混ざる境界を設計で閉じているか（allowlist/QUOTENAME/固定テンプレ）
-    - エラー処理の統一（変換エラー・構文エラー・タイムアウトが“差分＝オラクル”にならない）
-    - DB権限最小化（アプリ接続ユーザの権限、EXEC権限、危険な拡張機能の無効化）
-    - 監査（失敗頻度、遅延、例外種別、同一入力点の反復）を相関し、ブラインド/低ノイズ探索を検知
-- WSTG
-  - SQLiテスト：入力点ごとに sink（値/識別子/断片/動的SQL）を確定し、MSSQLの“バッチ境界”を成立根拠として扱う
-  - エラーハンドリング：変換エラー（CONVERT/CAST系）や例外モデルが差分として漏れるかを観測
-  - 認可/マルチテナント：SQL改変で tenant 条件付与が崩れる前提で、越境混入の観測設計を持つ
-- PTES
-  - Vulnerability Analysis：MSSQL特有の差分（バッチ/複文/変換/待ち）で成立根拠を最小差分で確定
-  - Exploitation：影響実証は必要最小限（読み取り範囲/越境混入の確認に留め、破壊的操作は避ける）
-  - Reporting：根本原因を「バッチ境界（複文可否）」「動的SQL」「ORM/raw」「識別子allowlist欠落」「権限/設定境界」に分解して提示
-- MITRE ATT&CK
-  - TA0001 Initial Access（公開アプリ入口）/ TA0009 Collection / TA0006 Credential Access（DB内に資格情報がある場合）/ TA0005 Defense Evasion（エラー統一下でブラインド化）
-  - 代表：T1190 Exploit Public-Facing Application（SQLiは典型）
-
-## タイトル
-sql_injection_04_mssql（境界_プレースホルダ_バッチ境界）
+# 05_input_03_sql_injection_04_mssql（境界_プレースホルダ_バッチ境界）
 
 ## 目的（この技術で到達する状態）
 - MSSQL（SQL Server / T-SQL）でのSQLiを「値のバインドがあっても成立する境界」として説明できる
@@ -31,18 +9,23 @@ sql_injection_04_mssql（境界_プレースホルダ_バッチ境界）
 - 開発側へ「直し方」を、(1)値はバインド、(2)動的SQLを禁止/限定、(3)識別子はallowlist+QUOTENAME、(4)例外モデル統一、(5)最小権限と危険機能無効化、の設計課題として返せる
 
 ## 前提（対象・範囲・想定）
-- 対象
-  - SQL Server（オンプレ/クラウド問わず）をバックエンドに持つWeb/API
-  - 検索/一覧/ソート/ページング/レポート/エクスポート/管理UI（入力自由度が高いほど危険）
-- 想定実装
-  - ドライバ：ADO.NET / JDBC / ODBC / Node(mssql) / Python(pyodbc) 等
-  - ORM/Query Builder：EF Core / Dapper / Hibernate / Prisma 等
-  - ただし、MSSQLは「ストアド/動的SQL/複文」に逃げ道が残りやすく、ORMでも境界が破れる
-- 本ファイルの焦点
-  - MSSQL方言の差分（oracle）と、バッチ境界（複文の成立条件）を軸に、成立確定→原因特定→修正設計へ繋ぐ
-- 実務配慮
-  - 影響が大きい検証（長時間待ち、外部到達、危険機能）を避け、差分観測は最小回数・短時間で行う
-  - “できる/できない”の断定を、契約範囲・環境差（設定/権限）を分離して報告する
+- 対象：SQL Server（オンプレ/クラウド問わず）をバックエンドに持つWeb/API、検索/一覧/ソート/ページング/レポート/エクスポート/管理UI（入力自由度が高いほど危険）
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - 想定実装：ドライバ（ADO.NET / JDBC / ODBC / Node(mssql) / Python(pyodbc) 等）、ORM/Query Builder（EF Core / Dapper / Hibernate / Prisma 等）、ただし、MSSQLは「ストアド/動的SQL/複文」に逃げ道が残りやすく、ORMでも境界が破れる
+  - 本ファイルの焦点：MSSQL方言の差分（oracle）と、バッチ境界（複文の成立条件）を軸に、成立確定→原因特定→修正設計へ繋ぐ
+  - パラメータ化（値のバインド）で「入力→SQL」を遮断できているか（ただし識別子/構文/断片は別）、動的SQL（EXEC / sp_executesql）に入力が混ざる境界を設計で閉じているか（allowlist/QUOTENAME/固定テンプレ）、エラー処理の統一（変換エラー・構文エラー・タイムアウトが"差分＝オラクル"にならない）、DB権限最小化（アプリ接続ユーザの権限、EXEC権限、危険な拡張機能の無効化）、監査（失敗頻度、遅延、例外種別、同一入力点の反復）を相関し、ブラインド/低ノイズ探索を検知
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：MSSQL（SQL Server / T-SQL）でのSQLiを「値のバインドがあっても成立する境界」として説明できる、特に、MSSQLで影響度を跳ね上げる **バッチ境界（複文の成立条件）** を、脆弱性の有無（構文化）と切り離して整理し、何が成立根拠（oracle）なのか、何が"設定/実装の別軸"で影響を増幅するのかを、最小の差分観測で確定できる
+  - やらないこと：影響が大きい検証（長時間待ち、外部到達、危険機能）を避け、差分観測は最小回数・短時間で行う、"できる/できない"の断定を、契約範囲・環境差（設定/権限）を分離して報告する、DB内部権限（sysadmin等）の断定、危険機能（拡張手続き等）の可否断定（環境差が大きい）、大量データ抽出の可否断定（契約範囲・権限・設計に依存）
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+  - `01_topics/02_web/05_input_03_sql_injection_01_oracle（境界_プレースホルダ_ORM）.md`
+  - `01_topics/02_web/05_input_03_sql_injection_02_mysql（境界_プレースホルダ_動的組立）.md`
+  - `01_topics/02_web/05_input_03_sql_injection_03_postgre（境界_プレースホルダ_型キャスト）.md`
+  - `01_topics/02_web/04_api_03_rest_filters_検索・ソート・ページング境界.md`
+  - `01_topics/02_web/04_api_09_error_model_情報漏えい（例外_スタック）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ## MSSQLのコア概念：境界を2段で見る（脆弱性 と 影響増幅）
 ### A. 脆弱性（構文化）の境界
@@ -134,15 +117,24 @@ MSSQLは“語彙”よりも **変換・例外・待ち・複文条件**が差�
   - `N'...'` のようなUnicodeリテラルが絡む実装もある
   - 差分の意味：入力の正規化/エンコードが絡み、同じ入力でも挙動が変わる（観測を固定する必要がある）
 
-## 結果の意味（何が言える/言えない）
-- 言える（確定できる）
+## 結果の意味（その出力が示す状態：何が言える/言えない）
+- 何が"確定"できるか：
   - 入力がどのsink（値/識別子/断片/動的SQL）に入っている可能性が高いか
   - 成立根拠（oracle）が何か（boolean/error/time/second-order）と再現性
-  - “複文（バッチ境界）”が影響増幅条件として疑わしいか（ただし断定は根拠が必要）
-- 断定しない（追加根拠が必要）
+  - "複文（バッチ境界）"が影響増幅条件として疑わしいか（ただし断定は根拠が必要）
+- 何が"推定"できるか（推定の根拠/前提）：
+  - まず Boolean oracle（件数/長さ）で確定する（推奨）
+  - エラーが見えるなら、変換/名前解決差分を「コンテキスト推定」の補助に使う
+  - 時間差分は最後（短時間・少回数で、他指標と組み合わせる）
+  - "複文ができるか"は、脆弱性確定後に、契約範囲と影響を踏まえて慎重に扱う
+- 何は"言えない"か（不足情報・観測限界）：
   - DB内部権限（sysadmin等）の断定
   - 危険機能（拡張手続き等）の可否断定（環境差が大きい）
   - 大量データ抽出の可否断定（契約範囲・権限・設計に依存）
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：入力が値（data）ではなく構文（code）として解釈される → 文字列結合、動的SQL、識別子の動的組立、raw断片などで発生
+  - パターンB：複文（バッチ境界）が影響増幅条件として疑わしい → ただし断定は根拠が必要
+  - パターンC：成立根拠（oracle）が何か（boolean/error/time/second-order）と再現性 → 最小差分で確定できる
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
 ※本章は手順の提供ではなく、ペンテストでの優先度付け・仮説分岐を明文化する。
@@ -205,7 +197,9 @@ MSSQLは“語彙”よりも **変換・例外・待ち・複文条件**が差�
   - サーバログ：trace_id、例外分類（変換/構文/タイムアウト）、実行時間
   - DBログ（Labsのみ）：実行SQLがパラメータ化か、動的SQLか
 
-## 例（最小限：設計の違いを理解するための形）
+## コマンド/リクエスト例（例示は最小限・意味の説明が主）
+> 例示は"手段"であり"結論"ではない。必ず「何を観測している例か」を添える。
+
 ~~~~
 # 危険：識別子（列名/方向）を入力で組立（プレースホルダ化できない）
 ORDER BY {user_sort} {user_dir}
@@ -218,6 +212,10 @@ price    -> price
 に変換して ORDER BY を生成（入力値を列名として使わない）
 ~~~~
 
+- この例で観測していること：識別子（列名/方向）が動的組立されているかどうかを確認する設計の違い
+- 出力のどこを見るか（注目点）：ORDER BY句の生成方法、入力値が直接SQLに埋め込まれているか、サーバ側でマッピングされているか
+- この例が使えないケース（前提が崩れるケース）：ORMが自動的にマッピングしている場合、または完全に静的なSQLのみを使用している場合
+
 ~~~~
 # 危険：INリストをCSV連結（可変条件で断片化）
 WHERE id IN ({csv_ids})
@@ -225,6 +223,10 @@ WHERE id IN ({csv_ids})
 # 安全：要素数分をパラメータ化（または安全な配列/TVP等の機構へ）
 WHERE id IN (@p1, @p2, @p3, ...)
 ~~~~
+
+- この例で観測していること：INリストの生成方法、CSV連結による断片化の有無
+- 出力のどこを見るか（注目点）：IN句の生成方法、パラメータ化されているか、動的に連結されているか
+- この例が使えないケース（前提が崩れるケース）：固定数のINリストのみを使用している場合、または完全に静的なSQLのみを使用している場合
 
 ~~~~
 # 危険：動的SQLで入力を連結（構文化の中心）
@@ -234,10 +236,52 @@ EXEC( '... ' + {user_input} + ' ...' )
 sp_executesql '... WHERE col = @x ...', N'@x <type>', @x = {value}
 ~~~~
 
+- この例で観測していること：動的SQLの実装方法、入力がSQL文字列に連結されているか、パラメータとして渡されているか
+- 出力のどこを見るか（注目点）：EXEC vs sp_executesqlの使用、入力の連結方法、パラメータ化の有無
+- この例が使えないケース（前提が崩れるケース）：動的SQLを全く使用していない場合、または完全に静的なSQLのみを使用している場合
+
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：V5 Validation, Sanitization and Encoding、V7 Error Handling and Logging
+  - 該当要件（可能ならID）：V5.3.1、V5.3.2、V7.4.1
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - パラメータ化（値のバインド）で「入力→SQL」を遮断できているか（ただし識別子/構文/断片は別）
+    - 動的SQL（EXEC / sp_executesql）に入力が混ざる境界を設計で閉じているか（allowlist/QUOTENAME/固定テンプレ）
+    - エラー処理の統一（変換エラー・構文エラー・タイムアウトが"差分＝オラクル"にならない）
+    - DB権限最小化（アプリ接続ユーザの権限、EXEC権限、危険な拡張機能の無効化）
+    - 監査（失敗頻度、遅延、例外種別、同一入力点の反復）を相関し、ブラインド/低ノイズ探索を検知
+- WSTG：
+  - 該当カテゴリ/テスト観点：WSTG-INPV-05 SQL Injection、WSTG-ERRH-01 Error Handling
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：
+    - SQLiテスト：入力点ごとに sink（値/識別子/断片/動的SQL）を確定し、MSSQLの"バッチ境界"を成立根拠として扱う
+    - エラーハンドリング：変換エラー（CONVERT/CAST系）や例外モデルが差分として漏れるかを観測
+    - 認可/マルチテナント：SQL改変で tenant 条件付与が崩れる前提で、越境混入の観測設計を持つ
+- PTES：
+  - 該当フェーズ：Vulnerability Analysis、Exploitation、Reporting
+  - 前後フェーズとの繋がり（1行）：MSSQL特有の差分（バッチ/複文/変換/待ち）で成立根拠を最小差分で確定し、影響実証は必要最小限（読み取り範囲/越境混入の確認に留め、破壊的操作は避ける）、根本原因を「バッチ境界（複文可否）」「動的SQL」「ORM/raw」「識別子allowlist欠落」「権限/設定境界」に分解して提示
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：TA0001 Initial Access（公開アプリ入口）/ TA0009 Collection / TA0006 Credential Access（DB内に資格情報がある場合）/ TA0005 Defense Evasion（エラー統一下でブラインド化）
+  - 攻撃者の目的（この技術が支える意図）：T1190 Exploit Public-Facing Application（SQLiは典型）
+
+## 参考（必要最小限）
+- Microsoft SQL Server Documentation: https://docs.microsoft.com/en-us/sql/sql-server/
+- OWASP SQL Injection: https://owasp.org/www-community/attacks/SQL_Injection
+- OWASP SQL Injection Prevention Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
+- Microsoft SQL Server Security Best Practices: https://docs.microsoft.com/en-us/sql/relational-databases/security/sql-server-security-best-practices
+
 ## リポジトリ内リンク（最大3つまで）
 - `01_topics/02_web/04_api_03_rest_filters_検索・ソート・ページング境界.md`
 - `01_topics/02_web/04_api_09_error_model_情報漏えい（例外_スタック）.md`
 - `01_topics/02_web/04_api_08_file_export_エクスポート境界（CSV_PDF）.md`
 
-## 次（作成候補順）
-- `01_topics/02_web/05_input_04_nosql_injection_01_mongodb_01_operator（$ne_$gt_$regex）.md`
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+- `01_topics/02_web/05_input_03_sql_injection_01_oracle（境界_プレースホルダ_ORM）.md`
+- `01_topics/02_web/05_input_03_sql_injection_02_mysql（境界_プレースホルダ_動的組立）.md`
+- `01_topics/02_web/05_input_03_sql_injection_03_postgre（境界_プレースホルダ_型キャスト）.md`
+- `01_topics/02_web/04_api_03_rest_filters_検索・ソート・ページング境界.md`
+- `01_topics/02_web/04_api_09_error_model_情報漏えい（例外_スタック）.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+- `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`

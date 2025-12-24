@@ -1,11 +1,8 @@
 <<<BEGIN>>>
-# 02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md
+# 02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）
+セッションの挙動（発行・更新・失効）を、**通信差分で yes/no/unknown** まで落として説明する
 
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-- ASVS：V3（Session Management）を中核に、V2（Authentication）/ V4（Access Control）/ V7（Logging）へ接続。更新・失効・固定化対策は“セッション境界の設計”そのもの。
-- WSTG：WSTG-SESS（Session Management）で、セッションの発行・更新・失効・再利用可否を「観測→差分」で確認するための実務メモ。
-- PTES：Vulnerability Analysis（成立条件の切り分け）→ Exploitation（再現）→ Reporting（根拠提示）。ライフサイクルは推測が入りやすいため、証跡で固める。
-- MITRE ATT&CK：Valid Accounts / Session Hijacking に接続。セッション再利用が可能だと、攻撃者は“認証突破”ではなく“状態再利用”を優先する判断になり得る。
+---
 
 ## 目的（この技術で到達する状態）
 - セッションの挙動（発行・更新・失効）を、**通信差分で yes/no/unknown** まで落として説明できる。
@@ -14,13 +11,22 @@
 
 ## 前提（対象・範囲・想定）
 - 対象：Cookieベース/トークンベース双方のセッション（Web/SPA/API）。
-- 観測点（固定）：
-  - Proxyログ：Set-Cookie / Cookie / Authorization ヘッダ差分
-  - 必要時：HAR（ブラウザ）、サーバログ（ログイン/ログアウト/失効イベント）
-- 依存（関連）：
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - Web/SPA/API、SSO/MFA、CDN/WAFが一般的。
+- できること/やらないこと（安全に検証する範囲）：
+  - 観測は最小限の差分セットのみ（破壊的試験や過剰負荷は行わない）。
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
   - `01_topics/02_web/02_authn_01_cookie属性と境界（Secure_HttpOnly_SameSite_Path_Domain）.md`
-  - 親：`01_topics/02_web/02_authn_認証・セッション・トークン.md`
-  - 観測：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - セッションの発行・更新・失効・再利用可否の観測と差分検証
+    - セッション固定化、ローテーション、Idle/Absolute Timeout、ログアウト失効、並行セッションの挙動
+  - 扱わない（別ユニットへ接続）：
+    - Cookie属性の詳細 → `01_topics/02_web/02_authn_01_cookie属性と境界（Secure_HttpOnly_SameSite_Path_Domain）.md`
+    - トークン設計の詳細 → `01_topics/02_web/02_authn_03_token設計（Bearer_JWT_Refresh_Rotation）.md`
 
 ## 観測ポイント（何を見ているか：データ/状態/境界）
 ### まず確定する「状態遷移」
@@ -103,13 +109,19 @@
   - 仕様の期待値（要件）と整合しているかをケースに明記（技術だけで断定しない）
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言えること（Proxy証跡で断定できる）
+- 何が"確定"できるか：
   - ログイン前後で識別子が変わる/変わらない（固定化の疑い）
   - ログアウト後に同一識別子が通る/通らない（失効の有無）
   - 無操作・時間経過で切れる/切れない（寿命設計）
-- 言えないこと（追加証跡が必要）
+- 何が"推定"できるか（推定の根拠/前提）：
+  - セッション管理の設計意図（固定化対策、失効設計、寿命設計）
+- 何は"言えない"か（不足情報・観測限界）：
   - サーバ側での失効理由（ブラックリスト/セッションストア/トークン検証）の詳細
   - 中間層での再認証誘導（SSO/ゲートウェイ）の影響（入口ログ/SSOログが必要）
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：ログアウトが効いていない気がする → ログアウト直後に、同一Cookie/トークンで "状態参照API" と "状態変更API" を1回ずつ叩き、差分（200/401/403/302）を保存する
+  - パターンB：ログイン前後で同じ識別子に見える → ログイン前のCookie（セッション候補）を保持し、ログイン後のSet-Cookieと比較して "同一か" を確定する
+  - パターンC：一定時間で切れない／切れ方が不明 → 無操作→1回アクセス、操作継続→一定時間後アクセス、の2パターンを取り、Idle/Absoluteを分離して観測する
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
 - 優先度（最初に確定）
@@ -144,28 +156,93 @@
 - 期待する観測
   - どちらで切れるか（または切れないか）を yes/no/unknown で言える
 
-## 手を動かす検証（最小：差分セット）
-~~~~
-# 目的：セッションのライフサイクルを「観測→差分→結論」に落とす
+## 手を動かす検証（Labs連動：観測点を明確に）
+- 検証環境（関連する `04_labs/`）
+  - 参照ファイル：
+    - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+    - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 取得する証跡（目的ベースで最小限）：
+  - Proxyログ：Set-Cookie / Cookie / Authorization ヘッダ差分
+  - 必要時：HAR（ブラウザ）、サーバログ（ログイン/ログアウト/失効イベント）
+  - 差分セット（最小）：ログイン前、ログイン直後、通常操作、ログアウト、ログアウト後
+- 観測の取り方（どの視点で差分を見るか）：
+  - 識別子の変化（ログイン前後、更新、ローテーション）、失効の有無（ログアウト後、時間経過）、再利用可否（古い識別子で再アクセス）
+- 実施方法（最高に具体的）：観測の準備と相関キー
+  - 証跡ディレクトリ（必須）
+    ~~~~
+    mkdir -p ~/keda_evidence/session_lifecycle 2>/dev/null
+    cd ~/keda_evidence/session_lifecycle
+    ~~~~
+  - 検証の前提を固定（スコープ事故を防ぐ）
+    - 必須で決める（レポート先頭に書く）
+      - 対象は **許可されたスコープ** のみ
+      - 観測は **最小限の差分セット** のみ
+      - Cookie/トークンは秘匿情報。共有・提出・保管はルールに従う。
+  - 相関キー（最低限）を作る（後で必ず効く）
+    - Host、User、Time、Cookie/Token、識別子の変化（ログイン前/後、更新、ローテーション）、失効状態（有効/失効/不明）、再利用可否（yes/no/unknown）
 
-# 差分セット（最小）
-# 1) ログイン前：セッション候補Cookie/トークンを保存
-# 2) ログイン直後：Set-Cookie/Authorizationを保存（識別子が変わったか）
-# 3) 通常操作：数回アクセスし、識別子が更新される条件があるか確認
-# 4) ログアウト：ログアウト要求とレスポンス（Cookie削除の有無）を保存
-# 5) ログアウト後：同一識別子で再アクセス（通る/通らない）
+## コマンド/リクエスト例（例示は最小限・意味の説明が主）
+> 例示は"手段"であり"結論"ではない。必ず「何を観測している例か」を添える。
 
-# 注意：Cookie/トークンは秘匿情報。共有・提出・保管はルールに従う。
 ~~~~
+# 例：ログイン前後の識別子変化を観測
+curl -i https://example.com/login -d "username=test&password=test" -c cookies.txt
+curl -i https://example.com/api/me -b cookies.txt
+
+# 例：ログアウト後の再利用可否を観測
+curl -i https://example.com/logout -b cookies.txt
+curl -i https://example.com/api/me -b cookies.txt
+~~~~
+
+- この例で観測していること：
+  - ログイン前後で識別子が変わる/変わらない（固定化の疑い）、ログアウト後に同一識別子が通る/通らない（失効の有無）
+- 出力のどこを見るか（注目点）：
+  - Set-Cookieヘッダ（識別子の発行/更新）、Cookieヘッダ（送信有無）、ステータスコード（200/401/403/302）
+- この例が使えないケース（前提が崩れるケース）：
+  - JS必須/SSO必須の場合、curlだけでは成立しない（ブラウザ+HAR/Proxyで観測へ）
+
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：V3（Session Management）を中核に、V2（Authentication）/ V4（Access Control）/ V7（Logging）へ接続。更新・失効・固定化対策は"セッション境界の設計"そのもの。
+  - 該当要件（可能ならID）：V3（Session Management）、V2（Authentication）
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 満たす：セッションのライフサイクルを観測で確定し、以後の検証観点を外さないための基盤。
+  - 参照：https://github.com/OWASP/ASVS
+- WSTG：
+  - 該当カテゴリ/テスト観点：WSTG-SESS（Session Management）で、セッションの発行・更新・失効・再利用可否を「観測→差分」で確認するための実務メモ。
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：セッションライフサイクルの観測と理解
+  - 参照：https://owasp.org/www-project-web-security-testing-guide/
+- PTES：
+  - 該当フェーズ：Vulnerability Analysis（成立条件の切り分け）→ Exploitation（再現）→ Reporting（根拠提示）。ライフサイクルは推測が入りやすいため、証跡で固める。
+  - 前後フェーズとの繋がり（1行）：成立条件の切り分け→再現→根拠提示の品質を上げる。
+  - 参照：https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：Valid Accounts / Session Hijacking
+  - 攻撃者の目的（この技術が支える意図）：セッション再利用が可能だと、攻撃者は"認証突破"ではなく"状態再利用"を優先する判断になり得る。
+  - 参照：https://attack.mitre.org/tactics/TA0001/（Initial Access - Valid Accounts）、https://attack.mitre.org/techniques/T1563/（Session Hijacking）
 
 ## 参考（必要最小限）
-- 親：`01_topics/02_web/02_authn_認証・セッション・トークン.md`
-- 関連：`01_topics/02_web/02_authn_01_cookie属性と境界（Secure_HttpOnly_SameSite_Path_Domain）.md`
-- 観測：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+- OWASP Application Security Verification Standard: https://github.com/OWASP/ASVS
+- OWASP Web Security Testing Guide: https://owasp.org/www-project-web-security-testing-guide/
+- PTES (Penetration Testing Execution Standard): https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK: https://attack.mitre.org/
 
-## 深掘りリンク（親ファイル末尾に追加する枠：最大8件）
-- （親）`01_topics/02_web/02_authn_認証・セッション・トークン.md` の末尾に本ファイルへのリンクを追加する
-  - `02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`
+## リポジトリ内リンク（最大3つまで）
+- 関連 topics：`01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
+- 関連 topics：`01_topics/02_web/02_authn_01_cookie属性と境界（Secure_HttpOnly_SameSite_Path_Domain）.md`
+- 関連 labs：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
+- `01_topics/02_web/02_authn_01_cookie属性と境界（Secure_HttpOnly_SameSite_Path_Domain）.md`
+- `01_topics/02_web/02_authn_03_token設計（Bearer_JWT_Refresh_Rotation）.md`
+- `01_topics/02_web/02_authn_15_session_concurrency（多端末_同時ログイン制御）.md`
+- `01_topics/02_web/02_authn_17_refresh_token_rotation_盗用検知（reuse）.md`
+- `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+- `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ---
 

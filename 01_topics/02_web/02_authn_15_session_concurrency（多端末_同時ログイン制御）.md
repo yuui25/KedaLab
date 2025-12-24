@@ -1,19 +1,7 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS：
-  - この技術で満たす/破れる点：セッションの一意性/管理（多端末・多ブラウザ）、セッション失効（logout/全端末logout）、リスクベース制御（新規端末/異常IP）、Remember-me/Refresh Tokenの長期セッション管理、監査ログ（セッション作成/失効/並行数）
-  - 支える前提：「ログインできること」ではなく「どれだけのセッションが同時に生きるか」を制御できないと、漏洩後の被害抑止（containment）が効かない
-- WSTG：
-  - 該当テスト観点：Session Management（Session Timeout / Session Invalidation / Concurrent Sessions / Remember Me）
-  - どの観測に対応するか：同一ユーザの同時セッション数、端末識別、セッション一覧表示、失効API、異常検知/通知を観測して成立条件を切る
-- PTES：
-  - 該当フェーズ：Vulnerability Analysis（長期セッション・残存の欠陥、運用境界）、Post-Exploitation（侵害後の持続性/遮断の容易さを評価）
-  - 前後フェーズとの繋がり（1行）：14 logout（終了）と 17 refresh rotation（長期トークン）を結合して「終わらない/増え続けるセッション」が残るかを確定し、16 step-up（重要操作）で境界を締める
-- MITRE ATT&CK：
-  - 戦術：Persistence / Defense Evasion
-  - 目的：追加セッションを作って残す、長期トークンで居座る、ユーザのログアウトでは遮断されない状態を作る（※手順ではなく成立条件の判断）
+# 02_authn_15_session_concurrency（多端末_同時ログイン制御）
+"同時ログイン制御" を「最大セッション数の制限」だけでなく、端末識別・セッション一覧・失効・通知・監査まで含めた"遮断設計"として整理する
 
-## タイトル
-session_concurrency（多端末_同時ログイン制御）
+---
 
 ## 目的（この技術で到達する状態）
 - “同時ログイン制御” を「最大セッション数の制限」だけでなく、端末識別・セッション一覧・失効・通知・監査まで含めた“遮断設計”として整理できる
@@ -27,14 +15,29 @@ session_concurrency（多端末_同時ログイン制御）
   - 長期資産：refresh token、remember-me、device token（モバイル含む）
   - 管理面：セッション管理画面（devices/sessions）、全端末ログアウト、端末名/最終利用
   - SSO環境：IdPセッションと、RP側のセッション/トークンの二重管理（責任分界）
-- 想定する境界：
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
   - 多端末（PC/スマホ）、多ブラウザ、同一端末のプロファイル違い
   - NAT/モバイル回線/VPNでIPが揺れる（IPのみで端末識別できない）
   - SPA/ネイティブアプリで refresh token を前提にする
-- 安全な範囲（最小検証の基本方針）：
-  - テストアカウントで、少数の端末/ブラウザを使い分けて“同時性と失効”を観測する
-  - “漏洩を模した行為（盗用）” はしない。あくまで設計欠陥（遮断不能/残存）を観測で確定する
-  - 重要操作の検証（16）や盗用検知（17）は別ファイルへ分離し、ここでは“同時性/失効/可視化”に集中する
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：テストアカウントで、少数の端末/ブラウザを使い分けて"同時性と失効"を観測する
+  - やらないこと："漏洩を模した行為（盗用）" はしない。あくまで設計欠陥（遮断不能/残存）を観測で確定する。重要操作の検証（16）や盗用検知（17）は別ファイルへ分離し、ここでは"同時性/失効/可視化"に集中する
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/02_authn_14_logout_設計（RP_IdP_フロントチャネル）.md`
+  - `01_topics/02_web/02_authn_17_refresh_token_rotation_盗用検知（reuse）.md`
+  - `01_topics/02_web/02_authn_08_device_binding（端末紐付け_IP_UA_fingerprint）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - 同時ログイン制御を「3つの設計ゴール」に分解する（増やさない、見える、切れる）
+    - セッションを構成要素に分解する（cookie/refresh/device_id/サーバ側レコード）
+    - 端末識別（device binding）の強度の観測
+    - セッション一覧UI/API（可視化）の観測
+    - 失効（revoke/invalidate）モデルの切り分け
+    - 同時ログイン制御の「例外パス」の観測
+  - 扱わない（別ユニットへ接続）：
+    - 実侵害後の横展開（盗用/複製）※ここでは成立条件の評価に留める → 別ユニット
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 ### 1) 同時ログイン制御を「3つの設計ゴール」に分解する
@@ -125,16 +128,21 @@ session_concurrency（多端末_同時ログイン制御）
   - action_priority（P0/P1/P2）
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言える（確定できる）：
+- 何が"確定"できるか：
   - 同時セッションが増える条件（端末/ブラウザ差、ログイン入口差）
   - 一覧可視化の有無と整合性（増える/消える/一致する）
   - 失効（revoke）がどの範囲に効くか（current/device/all）と、例外パスの有無
-  - “パスワード変更で全失効” のような侵害時の遮断が成立するか（少数回の観測で兆候を取る）
-- 推定（根拠付きで言える）：
+  - "パスワード変更で全失効" のような侵害時の遮断が成立するか（少数回の観測で兆候を取る）
+- 何が"推定"できるか（推定の根拠/前提）：
   - 端末識別が弱い場合、盗用検知や選択的遮断が困難（17/18へ波及）
   - SSO境界が曖昧な場合、ユーザは切ったつもりでも復活しやすい（14へ波及）
-- 言えない（この段階では断定しない）：
+- 何は"言えない"か（不足情報・観測限界）：
   - 実侵害後の横展開（盗用/複製）※ここでは成立条件の評価に留める
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：同時セッションが無制限で、遮断が弱い → ブラウザA/B（別プロファイル）＋モバイル（可能なら）でログインし、一覧が増えるか/識別できるかを確認
+  - パターンB：一覧/失効はあるが例外パスがある（mobile/api/remember-me） → webで失効→mobileが残る、またはその逆が起きないかを確認
+  - パターンC：SSO境界で復活する（IdPセッション残存） → RP全端末logout後に、IdP側セッションが残り即復帰するか（14と同じ観測）
+  - パターンD：パスワード変更で全失効しない → パスワード変更後、別端末の既存セッションが生きていないかを確認（少数回）
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
 - 優先度（P0/P1/P2）
@@ -216,12 +224,48 @@ POST /api/sessions/revoke_all     {}                      # 全端末
 - この例が使えないケース（前提が崩れるケース）：
   - 端末一覧が無く、セッション制御がサーバ内部のみ（→監査ログ/設定で代替証跡を取る）
 
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：セッションの一意性/管理（多端末・多ブラウザ）、セッション失効（logout/全端末logout）、リスクベース制御（新規端末/異常IP）、Remember-me/Refresh Tokenの長期セッション管理、監査ログ（セッション作成/失効/並行数）
+  - 該当要件（可能ならID）：V3（Session Management）
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 満たす：「ログインできること」ではなく「どれだけのセッションが同時に生きるか」を制御できないと、漏洩後の被害抑止（containment）が効かないことを観測で確定し、以後の検証観点を外さないための基盤。
+  - 参照：https://github.com/OWASP/ASVS
+- WSTG：
+  - 該当カテゴリ/テスト観点：Session Management（Session Timeout / Session Invalidation / Concurrent Sessions / Remember Me）
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：同一ユーザの同時セッション数、端末識別、セッション一覧表示、失効API、異常検知/通知を観測して成立条件を切る
+  - 参照：https://owasp.org/www-project-web-security-testing-guide/
+- PTES：
+  - 該当フェーズ：Vulnerability Analysis（長期セッション・残存の欠陥、運用境界）、Post-Exploitation（侵害後の持続性/遮断の容易さを評価）
+  - 前後フェーズとの繋がり（1行）：14 logout（終了）と 17 refresh rotation（長期トークン）を結合して「終わらない/増え続けるセッション」が残るかを確定し、16 step-up（重要操作）で境界を締める。
+  - 参照：https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：Persistence / Defense Evasion
+  - 攻撃者の目的（この技術が支える意図）：追加セッションを作って残す、長期トークンで居座る、ユーザのログアウトでは遮断されない状態を作る（※手順ではなく成立条件の判断）。
+  - 参照：https://attack.mitre.org/tactics/TA0003/（Persistence）、https://attack.mitre.org/tactics/TA0005/（Defense Evasion）
+
 ## 参考（必要最小限）
-- OWASP ASVS（セッション管理、失効、長期トークン）
-- OWASP WSTG（Concurrent Sessions、Remember Me、Session Termination）
+- OWASP Application Security Verification Standard: https://github.com/OWASP/ASVS
+- OWASP Web Security Testing Guide: https://owasp.org/www-project-web-security-testing-guide/
+- PTES (Penetration Testing Execution Standard): https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK: https://attack.mitre.org/
 - 侵害時対応の観点（全端末logout、パスワード変更での遮断、監査ログ）
 
 ## リポジトリ内リンク（最大3つまで）
+- 関連 topics：`01_topics/02_web/02_authn_14_logout_設計（RP_IdP_フロントチャネル）.md`
+- 関連 topics：`01_topics/02_web/02_authn_16_step-up_再認証境界（重要操作_再確認）.md`
+- 関連 topics：`01_topics/02_web/02_authn_17_refresh_token_rotation_盗用検知（reuse）.md`
+
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
+- `01_topics/02_web/02_authn_08_device_binding（端末紐付け_IP_UA_fingerprint）.md`
 - `01_topics/02_web/02_authn_14_logout_設計（RP_IdP_フロントチャネル）.md`
 - `01_topics/02_web/02_authn_16_step-up_再認証境界（重要操作_再確認）.md`
 - `01_topics/02_web/02_authn_17_refresh_token_rotation_盗用検知（reuse）.md`
+- `01_topics/02_web/02_authn_18_token_binding（DPoP_mTLS）観測.md`
+- `01_topics/02_web/02_authn_19_webauthn_passkeys_登録・回復境界.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+
+---

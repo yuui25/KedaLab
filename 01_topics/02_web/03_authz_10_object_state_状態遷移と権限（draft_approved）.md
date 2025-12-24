@@ -1,19 +1,4 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS：
-  - この技術で満たす/破れる点：認可の一貫性（状態に応じた許可/禁止）、ビジネスルール強制（workflow/approval）、最小権限（state別の開示/操作制御）、マルチテナント境界（03）、重要操作（承認/公開/取消）の追加ガード（06）、監査（誰が状態を変えたか）
-  - 支える前提：AuthZは「誰が何をするか」だけでなく「“いつ/どの状態で”できるか」。状態遷移が崩れると、承認/公開/支払などの中核が抜ける。
-- WSTG：
-  - 該当テスト観点：Business Logic Testing（ワークフロー/承認）、Authorization Testing（状態によるアクセス制御）、API Testing（不正遷移・二重実行・競合）、Session Management（step-up境界がstate操作に必要か）
-  - どの観測に対応するか：状態モデルを「状態×操作」の行列表に落とし、許可/拒否の一貫性を入口別（UI/REST/GraphQL/admin/job）に差分観測して確定する
-- PTES：
-  - 該当フェーズ：Information Gathering（状態の列挙：UI表示/レスポンス/ログ）、Vulnerability Analysis（不正遷移・例外パス・TOCTOU）、Exploitation（最小差分検証：テストオブジェクト）
-  - 前後フェーズとの繋がり（1行）：04（判定点）と06（重要操作）で定義した“追加ガードと強制点”を、10で「状態遷移（workflow）の強制」に落とし込み、02/05/09の例外パスで崩れないかを評価する
-- MITRE ATT&CK：
-  - 戦術：Impact / Privilege Escalation / Defense Evasion
-  - 目的：本来禁止の遷移（draft→approved、approved→cancel 等）を成立させ、承認迂回・不正支払・公開・復元・証拠隠滅を達成する（※手順ではなく成立条件の判断）
-
-## タイトル
-object_state_状態遷移と権限（draft_approved）
+# 03_authz_10_object_state_状態遷移と権限（draft_approved）
 
 ## 目的（この技術で到達する状態）
 - “状態遷移”を、UIの表示条件ではなく「サーバが強制する認可・ビジネスルール」としてモデル化し、状態バグ（不正遷移/飛び級/巻き戻し/二重実行/競合）を短時間で見つけられる
@@ -24,14 +9,24 @@ object_state_状態遷移と権限（draft_approved）
 ## 前提（対象・範囲・想定）
 - 対象：状態を持つ業務オブジェクト全般
   - 例：申請（draft→submitted→approved/rejected）、記事（draft→published）、請求（draft→issued→paid）、取引（pending→settled）、サポートチケット（open→resolved→closed）
-- 状態は通常、以下を同時に変える
-  - 許可される操作（edit/approve/cancel）
-  - 表示される情報（フィールド/添付/ログ）
-  - 実行される副作用（通知、課金、外部連携）
-- 検証の安全な範囲（実務的）
-  - テスト用オブジェクトを作成し、状態遷移を少数回で観測する（飛び級/巻き戻し/二重実行は特に慎重）
-  - 重要操作（承認/支払/公開）は06の枠組みで、dry-run/テスト環境を優先する
-  - 証跡は「状態のbefore/after」「拒否理由」「入口差分」で確定する
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - 状態は通常、以下を同時に変える：許可される操作（edit/approve/cancel）、表示される情報（フィールド/添付/ログ）、実行される副作用（通知、課金、外部連携）
+  - AuthZは「誰が何をするか」だけでなく「"いつ/どの状態で"できるか」。状態遷移が崩れると、承認/公開/支払などの中核が抜ける。
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：テスト用オブジェクトを作成し、状態遷移を少数回で観測する（飛び級/巻き戻し/二重実行は特に慎重）、重要操作（承認/支払/公開）は06の枠組みで、dry-run/テスト環境を優先する、証跡は「状態のbefore/after」「拒否理由」「入口差分」で確定する
+  - やらないこと：全ての状態の網羅（大規模システムでは状態が多い）。ただし主要遷移（承認/公開/確定）に絞れば高リスクは評価できる。
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+  - `01_topics/02_web/03_authz_02_idor_典型パターン（一覧_検索_参照キー）.md`
+  - `01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
+  - `01_topics/02_web/03_authz_04_rbac_abac_判定点（policy_engine）.md`
+  - `01_topics/02_web/03_authz_05_mass-assignment_モデル結合境界.md`
+  - `01_topics/02_web/03_authz_06_privileged_action_重要操作（承認_送金_権限）.md`
+  - `01_topics/02_web/03_authz_07_graphql_authz（field_level）.md`
+  - `01_topics/02_web/03_authz_08_file_access_ダウンロード認可（署名URL）.md`
+  - `01_topics/02_web/03_authz_09_admin_console_運用UIの境界.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 ### 1) 状態モデルを“列挙”し、stateをサーバ側の真実にする
@@ -122,17 +117,23 @@ object_state_状態遷移と権限（draft_approved）
   - evidence（before/after、拒否理由、監査ログ断片）
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言える（確定できる）：
+- 何が"確定"できるか：
   - 状態遷移が専用コマンドとして守られているか、またはgeneric_updateで崩れ得るか
   - state条件が入口別に一貫しているか（drift）
   - 飛び級/巻き戻し/二重実行/競合の兆候（整合性）
   - 状態依存の開示（フィールド/派生物）が守られているか（07/08）
   - 監査・否認防止（誰が状態を変えたか）の強度
-- 推定（根拠付きで言える）：
+- 何が"推定"できるか（推定の根拠/前提）：
   - 遷移がgeneric_updateに混入している場合、MA（05）やadmin例外（09）で破綻しやすい
   - 競合制御が弱い場合、実運用で事故（重複/矛盾）が起きやすい
-- 言えない（この段階では断定しない）：
+- 何は"言えない"か（不足情報・観測限界）：
   - 全ての状態の網羅（大規模システムでは状態が多い）。ただし主要遷移（承認/公開/確定）に絞れば高リスクは評価できる。
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：飛び級（draft→approved/published/finalized）が成立 → 状態遷移が専用コマンドとして守られているか、またはgeneric_updateで崩れ得るかを観測
+  - パターンB：巻き戻し（approved→draft）が過剰に許可される（証拠改ざん/監査回避） → 巻き戻しが過剰に許可される兆候を観測
+  - パターンC：二重実行で二重課金/二重承認が成立し得る（06） → 二重実行で二重課金/二重承認が成立し得る兆候を観測
+  - パターンD：状態で隠すべき情報が派生物（export/preview/file）で漏れる（07/08） → 状態依存の開示（フィールド/派生物）が守られているか（07/08）を観測
+  - パターンE：入口別に遷移条件が不一致（UIではNG、APIでOK） → state条件が入口別に一貫しているか（drift）を観測
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
 - 優先度（P0/P1/P2）
@@ -215,6 +216,21 @@ PATCH /api/requests/123
 - この例が使えないケース（前提が崩れるケース）：
   - 状態が外部システムで決まる（→戻りの状態更新APIと監査・整合性に評価軸を寄せる）
 
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：V5（アクセス制御）、V7（ログとモニタリング）
+  - 該当要件（可能ならID）：V5.1（一般的なアクセス制御設計）、V7.1（ログ要件）
+  - このファイルの内容が「満たす/破れる」ポイント：認可の一貫性（状態に応じた許可/禁止）、ビジネスルール強制（workflow/approval）、最小権限（state別の開示/操作制御）、マルチテナント境界（03）、重要操作（承認/公開/取消）の追加ガード（06）、監査（誰が状態を変えたか）
+- WSTG：
+  - 該当カテゴリ/テスト観点：Business Logic Testing（ワークフロー/承認）、Authorization Testing（状態によるアクセス制御）、API Testing（不正遷移・二重実行・競合）、Session Management（step-up境界がstate操作に必要か）
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：状態モデルを「状態×操作」の行列表に落とし、許可/拒否の一貫性を入口別（UI/REST/GraphQL/admin/job）に差分観測して確定する
+- PTES：
+  - 該当フェーズ：Information Gathering（状態の列挙：UI表示/レスポンス/ログ）、Vulnerability Analysis（不正遷移・例外パス・TOCTOU）、Exploitation（最小差分検証：テストオブジェクト）
+  - 前後フェーズとの繋がり（1行）：04（判定点）と06（重要操作）で定義した"追加ガードと強制点"を、10で「状態遷移（workflow）の強制」に落とし込み、02/05/09の例外パスで崩れないかを評価する
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：TA0004（Privilege Escalation）、TA0040（Impact）、TA0005（Defense Evasion）
+  - 攻撃者の目的（この技術が支える意図）：本来禁止の遷移（draft→approved、approved→cancel 等）を成立させ、承認迂回・不正支払・公開・復元・証拠隠滅を達成する（※手順ではなく成立条件の判断）
+
 ## 参考（必要最小限）
 - OWASP ASVS（ビジネスルール、認可、監査）
 - OWASP WSTG（Business Logic / Authorization：workflow）
@@ -226,6 +242,15 @@ PATCH /api/requests/123
 - `01_topics/02_web/03_authz_05_mass-assignment_モデル結合境界.md`
 - `01_topics/02_web/03_authz_09_admin_console_運用UIの境界.md`
 
-## 次（このAuthZセットの次）に進む前に確認したいこと（必要なら回答）
-- 次のサブトピック（今後の候補）：
-  - もしこのままAuthZの次を続けるなら、Web系では「API設計差分（REST/GraphQL/Batch）」「監査ログ設計」「権限テスト自動化（回帰防止）」へ分割すると運用価値が上がる
+---
+
+## 深掘りリンク（最大8）
+- 関連 topics：
+  - `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+  - `01_topics/02_web/03_authz_02_idor_典型パターン（一覧_検索_参照キー）.md`
+  - `01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
+  - `01_topics/02_web/03_authz_04_rbac_abac_判定点（policy_engine）.md`
+  - `01_topics/02_web/03_authz_05_mass-assignment_モデル結合境界.md`
+  - `01_topics/02_web/03_authz_06_privileged_action_重要操作（承認_送金_権限）.md`
+  - `01_topics/02_web/03_authz_07_graphql_authz（field_level）.md`
+  - `01_topics/02_web/03_authz_08_file_access_ダウンロード認可（署名URL）.md`

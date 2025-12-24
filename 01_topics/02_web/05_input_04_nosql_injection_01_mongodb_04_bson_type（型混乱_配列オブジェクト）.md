@@ -1,23 +1,4 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-
-- ASVS
-  - 入力→実行境界：入力が「値（scalar）」ではなく「BSON型（object/array/null/bool/number）」としてDBクエリに到達し、条件解釈が変わらない設計か
-  - 型・スキーマ：API境界で型拘束（DTO/JSON Schema）を強制し、スキーマレスDBの“自由度”をアプリ側で閉じているか
-  - 認可境界：tenant/org/owner 条件と同列にユーザ入力をマージしていないか（型混乱で条件が崩れる）
-  - 例外/エラー：キャスト失敗・型不一致・配列処理の例外を統一し、差分（oracle）を潰せているか
-  - 監査：型逸脱（string想定にobject/arrayが来る、nullが多い等）をログ相関し、探索兆候を検知できるか
-- WSTG
-  - Injection（入力→実行）として、SQLiの“型キャスト境界”に相当する観点をNoSQLへ移植（型変化で挙動が変わるか）
-  - テストはエラー誘発より **Boolean oracle（件数/長さ/表示要素）** を主証拠に、型変化（string→array/object/null等）で差分を取る
-- PTES
-  - Vulnerability Analysis：入力点→型変換/バリデーション→クエリ生成点（find/aggregate）→差分観測で成立根拠を確定
-  - Exploitation：影響実証は最小限（認証/検索/越境混入の成立の有無）。DoSや大量抽出は避ける
-  - Reporting：根本原因を「API境界の型拘束欠如」「型変換の不整合（string/ObjectId）」「merge設計」「スキーマレス運用」に分解して提示
-- MITRE ATT&CK
-  - TA0001 Initial Access（公開アプリ入口）/ TA0009 Collection（検索APIからの収集）/ TA0005 Defense Evasion（エラー統一下でブラインド化）
-  - 代表：T1190 Exploit Public-Facing Application（NoSQLi/型混乱は入口になり得る）
-
-# NoSQL Injection（MongoDB）：BSON型混乱（配列・オブジェクト）
+# 05_input_04_nosql_injection_01_mongodb_04_bson_type（型混乱_配列オブジェクト）
 
 ## 目的（この技術で到達する状態）
 - MongoDB（BSON）特有の「型の自由度」を悪用した **型混乱（Type Confusion）** を、Operator Injection（$ne等）とは別枠で整理できる。
@@ -28,14 +9,19 @@
   4) 修正を「禁止ワード」ではなく **API境界の型拘束（DTO/Schema）＋クエリ生成の設計** へ落とせる
 
 ## 前提（対象・範囲・想定）
-- 対象
-  - MongoDB を利用するWeb/APIで、検索・ログイン・一覧・管理UI等の条件が入力由来になっている箇所
-  - JSON（application/json）、form-urlencoded、query string（ネスト復元あり）のいずれも対象
-- 本ファイルの焦点
-  - “$演算子” を直接使わなくても、入力が **配列/オブジェクト** になっただけでクエリ解釈が変わる・バリデーションがすり抜ける・mergeが崩れる、という境界破壊を扱う
-- 位置づけ
-  - Operator Injection（`$ne/$gt/$regex`）が「演算子語彙の混入」なら、
-  - BSON型混乱は「型（データ構造）の混入」で、入力→クエリの境界を破る
+- 対象：MongoDB を利用するWeb/APIで、検索・ログイン・一覧・管理UI等の条件が入力由来になっている箇所、JSON（application/json）、form-urlencoded、query string（ネスト復元あり）のいずれも対象
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - 本ファイルの焦点："$演算子" を直接使わなくても、入力が **配列/オブジェクト** になっただけでクエリ解釈が変わる・バリデーションがすり抜ける・mergeが崩れる、という境界破壊を扱う
+  - 位置づけ：Operator Injection（`$ne/$gt/$regex`）が「演算子語彙の混入」なら、BSON型混乱は「型（データ構造）の混入」で、入力→クエリの境界を破る
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：入力が "値" を超えて "Mongoクエリ構造（演算子）" を形成できる（境界破壊）、その成立経路（JSON直渡し / ネスト復元 / filter JSONパース / マージ処理）がどれか、差分（oracle）がどこに出るか（件数/長さ/エラー/時間）と再現性、認可境界（tenant/org/owner 条件）に接続し得る入口か（設計上の危険性）
+  - やらないこと：DB種類の断定（互換実装・抽象化がある）、"データが全て抜ける" の断定（権限・投影・API制限・監査で変わる）、"高負荷攻撃が可能" の断定（負荷検証は契約と安全配慮が必要）
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+  - `01_topics/02_web/05_input_04_nosql_injection_01_mongodb_01_operator（$ne_$gt_$regex）.md`
+  - `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ## 境界モデル：どこで“型”が変わるか（入力→復元→検証→クエリ生成）
 
@@ -105,9 +91,34 @@
 - 型混乱の論点
   - `tenant_id` を string のつもりでも、ユーザが object/array/null を混ぜられると、上書き・無効化・条件の別解釈が起き得る
 - 観測で言えること
-  - 認可境界に関わるキーが“ユーザ入力と同じ階層で受理される”設計自体が危険（BOLA接続）
+  - 認可境界に関わるキーが"ユーザ入力と同じ階層で受理される"設計自体が危険（BOLA接続）
 - 次の一手
   - 既定条件は固定、ユーザ条件は安全DSLから生成しAND結合（入力オブジェクトを直接mergeしない）へ落とす
+
+## 結果の意味（その出力が示す状態：何が言える/言えない）
+- 何が"確定"できるか：
+  - 入力が "値" を超えて "Mongoクエリ構造（演算子）" を形成できる（境界破壊）、その成立経路（JSON直渡し / ネスト復元 / filter JSONパース / マージ処理）がどれか、差分（oracle）がどこに出るか（件数/長さ/エラー/時間）と再現性、認可境界（tenant/org/owner 条件）に接続し得る入口か（設計上の危険性）
+- 何が"推定"できるか（推定の根拠/前提）：
+  - まず Boolean oracle（件数/長さ）で確定する（推奨）
+  - エラーが見えるなら、型不一致・キャスト失敗が返る場合は「DB到達」の補助証拠に使う（主証拠はBoolean）
+  - 時間差分は最後（短時間・少回数で、他指標と組み合わせる）
+- 何は"言えない"か（不足情報・観測限界）：
+  - DB種類の断定（互換実装・抽象化がある）、"データが全て抜ける" の断定（権限・投影・API制限・監査で変わる）、"高負荷攻撃が可能" の断定（負荷検証は契約と安全配慮が必要）
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：照合（login/本人確認）で型が揺れる → 入力が array/object/null になったときに、検証が落ちるべきなのに"通る/別分岐へ行く"
+  - パターンB：検索/フィルタで "配列" が想定外の意味を持つ → アプリ側が「単一値」想定で組んだクエリが、配列やnullの混入で"条件が弱くなる/強くなる/無効化される"
+  - パターンC：ObjectId（またはUUID等）キャスト境界の不整合 → ある経路では ObjectId にキャストするが、別経路では文字列のまま検索する（実装分岐）
+
+## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
+- この状態が示す"狙い目"：
+  - ログイン/本人確認に近い照合、"一致判定"が型で崩れると、認証・アカウント列挙の問題へ繋がる、検索API（q/filter/where）、"柔軟検索"を謳うほど、filter JSON を受けてマージしがち、管理画面の一覧・エクスポート、条件が複雑で、サーバ側も動的にマージしがち（越境混入が起きやすい）
+- 優先度の付け方（時間制約がある場合の順序）：
+  - まず "同じフィールド"に対し、入力形式だけ変えて "条件解釈が変わる" かを差分で見る、これが見えれば「エスケープ不足」ではなく「構造注入」であることを説明できる
+- 代表的な攻め筋（この観測から自然に繋がるもの）：
+  - 攻め筋1：型拘束がなく、object/array/null が受理されている → 同一フィールドに対し、型だけ変えたときにレスポンス（件数/長さ/表示）が安定して変わる
+  - 攻め筋2：filterパース/merge が原因で型衝突が起きている → 単純パラメータでは差分が出ないが、advanced filter で差分が出る
+- 「見える/見えない」による戦略変更（例：CDN配下、SSO前提、外部委託先など）：
+  - 型混乱は "値のエスケープ" では防げない、防御は **ステージの許可集合（allowlist）** と **サーバ側生成（入力を構造にしない）** が本体
 
 ## 根本原因の分類（報告にそのまま使える形）
 
@@ -197,7 +208,9 @@
   - サーバログ：trace_id、受理型、生成クエリの要約（キーのみ、値はマスク）
   - DBログ（Labsのみ）：実行クエリの型（ObjectIdか文字列か等）
 
-## 例（最小限：設計の違いを理解するための形）
+## コマンド/リクエスト例（例示は最小限・意味の説明が主）
+> 例示は"手段"であり"結論"ではない。必ず「何を観測している例か」を添える。
+
 ~~~~
 # 危険：受理型を固定していない（object/arrayがそのまま通る）
 const username = req.body.username
@@ -207,6 +220,10 @@ db.users.find({ username: username })
 assert(typeof req.body.username === "string")
 db.users.find({ username: req.body.username })
 ~~~~
+
+- この例で観測していること：受理型の固定、型拘束の有無、object/arrayの混入可能性
+- 出力のどこを見るか（注目点）：型検証の有無、エラーハンドリング、クエリの生成方法
+- この例が使えないケース（前提が崩れるケース）：ORMが自動的に型検証を行っている場合、または完全に静的なクエリのみを使用している場合
 
 ~~~~
 # 危険：filterパース＋deep merge（型衝突・上書きが起きる）
@@ -218,6 +235,10 @@ query = deepMerge(base, user)
 query = { $and: [ base, safeUserCondition ] }
 ~~~~
 
+- この例で観測していること：filterパースの処理、deep mergeの危険性、権限条件の固定性
+- 出力のどこを見るか（注目点）：マージ処理の方法、AND結合の有無、権限条件の固定性
+- この例が使えないケース（前提が崩れるケース）：権限条件が固定されていない場合、または完全に静的なクエリのみを使用している場合
+
 ~~~~
 # 危険：IDキャストが経路で揺れる（ある経路はObjectId、別経路は文字列）
 findById(id)  # 実装によりキャスト有無が混在
@@ -227,10 +248,51 @@ id = normalizeObjectId(req.params.id)
 findById(id)
 ~~~~
 
+- この例で観測していること：IDキャストの一貫性、型正規化の有無、エラーハンドリング
+- 出力のどこを見るか（注目点）：キャスト処理の方法、エラーハンドリング、型正規化の有無
+- この例が使えないケース（前提が崩れるケース）：IDが常に同じ型で扱われている場合、または完全に静的なクエリのみを使用している場合
+
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：V5 Validation, Sanitization and Encoding、V7 Error Handling and Logging
+  - 該当要件（可能ならID）：V5.3.1、V5.3.2、V7.4.1
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 入力→実行境界：入力が「値（scalar）」ではなく「BSON型（object/array/null/bool/number）」としてDBクエリに到達し、条件解釈が変わらない設計か
+    - 型・スキーマ：API境界で型拘束（DTO/JSON Schema）を強制し、スキーマレスDBの"自由度"をアプリ側で閉じているか
+    - 認可境界：tenant/org/owner 条件と同列にユーザ入力をマージしていないか（型混乱で条件が崩れる）
+    - 例外/エラー：キャスト失敗・型不一致・配列処理の例外を統一し、差分（oracle）を潰せているか
+    - 監査：型逸脱（string想定にobject/arrayが来る、nullが多い等）をログ相関し、探索兆候を検知できるか
+- WSTG：
+  - 該当カテゴリ/テスト観点：WSTG-INPV-05 SQL Injection、WSTG-ERRH-01 Error Handling
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：
+    - Injection（入力→実行）として、SQLiの"型キャスト境界"に相当する観点をNoSQLへ移植（型変化で挙動が変わるか）
+    - テストはエラー誘発より **Boolean oracle（件数/長さ/表示要素）** を主証拠に、型変化（string→array/object/null等）で差分を取る
+- PTES：
+  - 該当フェーズ：Vulnerability Analysis、Exploitation、Reporting
+  - 前後フェーズとの繋がり（1行）：入力点→型変換/バリデーション→クエリ生成点（find/aggregate）→差分観測で成立根拠を確定し、影響実証は最小限（認証/検索/越境混入の成立の有無）。DoSや大量抽出は避ける、根本原因を「API境界の型拘束欠如」「型変換の不整合（string/ObjectId）」「merge設計」「スキーマレス運用」に分解して提示
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：TA0001 Initial Access（公開アプリ入口）/ TA0009 Collection（検索APIからの収集）/ TA0005 Defense Evasion（エラー統一下でブラインド化）
+  - 攻撃者の目的（この技術が支える意図）：T1190 Exploit Public-Facing Application（NoSQLi/型混乱は入口になり得る）
+
+## 参考（必要最小限）
+- MongoDB Documentation: https://docs.mongodb.com/
+- MongoDB BSON Types: https://docs.mongodb.com/manual/reference/bson-types/
+- OWASP NoSQL Injection: https://owasp.org/www-community/attacks/NoSQL_Injection
+- OWASP Injection Prevention Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html
+
 ## リポジトリ内リンク（最大3つまで）
 - `01_topics/02_web/05_input_04_nosql_injection_01_mongodb_01_operator（$ne_$gt_$regex）.md`
 - `01_topics/02_web/04_api_03_rest_filters_検索・ソート・ページング境界.md`
 - `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
 
-## 次（作成候補順）
-- `01_topics/02_web/05_input_04_nosql_injection_02_elasticsearch_01_query_string（lucene_querystring）.md`
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+- `01_topics/02_web/05_input_04_nosql_injection_01_mongodb_01_operator（$ne_$gt_$regex）.md`
+- `01_topics/02_web/05_input_04_nosql_injection_01_mongodb_02_where_eval（$where_js）.md`
+- `01_topics/02_web/05_input_04_nosql_injection_01_mongodb_03_aggregation（pipeline_$lookup）.md`
+- `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+- `01_topics/02_web/04_api_03_rest_filters_検索・ソート・ページング境界.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+- `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`

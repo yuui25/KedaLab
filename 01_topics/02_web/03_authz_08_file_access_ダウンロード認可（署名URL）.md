@@ -1,19 +1,7 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS：
-  - この技術で満たす/破れる点：リソース単位のアクセス制御（ファイル＝高頻度に抜ける）、マルチテナント分離（03）、最小権限（閲覧/ダウンロード/共有/公開）、機密データ保護（PII/契約/請求/添付）、署名URLの安全な運用（期限・スコープ・権限）、監査（誰が何をダウンロードしたか）
-  - 支える前提：本文やAPIは守れていても、添付/ダウンロード経路だけが“例外パス”になりやすい。IDOR/越境のImpact増幅器。
-- WSTG：
-  - 該当テスト観点：Authorization Testing（IDOR/BOLA、File Authorization）、API Testing（署名URL/リダイレクト/メタデータ）、Business Logic（共有/公開リンク）、Session Management（Cookie付与有無、リファラ漏洩）
-  - どの観測に対応するか：ファイルアクセスを「参照（メタ）→取得（実体）→派生（共有/変換/サムネ）」に分解し、どこで認可が抜けるかを差分で確定する
-- PTES：
-  - 該当フェーズ：Information Gathering（ファイル入口の列挙：UI/API/GraphQL/メール）、Vulnerability Analysis（署名URL・ストレージキー・アプリ経由DLの境界）、Exploitation（最小差分検証：2ユーザ/2テナント）
-  - 前後フェーズとの繋がり（1行）：02/03で見つけた参照キー集合と越境兆候を、08で「file_id/キー/署名URL」に写像し、漏れが“実体データ”に波及しているかを確定して06/09/10へ接続する
-- MITRE ATT&CK：
-  - 戦術：Collection / Exfiltration / Impact
-  - 目的：添付・契約書・請求書・本人確認書類など高価値ファイルを取得し、情報漏洩・恐喝・不正操作の材料にする（※手順ではなく成立条件の判断）
+# 03_authz_08_file_access_ダウンロード認可（署名URL）
+ファイルアクセスを「本文（リソース）とは別の認可境界」として扱い、(1)ファイルの識別子（file_id/key）、(2)取得経路（アプリ経由/署名URL/公開リンク）、(3)派生物（サムネ/変換/エクスポート）、(4)有効期限と共有、(5)監査、の観点で短時間にリスクを確定する
 
-## タイトル
-file_access_ダウンロード認可（署名URL）
+---
 
 ## 目的（この技術で到達する状態）
 - ファイルアクセスを「本文（リソース）とは別の認可境界」として扱い、(1)ファイルの識別子（file_id/key）、(2)取得経路（アプリ経由/署名URL/公開リンク）、(3)派生物（サムネ/変換/エクスポート）、(4)有効期限と共有、(5)監査、の観点で短時間にリスクを確定できる
@@ -23,19 +11,26 @@ file_access_ダウンロード認可（署名URL）
 
 ## 前提（対象・範囲・想定）
 - 対象：Web/API/GraphQL/モバイルでのファイルアップロード・添付・ダウンロード
-- ファイル種別（代表）
-  - ユーザ提供：本人確認書類、プロフィール画像、添付資料
-  - システム生成：請求書PDF、レポートCSV、エクスポート、ログ
-  - 派生物：サムネ、変換後ファイル（pdf化、zip化）
-- 取得経路（混在前提）
-  - アプリ経由DL：`GET /files/{id}/download` のようにサーバが認可してストリームする
-  - 署名URL：アプリが短命URLを発行し、ストレージへ直接GETする
-  - 公開/共有リンク：share_id 等で誰でもアクセス可能（仕様境界）
-  - CDN経由：キャッシュが絡む
-- 検証の安全な範囲（実務的）
-  - 2ユーザ×2テナントで、同一file_id/同一署名URLの到達可能性を差分で観測
-  - 実体取得は必要最小限に留め、メタ情報（サイズ/Content-Type/ETag）で証跡化できるなら優先する
-  - 共有リンクは仕様の範囲を確認し、意図しない公開（期限なし/権限なし/対象束縛なし）を狙って成立条件を確定する
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - ファイル種別（代表）：ユーザ提供（本人確認書類、プロフィール画像、添付資料）、システム生成（請求書PDF、レポートCSV、エクスポート、ログ）、派生物（サムネ、変換後ファイル（pdf化、zip化））
+  - 取得経路（混在前提）：アプリ経由DL（`GET /files/{id}/download` のようにサーバが認可してストリームする）、署名URL（アプリが短命URLを発行し、ストレージへ直接GETする）、公開/共有リンク（share_id 等で誰でもアクセス可能（仕様境界））、CDN経由（キャッシュが絡む）
+  - 本文やAPIは守れていても、添付/ダウンロード経路だけが"例外パス"になりやすい。IDOR/越境のImpact増幅器。
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：2ユーザ×2テナントで、同一file_id/同一署名URLの到達可能性を差分で観測、実体取得は必要最小限に留め、メタ情報（サイズ/Content-Type/ETag）で証跡化できるなら優先する
+  - やらないこと：共有リンクは仕様の範囲を確認し、意図しない公開（期限なし/権限なし/対象束縛なし）を狙って成立条件を確定する
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+  - `01_topics/02_web/03_authz_02_idor_典型パターン（一覧_検索_参照キー）.md`
+  - `01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - ファイルアクセスを「本文（リソース）とは別の認可境界」として扱い、(1)ファイルの識別子（file_id/key）、(2)取得経路（アプリ経由/署名URL/公開リンク）、(3)派生物（サムネ/変換/エクスポート）、(4)有効期限と共有、(5)監査、の観点で短時間にリスクを確定する
+    - 署名URL（S3/GCS/Azure等）を"便利機能"ではなく、権限のスコープ設計（誰がいつ何にアクセスできるか）として評価する
+    - 02（IDOR）/03（越境）/07（GraphQL）/06（重要操作）と結合したときに、漏洩の最大Impact（実体データ）を見積もる
+  - 扱わない（別ユニットへ接続）：
+    - 実体取得は必要最小限に留め、メタ情報（サイズ/Content-Type/ETag）で証跡化できるなら優先する → 別ユニット
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 ### 1) ファイルアクセスは2段階（メタ→実体）で崩れる
@@ -138,16 +133,22 @@ file_access_ダウンロード認可（署名URL）
   - evidence（HAR、URL断片、レスポンスヘッダ、監査ログ断片）
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言える（確定できる）：
+- 何が"確定"できるか：
   - ファイル取得がどの経路（アプリ/署名URL/共有）で成立し、どこが最終PEPか
   - file_id/key/share_id の露出と、それが取得入口に直結しているか
   - tenant束縛が強いか弱いか（越境リスク）
   - 派生物（thumbnail/preview/export）が例外パスになっていないか
   - 署名URLのTTL・スコープ・失効モデルの強度
-- 推定（根拠付きで言える）：
+- 何が"推定"できるか（推定の根拠/前提）：
   - 署名URLが長寿命で露出面が広い場合、漏洩時のImpactが大きい（防御は短命化/再発行/束縛強化）
   - 派生物が別経路にある場合、本体より抜けやすい（重点検証）
-- 言えない（この段階では断定しない）：
+- 何は"言えない"か（不足情報・観測限界）：
+  - 実体取得は必要最小限に留め、メタ情報（サイズ/Content-Type/ETag）で証跡化できるなら優先する
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：他人/他テナントのファイル実体が取得できる（IDOR/越境確定） → 2ユーザ×2テナントで、同一file_id/同一署名URLの到達可能性を差分で観測
+  - パターンB：署名URL発行APIが弱く、他人のkey/file_idで署名を発行できる → 署名URL発行APIが弱く、他人のkey/file_idで署名を発行できる兆候を観測
+  - パターンC：派生物（thumbnail/preview/export）で認可が抜けて実体が取れる → 派生物（thumbnail/preview/export）で認可が抜けて実体が取れる兆候を観測
+  - パターンD：share_idが推測可能/期限なし/回収不可で、機密が恒久的に露出する → share_idが推測可能/期限なし/回収不可で、機密が恒久的に露出する兆候を観測
   - 最大漏洩量（大量取得は許可範囲次第）。ただし入口と束縛からリスクは示せる。
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
@@ -231,19 +232,47 @@ GET /files/999/preview
 - この例が使えないケース（前提が崩れるケース）：
   - すべてのファイルがCDNの公開配信（→公開/共有の仕様境界として、対象束縛・期限・回収・監査に評価軸を寄せる）
 
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：リソース単位のアクセス制御（ファイル＝高頻度に抜ける）、マルチテナント分離（03）、最小権限（閲覧/ダウンロード/共有/公開）、機密データ保護（PII/契約/請求/添付）、署名URLの安全な運用（期限・スコープ・権限）、監査（誰が何をダウンロードしたか）
+  - 該当要件（可能ならID）：V4（Access Control）、V7（Data Protection）
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 満たす：本文やAPIは守れていても、添付/ダウンロード経路だけが"例外パス"になりやすい。IDOR/越境のImpact増幅器であることを観測で確定し、以後の検証観点を外さないための基盤。
+  - 参照：https://github.com/OWASP/ASVS
+- WSTG：
+  - 該当カテゴリ/テスト観点：Authorization Testing（IDOR/BOLA、File Authorization）、API Testing（署名URL/リダイレクト/メタデータ）、Business Logic（共有/公開リンク）、Session Management（Cookie付与有無、リファラ漏洩）
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：ファイルアクセスを「参照（メタ）→取得（実体）→派生（共有/変換/サムネ）」に分解し、どこで認可が抜けるかを差分で確定する
+  - 参照：https://owasp.org/www-project-web-security-testing-guide/
+- PTES：
+  - 該当フェーズ：Information Gathering（ファイル入口の列挙：UI/API/GraphQL/メール）、Vulnerability Analysis（署名URL・ストレージキー・アプリ経由DLの境界）、Exploitation（最小差分検証：2ユーザ/2テナント）
+  - 前後フェーズとの繋がり（1行）：02/03で見つけた参照キー集合と越境兆候を、08で「file_id/キー/署名URL」に写像し、漏れが"実体データ"に波及しているかを確定して06/09/10へ接続する。
+  - 参照：https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：Collection / Exfiltration / Impact
+  - 攻撃者の目的（この技術が支える意図）：添付・契約書・請求書・本人確認書類など高価値ファイルを取得し、情報漏洩・恐喝・不正操作の材料にする（※手順ではなく成立条件の判断）。
+  - 参照：https://attack.mitre.org/tactics/TA0009/（Collection）、https://attack.mitre.org/tactics/TA0010/（Exfiltration）、https://attack.mitre.org/tactics/TA0040/（Impact）
+
 ## 参考（必要最小限）
-- OWASP ASVS（Authorization、データ保護、監査）
-- OWASP WSTG（Authorization Testing、File Download Authorization）
-- PTES（入口列挙→差分観測→成立条件確定）
-- MITRE ATT&CK（Collection/Exfiltration：ファイルは高価値）
+- OWASP Application Security Verification Standard: https://github.com/OWASP/ASVS
+- OWASP Web Security Testing Guide: https://owasp.org/www-project-web-security-testing-guide/
+- PTES (Penetration Testing Execution Standard): https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK: https://attack.mitre.org/
 
 ## リポジトリ内リンク（最大3つまで）
+- 関連 topics：`01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+- 関連 topics：`01_topics/02_web/03_authz_02_idor_典型パターン（一覧_検索_参照キー）.md`
+- 関連 topics：`01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
+
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
 - `01_topics/02_web/03_authz_02_idor_典型パターン（一覧_検索_参照キー）.md`
 - `01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
+- `01_topics/02_web/03_authz_06_privileged_action_重要操作（承認_送金_権限）.md`
 - `01_topics/02_web/03_authz_07_graphql_authz（field_level）.md`
+- `01_topics/02_web/03_authz_09_admin_console_運用UIの境界.md`
+- `01_topics/02_web/03_authz_10_object_state_状態遷移と権限（draft_approved）.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
 
-## 次（09以降）に進む前に確認したいこと（必要なら回答）
-- 09 admin_console：
-  - ファイル管理（検索/一括DL/削除/復元）が管理UIにある場合、例外パスとして非常に危険なので強めに書く
-- 10 object_state：
-  - 状態により公開/共有/ダウンロード可否が変わるドメイン（請求書、申請書、下書き資料）が強い場合、state×fileの結合を主軸にする
+---

@@ -1,18 +1,4 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS
-  - 満たす/破れる点：APIが「Cookie認証（ブラウザが自動付与）」を採る場合、UI同様にCSRF境界を持つ。CORSは“読み取り制御”であり、CSRF（書き込み/状態変更）対策ではないため、トークン/Fetch Metadata/重要操作の再認証などを含む層で閉じる必要がある
-  - 例外設計：SPA/モバイル/外部連携の要件で `SameSite=None` や `credentials` が必要になる局面ほど、CSRFの成立条件が復活しやすい（= APIにこそCSRF設計が要る）
-- WSTG
-  - CSRF（WSTG-SESS-05）をAPIにも拡張して適用：状態変更APIが(1)トークン等で守られているか、(2)Cookieがクロスサイトで付く条件が残っていないか、(3)例外パス（JSON/アップロード/旧API）に抜けがないかを観測で確定する
-- PTES
-  - Vulnerability Analysis：API境界（認証方式・CORS・Cookie属性・Fetch Metadata）をモデル化 → Exploitation：成立根拠は「クロスサイトから“送れる形”で状態変更が受理される」差分の証拠化 → Reporting：CORS誤解（“CORS入れてるから安全”）を設計言語に直して是正
-- MITRE ATT&CK
-  - 位置づけ：Web誘導を起点に被害者ブラウザで操作を走らせる導線は Drive-by Compromise（T1189）と接続して説明可能（= “閲覧/誘導”が入口）
-
----
-
-## タイトル
-API CSRF（CORS / JSON CSRF）境界モデル：送れるのに読めない、を誤解しない
+# 05_input_07_csrf_03_api（cors_json_csrf）
 
 ## 目的（この技術で到達する状態）
 - 「APIはCORSがあるからCSRF不要」という誤解を排除し、次の境界で判断できる
@@ -27,17 +13,20 @@ API CSRF（CORS / JSON CSRF）境界モデル：送れるのに読めない、�
 
 ---
 
-## 前提（最重要の誤解を先に潰す）
-### 1) CORSは“CSRF対策ではない”
-- PortSwiggerは明示的に「CORSはCSRFの保護ではない」と述べる（CORSは“読み取り”の制御）
-- つまり「攻撃者がレスポンスを読めない」だけでは、状態変更（書き込み）は止まらない
-
-### 2) APIのCSRF要否は“認証方式”で決まる
-- Cookie（セッション/リフレッシュ）が自動付与される設計は、APIでもCSRF境界を持つ
-- Authorization: Bearer をJSが明示付与する設計は、一般にCSRFは成立しにくい（代わりにXSS/トークン窃取が主戦場）
-  - ただし「BearerをCookieに入れている」「SameSite=Noneで共有」等をやるとCSRF側へ戻る
-
----
+## 前提（対象・範囲・想定）
+- 対象：APIが「Cookie認証（ブラウザが自動付与）」を採る場合、UI同様にCSRF境界を持つ、状態変更API、JSON API、SPA/モバイル/外部連携の要件で `SameSite=None` や `credentials` が必要になる局面
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - CORSは"CSRF対策ではない"：PortSwiggerは明示的に「CORSはCSRFの保護ではない」と述べる（CORSは"読み取り"の制御）、つまり「攻撃者がレスポンスを読めない」だけでは、状態変更（書き込み）は止まらない、APIのCSRF要否は"認証方式"で決まる：Cookie（セッション/リフレッシュ）が自動付与される設計は、APIでもCSRF境界を持つ、Authorization: Bearer をJSが明示付与する設計は、一般にCSRFは成立しにくい（代わりにXSS/トークン窃取が主戦場）、ただし「BearerをCookieに入れている」「SameSite=Noneで共有」等をやるとCSRF側へ戻る
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：送信境界：攻撃者オリジンから、ブラウザが"状態変更リクエストを送れるか"、資格情報境界：その送信にCookie等の資格情報が付くか（SameSite/credentials/ドメイン）、受理境界：サーバが受理する条件が何か（CSRFトークン / Fetch Metadata / Origin/Referer 等）、読取境界：CORSで"レスポンスが読めるか"は別問題（CSRFは読めなくても成立する）、APIの認証方式（Cookie / Bearer）ごとに、CSRF設計が必要な範囲を切り分けられる、「JSONだから安全」「application/jsonだから外部から送れない」といった誤解を、CORS/プリフライト/受理条件の観測で潰せる、防御は CORS ではなく、トークン/Fetch Metadata/重要操作の再認証 で閉じるべきだと説明できる
+  - やらないこと：影響実証は最小限（成立根拠の確定まで）。高負荷/外部到達/大量出力は避ける
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+  - `01_topics/02_web/05_input_07_csrf_01_token（synchronizer_double_submit）.md`
+  - `01_topics/02_web/05_input_07_csrf_02_samesite（cookie_credential）.md`
+  - `01_topics/02_web/06_config_01_CORSと信頼境界（Origin_資格情報_プリフライト）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ## 境界モデル（API CSRFの“成立根拠”を構造化）
 ### 1) 送信境界：攻撃者オリジンから“送れる”形の整理
@@ -110,18 +99,36 @@ API CSRF（CORS / JSON CSRF）境界モデル：送れるのに読めない、�
 
 ### 状態B：CSRFが成立し得る（最頻）
 - 状態変更APIでトークン検証が抜けている（UIは守っているがAPIが抜ける、など）
-- “JSONだから外部から送れない”前提で設計しており、実際は別形で受理している（Content-Type/メソッド/互換パス）
+- "JSONだから外部から送れない"前提で設計しており、実際は別形で受理している（Content-Type/メソッド/互換パス）
 - Fetch Metadata/Origin検証が無く、SameSite=None 等でCookieがクロスサイト送信される条件が残っている
 
 ### 状態C：CORS誤設定が重なり、被害が増幅
 - CORS misconfig によりレスポンスが読める → CSRFトークンやユーザ情報の読み取りが可能になり、CSRF防御の迂回が容易になる
 
----
+## 結果の意味（その出力が示す状態：何が言える/言えない）
+- 何が"確定"できるか：
+  - 送信境界：攻撃者オリジンから、ブラウザが"状態変更リクエストを送れるか"、資格情報境界：その送信にCookie等の資格情報が付くか（SameSite/credentials/ドメイン）、受理境界：サーバが受理する条件が何か（CSRFトークン / Fetch Metadata / Origin/Referer 等）、読取境界：CORSで"レスポンスが読めるか"は別問題（CSRFは読めなくても成立する）
+- 何が"推定"できるか（推定の根拠/前提）：
+  - まず Boolean oracle（HTTP差分（ステータス、レスポンス、反映結果））で確定する（推奨）
+  - APIの認証方式を確定（ここが分岐の起点）：Cookie（session/refresh）が状態変更APIに付いているか、Authorizationヘッダ主体か（フロントが都度付与か）、併用か（"一部だけCookie"が最も事故りやすい）
+  - CORSヘッダの観測：`Access-Control-Allow-Origin`、`Access-Control-Allow-Credentials`、`Access-Control-Allow-Methods`、`Access-Control-Allow-Headers`、プリフライトの有無、実リクエストでの資格情報送信可否
+- 何は"言えない"か（不足情報・観測限界）：
+  - "任意操作が可能"の断定（環境/設定/権限で差が大きい）、"DoSが可能"の断定（性能試験は別枠、契約と安全配慮が必要）
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：強い（最低限の要件を満たす） → 状態変更APIにCSRF対策があるか（トークン/Fetch Metadata）を横断で確認、CORSは"最小許可"で運用（読取境界の防御）、許可オリジンを限定し、安易なOrigin反射をしない、credentials を許可するなら、オリジンの許可条件を厳密に（読取可能化は影響が大きい）
+  - パターンB：CSRFが成立し得る（最頻） → 状態変更APIでトークン検証が抜けている（UIは守っているがAPIが抜ける、など）、"JSONだから外部から送れない"前提で設計しており、実際は別形で受理している（Content-Type/メソッド/互換パス）、Fetch Metadata/Origin検証が無く、SameSite=None 等でCookieがクロスサイト送信される条件が残っている
+  - パターンC：CORS誤設定が重なり、被害が増幅 → CORS misconfig によりレスポンスが読める → CSRFトークンやユーザ情報の読み取りが可能になり、CSRF防御の迂回が容易になる
 
-## 攻撃者視点での利用（“攻撃より”だが、作り方ではなく優先度を固定）
-- まず見る：Cookie認証の状態変更API（特に `SameSite=None` を要求する要件がある領域）
-- 次に見る：CORSで credentials を許容しているAPI（反射/過広範なら“読取”まで可能）
-- 最後に見る：トークンがあるのに、トークンを返すAPIがCORSで読める（= 防御層を自分で開けている）
+## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
+- この状態が示す"狙い目"：
+  - APIが「Cookie認証（ブラウザが自動付与）」を採る場合、UI同様にCSRF境界を持つ、状態変更API、JSON API、SPA/モバイル/外部連携の要件で `SameSite=None` や `credentials` が必要になる局面
+- 優先度の付け方（時間制約がある場合の順序）：
+  - まず見る：Cookie認証の状態変更API（特に `SameSite=None` を要求する要件がある領域）、次に見る：CORSで credentials を許容しているAPI（反射/過広範なら"読取"まで可能）、最後に見る：トークンがあるのに、トークンを返すAPIがCORSで読める（= 防御層を自分で開けている）
+- 代表的な攻め筋（この観測から自然に繋がるもの）：
+  - 攻め筋1：APIがCookie認証（セッション）で動いている → 状態変更APIにCSRF対策があるか（トークン/Fetch Metadata）を横断で確認、"UIは守ってるがAPIが抜ける"を優先的に疑う（実務で多い）、SameSite/Domain/Pathの境界が広すぎないか（サブドメイン共有は事故要因）
+  - 攻め筋2：JSON CSRF（"JSONだから安全"が崩れる典型パターン） → JSON専用のつもりが、別Content-Typeでも受理している、メソッド/経路の例外（GETで状態変更、旧API、互換パス）、GraphQL/検索APIで副作用が混じる
+- 「見える/見えない」による戦略変更（例：CDN配下、SSO前提、外部委託先など）：
+  - CORSは"CSRF対策ではない"：PortSwiggerは明示的に「CORSはCSRFの保護ではない」と述べる（CORSは"読み取り"の制御）、つまり「攻撃者がレスポンスを読めない」だけでは、状態変更（書き込み）は止まらない、CORS誤解（"CORS入れてるから安全"）を設計言語に直して是正
 
 ---
 
@@ -172,33 +179,56 @@ API CSRF（CORS / JSON CSRF）境界モデル：送れるのに読めない、�
 
 ---
 
-## コマンド/例（例示は最小限：観測の形だけ）
+## コマンド/リクエスト例（例示は最小限・意味の説明が主）
+> 例示は"手段"であり"結論"ではない。必ず「何を観測している例か」を添える。
+
 ~~~~
-# 観測目的：CORSは“送信を止めない”ので、状態変更が受理される条件（トークン/Fetch Metadata）を確認する
+# 観測目的：CORSは"送信を止めない"ので、状態変更が受理される条件（トークン/Fetch Metadata）を確認する
 # 1) 状態変更APIに、CSRFトークンが必須か（欠落/不一致で拒否されるか）
 # 2) リクエストに Sec-Fetch-Site 等が来ているか、サーバが cross-site を拒否しているか
 # 3) CORSヘッダが credentials を許可していないか（読取境界の評価）
 ~~~~
 
----
+- この例で観測していること：送信境界、資格情報境界、受理境界、読取境界、APIの認証方式（Cookie/Bearer）、CORSヘッダの観測
+- 出力のどこを見るか（注目点）：HTTP差分（ステータス、レスポンス、反映結果）、`Set-Cookie`、CORSヘッダ一式（`Access-Control-Allow-Origin`、`Access-Control-Allow-Credentials`、`Access-Control-Allow-Methods`、`Access-Control-Allow-Headers`）、`Sec-Fetch-*` の到達、反映結果（状態変化）
+- この例が使えないケース（前提が崩れるケース）：APIがそもそも使用されていない場合、または完全に静的なリクエストのみを使用している場合
 
-## 参考（一次情報に近いもの中心）
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：V4 Access Control、V7 Error Handling and Logging
+  - 該当要件（可能ならID）：V4.1.1、V4.1.2、V7.4.1
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 満たす/破れる点：APIが「Cookie認証（ブラウザが自動付与）」を採る場合、UI同様にCSRF境界を持つ。CORSは"読み取り制御"であり、CSRF（書き込み/状態変更）対策ではないため、トークン/Fetch Metadata/重要操作の再認証などを含む層で閉じる必要がある
+    - 例外設計：SPA/モバイル/外部連携の要件で `SameSite=None` や `credentials` が必要になる局面ほど、CSRFの成立条件が復活しやすい（= APIにこそCSRF設計が要る）
+- WSTG：
+  - 該当カテゴリ/テスト観点：WSTG-SESS-05 Testing for Cross Site Request Forgery
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：
+    - CSRF（WSTG-SESS-05）をAPIにも拡張して適用：状態変更APIが(1)トークン等で守られているか、(2)Cookieがクロスサイトで付く条件が残っていないか、(3)例外パス（JSON/アップロード/旧API）に抜けがないかを観測で確定する
+- PTES：
+  - 該当フェーズ：Vulnerability Analysis、Exploitation、Reporting
+  - 前後フェーズとの繋がり（1行）：API境界（認証方式・CORS・Cookie属性・Fetch Metadata）をモデル化し、成立根拠は「クロスサイトから"送れる形"で状態変更が受理される」差分の証拠化、CORS誤解（"CORS入れてるから安全"）を設計言語に直して是正
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：Initial Access / Execution
+  - 攻撃者の目的（この技術が支える意図）：Web誘導を起点に被害者ブラウザで操作を走らせる導線は Drive-by Compromise（T1189）と接続して説明可能（= "閲覧/誘導"が入口）
+
+## 参考（必要最小限）
 - OWASP WSTG：Testing for CSRF（WSTG-SESS-05）
 - OWASP CSRF Prevention Cheat Sheet（Fetch Metadata含む）
 - MDN：CSRF（Sec-Fetch-Siteによる緩和の説明）
 - W3C：Fetch Metadata Request Headers（仕様根拠）
 - MDN：CORS（プリフライトとcredentialsの原則）
-- PortSwigger：CORSはCSRF防御ではない（明示）
-- PortSwigger Lab：Origin反射などのCORS誤設定例（影響理解の補助）
-
----
 
 ## リポジトリ内リンク（最大3つまで）
-- `01_topics/02_web/06_config_01_CORSと信頼境界（Origin_資格情報_プリフライト）.md`
 - `01_topics/02_web/05_input_07_csrf_01_token（synchronizer_double_submit）.md`
 - `01_topics/02_web/05_input_07_csrf_02_samesite（cookie_credential）.md`
+- `01_topics/02_web/06_config_01_CORSと信頼境界（Origin_資格情報_プリフライト）.md`
 
 ---
 
-## 次（作成候補順）
-- `01_topics/02_web/05_input_08_xxe_01_parser（doctype_entity）.md`
+## 深掘りリンク（最大8）
+- `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+- `01_topics/02_web/05_input_07_csrf_01_token（synchronizer_double_submit）.md`
+- `01_topics/02_web/05_input_07_csrf_02_samesite（cookie_credential）.md`
+- `01_topics/02_web/06_config_01_CORSと信頼境界（Origin_資格情報_プリフライト）.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+- `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`

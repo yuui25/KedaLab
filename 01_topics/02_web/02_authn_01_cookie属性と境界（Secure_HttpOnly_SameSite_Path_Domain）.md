@@ -1,11 +1,7 @@
-<<<BEGIN>>>
-# 02_authn_01_cookie属性と境界（Secure_HttpOnly_SameSite_Path_Domain）.md
+# 02_authn_01_cookie属性と境界（Secure_HttpOnly_SameSite_Path_Domain）
+Cookie属性を「知っている」ではなく、**境界（いつ/どこへ/誰として送られるか）を観測→差分→結論**で説明する
 
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-- ASVS：V3（Session Management）を中心に、V2（Authentication）/ V4（Access Control）/ V7（Error Handling & Logging）へ接続する。Cookie属性は「セッションの守り」だけでなく「境界の設計（どこで送られるか）」そのもの。
-- WSTG：WSTG-SESS（Session Management）/ WSTG-ATHN（Authentication）で、Cookieが“どの条件で送信されるか”を観測し、差分で結論を出すための前提。
-- PTES：Vulnerability Analysis（成立条件の切り分け）→ Exploitation（再現）→ Reporting（根拠提示）の品質を上げる。Cookie属性は“推測”を減らし、通信差分で説明できる。
-- MITRE ATT&CK：Credential Access / Collection / Defense Evasion に接続。Cookie保護が弱いとセッション再利用や不正操作に繋がる。逆に強い場合は攻撃者の次の手が変わる（判断材料）。
+---
 
 ## 目的（この技術で到達する状態）
 - Cookie属性を「知っている」ではなく、**境界（いつ/どこへ/誰として送られるか）を観測→差分→結論**で説明できる。
@@ -14,12 +10,22 @@
 
 ## 前提（対象・範囲・想定）
 - 対象：Webアプリの認証後セッション（Cookieベース）または補助Cookie（CSRF token、Remember-me 等）。
-- 想定する観測点：
-  - Proxyログ（推奨）：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
-  - 必要時：HAR（ブラウザ）、pcap（HTTP/2/3やTLS切り分け）、サーバログ（認証/セッション）
-- 注意：
-  - Cookie属性は“ブラウザ側の送信条件”を規定する。サーバ側がどう判定したかは別（ログ等で補強）。
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
   - CDN/キャッシュ/ドメイン分割があると、同じCookie名でも境界が複雑になる（ケースで明示する）。
+- できること/やらないこと（安全に検証する範囲）：
+  - Cookie属性は"ブラウザ側の送信条件"を規定する。サーバ側がどう判定したかは別（ログ等で補強）。
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - Cookie属性（Secure、HttpOnly、SameSite、Domain、Path、Expires/Max-Age、__Host-/__Secure-プレフィックス）の意味と境界
+    - Cookieがどの条件で送信されるかの観測と差分検証
+    - 実務で、Cookie起因の問題（セッション固定化、CSRF成立条件、越境送信、サブドメイン混在など）の判断
+  - 扱わない（別ユニットへ接続）：
+    - セッションライフサイクルの詳細 → `01_topics/02_web/02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`
+    - トークン設計の詳細 → `01_topics/02_web/02_authn_03_token設計（Bearer_JWT_Refresh_Rotation）.md`
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 ### Cookieが関与する「境界」
@@ -96,13 +102,19 @@
   - 使われていないこと自体を問題にするのではなく、境界（送信範囲）が過剰かどうかを差分で確かめる
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言えること（観測で断定できる）
+- 何が"確定"できるか：
   - Cookieが **どの条件で送られるか**（HTTPS/クロスサイト/サブドメイン/パス）
   - セッション維持が **どのCookieに依存しているか**（識別子の所在）
   - 失効・寿命・スコープが **境界として整合しているか**
-- 言えないこと（追加証跡が必要）
+- 何が"推定"できるか（推定の根拠/前提）：
+  - Cookie属性の設計意図（境界の設計が適切かどうか）
+- 何は"言えない"か（不足情報・観測限界）：
   - サーバ側でのセッション失効ロジックの正否（ログ/設定/実装確認が必要）
   - 中間層（CDN/WAF/プロキシ）による書き換えの有無（別観測が必要）
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：Cookieが送られない／挙動が揺れる → Proxyで Set-Cookie と Cookie の両方を保存し、送信される/されない条件を1つずつ変えて差分を見る
+  - パターンB：不正操作（状態変更）が疑われる → SameSiteとCSRFトークンの関係を、実リクエスト差分で確認する（送信されるのに拒否される＝別境界）
+  - パターンC：サブドメインや複数ホストで挙動が混ざる → Domainのスコープを確定し、サブドメイン一覧（ASM/OSINT結果）と突き合わせて"影響面"を評価する
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
 > “攻撃手順”ではなく、次の検証を早く正しく選ぶための判断材料。
@@ -136,29 +148,92 @@
 - 期待する観測
   - “どのホストが同じセッション境界に入るか”を説明できる
 
-## 手を動かす検証（最小：Proxyで差分を取る）
+## 手を動かす検証（Labs連動：観測点を明確に）
+- 検証環境（関連する `04_labs/`）
+  - 参照ファイル：
+    - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+    - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 取得する証跡（目的ベースで最小限）：
+  - Proxyログ（推奨）、必要時：HAR（ブラウザ）、pcap（HTTP/2/3やTLS切り分け）、サーバログ（認証/セッション）
+  - ログイン直後のレスポンスで Set-Cookie を保存
+  - 同一機能を、条件を1つだけ変えて呼び出し、Cookie送信の有無を比較する
+- 観測の取り方（どの視点で差分を見るか）：
+  - 条件差（https/http、同一サイト遷移/クロスサイト遷移、サブドメイン変更、パス変更）を1つずつ変えて差分を見る
+- 実施方法（最高に具体的）：観測の準備と相関キー
+  - 証跡ディレクトリ（必須）
+    ~~~~
+    mkdir -p ~/keda_evidence/cookie_attributes 2>/dev/null
+    cd ~/keda_evidence/cookie_attributes
+    ~~~~
+  - 検証の前提を固定（スコープ事故を防ぐ）
+    - 必須で決める（レポート先頭に書く）
+      - 対象は **許可されたスコープ** のみ
+      - 観測は **最小限の差分セット** のみ
+      - Cookie値そのものは秘匿情報になり得るため、共有・保存・提出時の扱いはルールに従う
+  - 相関キー（最低限）を作る（後で必ず効く）
+    - Host、Cookie名、属性（Secure/HttpOnly/SameSite/Domain/Path）、送信条件（HTTPS/クロスサイト/サブドメイン/パス）、送信有無（yes/no/unknown）
+
+## コマンド/リクエスト例（例示は最小限・意味の説明が主）
+> 例示は"手段"であり"結論"ではない。必ず「何を観測している例か」を添える。
+
 ~~~~
-# 目的：Cookie境界を「観測→差分→結論」で確定する
-# 手順（概念）：
-# 1) ログイン直後のレスポンスで Set-Cookie を保存する
-# 2) 同一機能を、条件を1つだけ変えて呼び出し、Cookie送信の有無を比較する
-#    - https / http
-#    - 同一サイト遷移 / クロスサイト遷移（Origin/Referer）
-#    - サブドメイン変更
-#    - パス変更
-#
-# 重要：Cookie値そのものは秘匿情報になり得るため、共有・保存・提出時の扱いはルールに従う
+# 例：ログイン直後のレスポンスで Set-Cookie を観測
+curl -i -L https://example.com/login -d "username=test&password=test"
+
+# 例：条件を変えてCookie送信の有無を比較
+curl -i https://example.com/api/me -H "Cookie: session=..."
+curl -i http://example.com/api/me -H "Cookie: session=..."
 ~~~~
+
+- この例で観測していること：
+  - Cookieがどの条件で送られるか（HTTPS/HTTP、クロスサイト/同一サイト、サブドメイン/パス）
+- 出力のどこを見るか（注目点）：
+  - Set-Cookieヘッダの属性（Secure、HttpOnly、SameSite、Domain、Path、Expires/Max-Age）
+  - Cookieヘッダの送信有無（条件差による差分）
+- この例が使えないケース（前提が崩れるケース）：
+  - JS必須/SSO必須の場合、curlだけでは成立しない（ブラウザ+HAR/Proxyで観測へ）
+
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：V3（Session Management）を中心に、V2（Authentication）/ V4（Access Control）/ V7（Error Handling & Logging）へ接続する。Cookie属性は「セッションの守り」だけでなく「境界の設計（どこで送られるか）」そのもの。
+  - 該当要件（可能ならID）：V3（Session Management）、V2（Authentication）
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 満たす：Cookie属性の境界を観測で確定し、以後の検証観点を外さないための基盤。
+  - 参照：https://github.com/OWASP/ASVS
+- WSTG：
+  - 該当カテゴリ/テスト観点：WSTG-SESS（Session Management）/ WSTG-ATHN（Authentication）で、Cookieが"どの条件で送信されるか"を観測し、差分で結論を出すための前提。
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：Cookie送信条件の観測と理解
+  - 参照：https://owasp.org/www-project-web-security-testing-guide/
+- PTES：
+  - 該当フェーズ：Vulnerability Analysis（成立条件の切り分け）→ Exploitation（再現）→ Reporting（根拠提示）の品質を上げる。Cookie属性は"推測"を減らし、通信差分で説明できる。
+  - 前後フェーズとの繋がり（1行）：成立条件の切り分け→再現→根拠提示の品質を上げる。
+  - 参照：https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：Credential Access / Collection / Defense Evasion
+  - 攻撃者の目的（この技術が支える意図）：Cookie保護が弱いとセッション再利用や不正操作に繋がる。逆に強い場合は攻撃者の次の手が変わる（判断材料）。
+  - 参照：https://attack.mitre.org/tactics/TA0006/（Credential Access）、https://attack.mitre.org/tactics/TA0009/（Collection）、https://attack.mitre.org/tactics/TA0005/（Defense Evasion）
 
 ## 参考（必要最小限）
-- `01_topics/02_web/02_authn_認証・セッション・トークン.md`（親：入口）
-- `02_playbooks/03_authn_観測ポイント（SSO_MFA前提）.md`（実行の順番）
-- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`（観測点固定）
+- OWASP Application Security Verification Standard: https://github.com/OWASP/ASVS
+- OWASP Web Security Testing Guide: https://owasp.org/www-project-web-security-testing-guide/
+- PTES (Penetration Testing Execution Standard): https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK: https://attack.mitre.org/
 
-## 深掘りリンク（親ファイル末尾に追加する枠：最大8件）
-- （親）`01_topics/02_web/02_authn_認証・セッション・トークン.md` の末尾に本ファイルへのリンクを追加する
-  - `02_authn_01_cookie属性と境界（Secure_HttpOnly_SameSite_Path_Domain）.md`
+## リポジトリ内リンク（最大3つまで）
+- 関連 topics：`01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
+- 関連 labs：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+- 関連 labs：`04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ---
 
-<<<END>>>
+## 深掘りリンク（最大8）
+- `01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
+- `01_topics/02_web/02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`
+- `01_topics/02_web/02_authn_03_token設計（Bearer_JWT_Refresh_Rotation）.md`
+- `01_topics/02_web/05_input_07_csrf_01_token（synchronizer_double_submit）.md`
+- `01_topics/02_web/05_input_07_csrf_02_samesite（cookie_credential）.md`
+- `01_topics/02_web/06_config_01_CORSと信頼境界（Origin_資格情報_プリフライト）.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+- `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+
+---

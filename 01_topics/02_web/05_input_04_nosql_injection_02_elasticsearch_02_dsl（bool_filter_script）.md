@@ -1,27 +1,4 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-
-- ASVS：
-  - 該当領域/章：入力検証（Injection）、アクセス制御（認可/テナント分離）、エラー処理/ロギング、可用性（リソース制御）
-  - このファイルの内容が「満たす/破れる」ポイント：
-    - ユーザ入力が Query DSL（JSON構造）として **bool / filter / script** を形成できると、値のエスケープでは防げない「入力→実行境界」破壊になる
-    - 認可条件（tenant/org/owner）を query と同階層で合成すると、境界条件が“揺れる/上書きされる”設計になりやすい
-    - script（Painless等）を入力由来で組み立てると、実行境界（コード評価）とDoS境界（高コスト計算）が同時に崩れる
-    - 防御は「安全DSL→サーバ側生成」「フィールド/演算子 allowlist」「固定の認可filter強制」「高コスト機能の無効化/制限（search.allow_expensive_queries 等）」に落ちる
-- WSTG：
-  - 該当カテゴリ/テスト観点：Injection（検索/フィルタ入力が実行計画に変換される点）、Authorization（テナント分離が検索で崩れないか）、Error Handling（oracle化）
-  - 対応の書き方：エラーより **Boolean oracle（件数/長さ/要素数）** と **構造差分（bool構造の揺れ）** を主証拠にする
-- PTES：
-  - 該当フェーズ：Vulnerability Analysis → Exploitation（影響実証は最小限）→ Reporting（根本原因を設計へ落とす）
-  - 前後フェーズとの繋がり（1行）：
-    - 前：APIの検索・絞り込み（filters/paging）観測で入口を確定 → 本：DSL生成点の境界破壊 → 後：認可（BOLA/BFLA）と可用性（DoS）へ影響を分解して報告
-- MITRE ATT&CK：
-  - 該当戦術：TA0001 Initial Access / TA0009 Collection / TA0005 Defense Evasion（エラー統一でブラインド化）
-  - 攻撃者の目的：検索機能を“横断収集・越境混入・高コスト実行”の足場にする（T1190 など）
-
----
-
-## タイトル
-NoSQL Injection（Elasticsearch）：Query DSL（bool / filter / script）入力→実行境界
+# 05_input_04_nosql_injection_02_elasticsearch_02_dsl（bool_filter_script）
 
 ## 目的（この技術で到達する状態）
 - Elasticsearch を使うWeb/APIで、ユーザ入力が「検索語」ではなく **Query DSL（JSON構造）** として解釈されているかを判定できる。
@@ -32,19 +9,19 @@ NoSQL Injection（Elasticsearch）：Query DSL（bool / filter / script）入力
   - 修正提案を、エスケープではなく **サーバ側DSL生成 + allowlist + 高コスト制限** に落とせる
 
 ## 前提（対象・範囲・想定）
-- 対象：
-  - 検索、一覧フィルタ、監査ログ検索、管理画面の詳細検索、レポート/エクスポートの絞り込み（保存検索＝second-orderも含む）
-- 想定する環境：
-  - アプリ（API）→ Elasticsearch クラスタ（同VPC/同NW・または外部SaaS）
-  - 単一テナント/マルチテナント（同一indexにtenant_idを持つ、または index/alias分離）
-  - Kibana 等が背後にある可能性（運用要件が設定に影響）
+- 対象：検索、一覧フィルタ、監査ログ検索、管理画面の詳細検索、レポート/エクスポートの絞り込み（保存検索＝second-orderも含む）
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - アプリ（API）→ Elasticsearch クラスタ（同VPC/同NW・または外部SaaS）、単一テナント/マルチテナント（同一indexにtenant_idを持つ、または index/alias分離）、Kibana 等が背後にある可能性（運用要件が設定に影響）
 - できること/やらないこと（安全に検証する範囲）：
-  - 低侵襲な差分観測（件数/長さ/構造差分）で境界を確定する
-  - 高負荷を発生させる検証（DoS相当）や大量抽出は避け、設計上の制約欠如として評価する
+  - できること：DSL生成点（JSONパース/merge/テンプレ/ORM相当）を同定し、入力→実行境界の成立根拠（差分）を取れる、認可filter（tenant/org/owner）の適用位置が正しいか（揺れないか）を、構造と結果差分で確定できる、script（Painless等）を「必要機能」と「危険境界（コード評価・高コスト）」に分離し、設計レビューと検証優先度を付けられる、修正提案を、エスケープではなく **サーバ側DSL生成 + allowlist + 高コスト制限** に落とせる
+  - やらないこと：低侵襲な差分観測（件数/長さ/構造差分）で境界を確定する、高負荷を発生させる検証（DoS相当）や大量抽出は避け、設計上の制約欠如として評価する
 - 依存する前提知識（必要最小限）：
-  - Query（スコアリング）と Filter（フィルタコンテキスト）の違い
-  - bool（must/should/filter/must_not）による合成構造
-  - script（Painless）を使う場面と、許可/制限の考え方
+  - `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+  - `01_topics/02_web/05_input_04_nosql_injection_02_elasticsearch_01_query_string（lucene_querystring）.md`
+  - `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+  - Query（スコアリング）と Filter（フィルタコンテキスト）の違い、bool（must/should/filter/must_not）による合成構造、script（Painless）を使う場面と、許可/制限の考え方
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 
@@ -201,14 +178,40 @@ POST /<index>/_search
 - Elastic Docs：Runtime fields（expensive query扱いの例）  
   - https://www.elastic.co/docs/manage-data/data-store/mapping/runtime-fields
 
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：V5 Validation, Sanitization and Encoding、V7 Error Handling and Logging
+  - 該当要件（可能ならID）：V5.3.1、V5.3.2、V7.4.1
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - ユーザ入力が Query DSL（JSON構造）として **bool / filter / script** を形成できると、値のエスケープでは防げない「入力→実行境界」破壊になる
+    - 認可条件（tenant/org/owner）を query と同階層で合成すると、境界条件が"揺れる/上書きされる"設計になりやすい
+    - script（Painless等）を入力由来で組み立てると、実行境界（コード評価）とDoS境界（高コスト計算）が同時に崩れる
+    - 防御は「安全DSL→サーバ側生成」「フィールド/演算子 allowlist」「固定の認可filter強制」「高コスト機能の無効化/制限（search.allow_expensive_queries 等）」に落ちる
+- WSTG：
+  - 該当カテゴリ/テスト観点：WSTG-INPV-05 SQL Injection、WSTG-ERRH-01 Error Handling
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：
+    - Injection（検索/フィルタ入力が実行計画に変換される点）、Authorization（テナント分離が検索で崩れないか）、Error Handling（oracle化）
+    - エラーより **Boolean oracle（件数/長さ/要素数）** と **構造差分（bool構造の揺れ）** を主証拠にする
+- PTES：
+  - 該当フェーズ：Vulnerability Analysis、Exploitation、Reporting
+  - 前後フェーズとの繋がり（1行）：APIの検索・絞り込み（filters/paging）観測で入口を確定 → DSL生成点の境界破壊 → 認可（BOLA/BFLA）と可用性（DoS）へ影響を分解して報告、影響実証は最小限、根本原因を設計へ落とす
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：TA0001 Initial Access / TA0009 Collection / TA0005 Defense Evasion（エラー統一でブラインド化）
+  - 攻撃者の目的（この技術が支える意図）：検索機能を"横断収集・越境混入・高コスト実行"の足場にする（T1190 など）
+
 ## リポジトリ内リンク（最大3つまで）
-- 関連 topics：
-  - `01_topics/02_web/05_input_04_nosql_injection_02_elasticsearch_01_query_string（lucene_querystring）.md`
-  - `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
-- 関連 playbooks：
-  - `02_playbooks/05_api_権限伝播→検証観点チェック.md`
+- `01_topics/02_web/05_input_04_nosql_injection_02_elasticsearch_01_query_string（lucene_querystring）.md`
+- `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+- `01_topics/02_web/04_api_03_rest_filters_検索・ソート・ページング境界.md`
 
 ---
 
-## 次（作成候補順）
+## 深掘りリンク（最大8）
+- `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+- `01_topics/02_web/05_input_04_nosql_injection_02_elasticsearch_01_query_string（lucene_querystring）.md`
 - `01_topics/02_web/05_input_04_nosql_injection_02_elasticsearch_03_painless（script_injection）.md`
+- `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+- `01_topics/02_web/04_api_03_rest_filters_検索・ソート・ページング境界.md`
+- `01_topics/02_web/04_api_09_error_model_情報漏えい（例外_スタック）.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+- `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`

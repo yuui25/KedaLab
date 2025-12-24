@@ -1,11 +1,7 @@
-<<<BEGIN>>>
-# 03_authz_01_境界モデル（オブジェクト_ロール_テナント）.md
+# 03_authz_01_境界モデル（オブジェクト_ロール_テナント）
+認可を「IDだけ変えたら見えた」ではなく、**境界（主体・対象・操作・条件）をモデル化**し、観測→差分→結論で説明する
 
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-- ASVS：V4（Access Control）を中心に、V2（Authentication）/ V3（Session Management）/ V13（API）へ接続。認可は「誰が何をできるか」の境界設計であり、実装差分の説明が求められる。
-- WSTG：WSTG-ATHZ（Authorization）で、境界モデル（主体・対象・操作・条件）を作り、差分検証（A/B）で結論を出すための前提。
-- PTES：Vulnerability Analysis（境界の仮説化）→ Exploitation（最小再現）→ Reporting（根拠提示）をブレさせない。“権限が違うから”を、モデルと証跡で説明する。
-- MITRE ATT&CK：Discovery / Collection / Privilege Escalation に接続。認可境界が崩れると、データ到達や権限拡大の導線が短くなるため、攻撃者の意思決定に直結する。
+---
 
 ## 目的（この技術で到達する状態）
 - 認可を「IDだけ変えたら見えた」ではなく、**境界（主体・対象・操作・条件）をモデル化**し、観測→差分→結論で説明できる。
@@ -14,14 +10,25 @@
 
 ## 前提（対象・範囲・想定）
 - 対象：Webアプリ／APIにおけるアクセス制御（画面/機能/データ/管理操作）。
-- 観測点（固定）：
-  - Proxyログ（必須）：リクエスト差分（ID/トークン/ヘッダ/ボディ）とレスポンス差分（Status/Body/Headers）
-  - 必要時：サーバログ（認可失敗理由の補強）、UI上の表示差分（画面は“結果”、根拠は通信）
-- 依存（関連）：
-  - Authn：`01_topics/02_web/02_authn_01_cookie属性と境界（Secure_HttpOnly_SameSite_Path_Domain）.md`
-  - Authn：`01_topics/02_web/02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`
-  - 観測：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
-  - 親：`01_topics/02_web/03_authz_認可（IDOR BOLA BFLA）境界モデル化.md`
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - SPA + API、マイクロサービス、SSO前提、SaaS連携（外部API/IdP）がある
+  - フロント（UI）とバックエンド（API）で認可の実装位置が異なることがある
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：Proxyログ（必須）：リクエスト差分（ID/トークン/ヘッダ/ボディ）とレスポンス差分（Status/Body/Headers）、必要時：サーバログ（認可失敗理由の補強）、UI上の表示差分（画面は"結果"、根拠は通信）
+  - やらないこと：大量な総当たりや負荷を前提にしない（差分観測で境界を確定する）
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/02_authn_01_cookie属性と境界（Secure_HttpOnly_SameSite_Path_Domain）.md`
+  - `01_topics/02_web/02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`
+  - `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - 認可を「IDだけ変えたら見えた」ではなく、**境界（主体・対象・操作・条件）をモデル化**し、観測→差分→結論で説明する
+    - Web画面・APIの両方で、認可の失敗が「401（身元）」「403（権限）」「404（隠蔽）」「200（通過）」のどれとして現れるかを整理し、誤解を減らす
+    - ケース（03_cases）に残すべき情報（前提・差分・証跡・結論）を固定し、再現性のある判断ができる
+  - 扱わない（別ユニットへ接続）：
+    - 大量な総当たりや負荷を前提にしない（差分観測で境界を確定する） → 別ユニット
 
 ## 観測ポイント（何を見ているか：境界の分解）
 認可の議論を安定させるため、まず「境界モデル」を4要素に分ける。
@@ -111,32 +118,64 @@
 - 典型：GETは403だが、PUT/PATCHは通る（または逆）
 - モデル上の崩れ：Action ごとの条件適用の不整合
 
-## 手を動かす検証（最小：差分セット）
-~~~~
-# 目的：認可境界を「主体・対象・操作・条件」で分解し、1要素だけ動かして差分を取る
-
-# 差分セット（最小）
-# 1) 主体A（所有者）で対象Xを read → 期待：200
-# 2) 主体B（非所有者）で同じ対象Xを read → 期待：403/404
-# 3) 主体Aで対象Xを update（PATCH/PUT） → 期待：200/204
-# 4) 主体Bで同じ対象Xを update → 期待：403/404
-
-# 記録すべきもの
-# - 主体（Cookie/Tokenの違い）
-# - 対象ID（どこに埋まっているか：path/query/body/header）
-# - 操作（HTTPメソッド/エンドポイント）
-# - 結果（Status/Bodyの差分）
-# - 結論（yes/no/unknown）と根拠（Proxyログ保存先）
-~~~~
+## 手を動かす検証（Labs連動：観測点を明確に）
+- 検証環境（関連する `04_labs/`）
+  - 参照ファイル：
+    - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+    - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 取得する証跡（目的ベースで最小限）：
+  - Proxyログ（必須）：リクエスト差分（ID/トークン/ヘッダ/ボディ）とレスポンス差分（Status/Body/Headers）
+  - 必要時：サーバログ（認可失敗理由の補強）、UI上の表示差分（画面は"結果"、根拠は通信）
+- 観測の取り方（どの視点で差分を見るか）：
+  - 認可の議論を安定させるため、まず「境界モデル」を4要素に分ける（主体、対象、操作、条件）
+  - この4要素を埋めると、差分検証が「IDを変える」から「境界を1つだけ動かす」に変わる
+- 実施方法（最高に具体的）：観測の準備と相関キー
+  - 証跡ディレクトリ（必須）
+    ~~~~
+    mkdir -p ~/keda_evidence/authz_boundary_model 2>/dev/null
+    cd ~/keda_evidence/authz_boundary_model
+    ~~~~
+  - 検証の前提を固定（スコープ事故を防ぐ）
+    - 必須で決める（レポート先頭に書く）
+      - 対象は **許可されたスコープ** のみ
+      - 観測は **最小限の差分セット** のみ
+      - 大量な総当たりや負荷を前提にしない
+  - 相関キー（最低限）を作る（後で必ず効く）
+    - 主体（Subject）、対象（Object）、操作（Action）、条件（Condition）、結果（Status/Body/Headers）、結論（yes/no/unknown）
+  - 差分セット（最小）
+    ~~~~
+    # 目的：認可境界を「主体・対象・操作・条件」で分解し、1要素だけ動かして差分を取る
+    
+    # 差分セット（最小）
+    # 1) 主体A（所有者）で対象Xを read → 期待：200
+    # 2) 主体B（非所有者）で同じ対象Xを read → 期待：403/404
+    # 3) 主体Aで対象Xを update（PATCH/PUT） → 期待：200/204
+    # 4) 主体Bで同じ対象Xを update → 期待：403/404
+    
+    # 記録すべきもの
+    # - 主体（Cookie/Tokenの違い）
+    # - 対象ID（どこに埋まっているか：path/query/body/header）
+    # - 操作（HTTPメソッド/エンドポイント）
+    # - 結果（Status/Bodyの差分）
+    # - 結論（yes/no/unknown）と根拠（Proxyログ保存先）
+    ~~~~
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言えること（証跡で断定できる）
+- 何が"確定"できるか：
   - 主体差分で結果が変わるか（境界が効いているか）
   - 対象ID差分で結果が変わるか（オブジェクト境界）
   - 操作差分で結果が変わるか（read/write境界）
-- 言えないこと（追加証跡が必要）
+- 何が"推定"できるか（推定の根拠/前提）：
   - なぜ拒否されたかの内部理由（サーバログ/実装確認が必要な場合がある）
-  - 404が“隠蔽”なのか“存在しない”なのか（主体差分と対象の実在確認が必要）
+  - 404が"隠蔽"なのか"存在しない"なのか（主体差分と対象の実在確認が必要）
+- 何は"言えない"か（不足情報・観測限界）：
+  - 1回のリクエストだけでの断定（状態確認や別条件での再現が必要）
+  - "ロール"の正確な意味（業務定義）までは、外形観測だけでは分からない場合がある
+  - 大域的な影響範囲（他機能への波及）は、関連API/画面の追加観測が必要
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：403/404の違いで迷う → 同一対象IDについて、主体A/主体Bで結果を並べ、差分が一貫するかを見る
+  - パターンB：画面では見えないがAPIが怪しい → UI操作で発生したAPIをProxyで抽出し、対象IDの位置（path/query/body）を確定してから差分を作る
+  - パターンC：テナント/組織境界が疑わしい → orgId/tenantId 相当の値がどこに入っているか（JWTクレーム、ヘッダ、URL、ボディ）を観測し、1要素だけ変えて差分を取る
 
 ## 次に試すこと（仮説A/Bの分岐と検証）
 ### 仮説A：403/404の違いで迷う
@@ -157,16 +196,67 @@
 - 期待する観測
   - “同一主体でも組織を変えると結果が変わる”を根拠として示せる
 
-## 参考（必要最小限）
-- 親：`01_topics/02_web/03_authz_認可（IDOR BOLA BFLA）境界モデル化.md`
-- 関連（Authn）：`01_topics/02_web/02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`
-- 観測：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
-- 実行：`02_playbooks/04_authz_境界モデル→検証観点チェック.md`
+## コマンド/リクエスト例（例示は最小限・意味の説明が主）
+> 例示は"手段"であり"結論"ではない。必ず「何を観測している例か」を添える。
 
-## 深掘りリンク（親ファイル末尾に追加する枠：最大8件）
-- （親）`01_topics/02_web/03_authz_認可（IDOR BOLA BFLA）境界モデル化.md` の末尾に本ファイルへのリンクを追加する
-  - `03_authz_01_境界モデル（オブジェクト_ロール_テナント）.md`
+~~~~
+# 例：認可境界を「主体・対象・操作・条件」で分解し、1要素だけ動かして差分を取る
+
+# 差分セット（最小）
+# 1) 主体A（所有者）で対象Xを read → 期待：200
+# 2) 主体B（非所有者）で同じ対象Xを read → 期待：403/404
+# 3) 主体Aで対象Xを update（PATCH/PUT） → 期待：200/204
+# 4) 主体Bで同じ対象Xを update → 期待：403/404
+~~~~
+
+- この例で観測していること：
+  - 認可境界を「主体・対象・操作・条件」で分解し、1要素だけ動かして差分を取る。この4要素を埋めると、差分検証が「IDを変える」から「境界を1つだけ動かす」に変わる。
+- 出力のどこを見るか（注目点）：
+  - 主体差分で結果が変わるか（境界が効いているか）、対象ID差分で結果が変わるか（オブジェクト境界）、操作差分で結果が変わるか（read/write境界）
+- この例が使えないケース（前提が崩れるケース）：
+  - 1回のリクエストだけでの断定（状態確認や別条件での再現が必要）
+
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：V4（Access Control）を中心に、V2（Authentication）/ V3（Session Management）/ V13（API）へ接続。認可は「誰が何をできるか」の境界設計であり、実装差分の説明が求められる。
+  - 該当要件（可能ならID）：V4（Access Control）
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 満たす：認可を「IDだけ変えたら見えた」ではなく、**境界（主体・対象・操作・条件）をモデル化**し、観測→差分→結論で説明できる状態にする。
+  - 参照：https://github.com/OWASP/ASVS
+- WSTG：
+  - 該当カテゴリ/テスト観点：WSTG-ATHZ（Authorization）で、境界モデル（主体・対象・操作・条件）を作り、差分検証（A/B）で結論を出すための前提。
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：認可は他すべてのテスト（入力/API/設定）に前提として影響するため、入口のモデル化として位置づける
+  - 参照：https://owasp.org/www-project-web-security-testing-guide/
+- PTES：
+  - 該当フェーズ：Vulnerability Analysis（境界の仮説化）→ Exploitation（最小再現）→ Reporting（根拠提示）をブレさせない。"権限が違うから"を、モデルと証跡で説明する。
+  - 前後フェーズとの繋がり（1行）：境界の仮説化から最小再現まで、根拠提示をブレさせない。"権限が違うから"を、モデルと証跡で説明する。
+  - 参照：https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：Discovery / Collection / Privilege Escalation
+  - 攻撃者の目的（この技術が支える意図）：認可境界が崩れると、データ到達や権限拡大の導線が短くなるため、攻撃者の意思決定に直結する。
+  - 参照：https://attack.mitre.org/tactics/TA0007/（Discovery）、https://attack.mitre.org/tactics/TA0009/（Collection）、https://attack.mitre.org/tactics/TA0004/（Privilege Escalation）
+
+## 参考（必要最小限）
+- OWASP Application Security Verification Standard: https://github.com/OWASP/ASVS
+- OWASP Web Security Testing Guide: https://owasp.org/www-project-web-security-testing-guide/
+- PTES (Penetration Testing Execution Standard): https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK: https://attack.mitre.org/
+
+## リポジトリ内リンク（最大3つまで）
+- 関連 topics：`01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+- 関連 topics：`01_topics/02_web/02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`
+- 関連 topics：`01_topics/02_web/03_authz_02_idor_典型パターン（一覧_検索_参照キー）.md`
 
 ---
 
-<<<END>>>
+## 深掘りリンク（最大8）
+- `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+- `01_topics/02_web/02_authn_01_cookie属性と境界（Secure_HttpOnly_SameSite_Path_Domain）.md`
+- `01_topics/02_web/02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`
+- `01_topics/02_web/03_authz_02_idor_典型パターン（一覧_検索_参照キー）.md`
+- `01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
+- `01_topics/02_web/03_authz_04_rbac_abac_判定点（policy_engine）.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+- `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+
+---

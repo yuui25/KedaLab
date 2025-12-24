@@ -1,24 +1,4 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS
-  - XMLの危険はXXE（外部実体）だけではなく、**XML→オブジェクト復元（binding/object mapping）**が「型決定」「暗黙変換」「フック実行」を含み、入力→実行境界になり得る点。
-  - 破綻パターンは、(1) 任意クラス/型を外部入力が選べる、(2) 反射/動的ロードにより“予期しない型”が生成される、(3) 復元後のフック（setter/callback/validation）が危険sinkへ到達、(4) パーサ機能（DTD/XInclude等）により到達性や情報漏えいが発生、(5) リソース制限不足でDoS。
-- WSTG
-  - XML入力を扱う機能（SAML、SOAP、RSS/Atom、Office系XML、独自Import）で、XXEに加えて **オブジェクトマッピング（JAXB/XStream/XmlSerializer等）**の境界（型・構造・深さ・未知要素・属性・名前空間）を差分で検証する。
-- PTES
-  - 情報収集：XMLが入る入口（SAML/SOAP/import/webhook/連携）と実装（言語・ライブラリ・設定）を特定。
-  - 脆弱性分析：object mapping の“型決定点”と“復元後に何が走るか（フック/変換/評価）”をモデル化。
-  - 侵害評価：RCEに短絡せず、まず「外部入力で型/構造が制御できる」→「危険な処理経路へ到達する」までを成立根拠として固める。
-- MITRE ATT&CK
-  - 初期侵入：T1190（公開アプリの脆弱性悪用：XML入力→unsafe mapping）
-  - 実行/影響（成立条件つき）：
-    - 型選択や危険フックが成立し、かつ実行権限・到達性がある場合に、SSRF/情報漏えい/改ざん/DoS、場合によりRCEへ接続。
-
----
-
-## タイトル
-XML（object mapping）：型・名前空間・属性が“復元モデル”を切り替え、入力→実行境界を太くする
-
----
+# 05_input_13_deserialization_03_xml（object_mapping）
 
 ## 目的（このファイルで到達する状態）
 - 「XML＝XXE」だけで終わらず、XML→オブジェクト復元で現実に問題になる境界を、次の形で説明できる。
@@ -31,22 +11,27 @@ XML（object mapping）：型・名前空間・属性が“復元モデル”を
 
 ---
 
-## 扱う範囲（本ファイルの守備範囲）
-- 本ファイル：XML→オブジェクト復元（object mapping / data binding）
-  - 例：Java（JAXB/XStream等）、.NET（XmlSerializer/DataContractSerializer等）、PHP（XML→配列/オブジェクト）、Python（lxml等のobjectify）
-  - 型決定、名前空間、属性、要素順、未知要素、ポリモーフィズム、復元後フック、DoS（深さ/要素数）
-- 直接は扱わない（ただし接続は必須）：
-  - XXE（外部実体/DTD/OOB）は `05_input_08_xxe_*` で深掘り済み
-  - XPath/XSLT 等の“クエリ注入”は別論点（必要なら追加分割）
-- 接続先：
-  - `05_input_08_xxe_01_parser（doctype_entity）.md`
-  - `05_input_08_xxe_03_to_ssrf（internal_reachability）.md`
+## 前提（対象・範囲・想定）
+- 対象：許可範囲のWeb/API（必要なら検証環境）に限定。
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - XMLが入る入口（SAML/SOAP/import/webhook/連携）を持つWebアプリ
+  - 実装（言語・ライブラリ・設定）が存在
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：外部入力で型/構造が制御できるか、危険な処理経路へ到達するかを成立根拠として固める
+  - やらないこと：破壊的な処理の実行、本番環境での過度な試行
+- 依存する前提知識（必要最小限）：
   - `05_input_13_deserialization_01_json（polymorphism_typehint）.md`
-  - `05_input_13_deserialization_02_yaml（anchors_tags）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - XML→オブジェクト復元（object mapping / data binding）
+    - 例：Java（JAXB/XStream等）、.NET（XmlSerializer/DataContractSerializer等）、PHP（XML→配列/オブジェクト）、Python（lxml等のobjectify）
+    - 型決定、名前空間、属性、要素順、未知要素、ポリモーフィズム、復元後フック、DoS（深さ/要素数）
+  - 扱わない（別ユニットへ接続）：
+    - XXE（外部実体/DTD/OOB） → `05_input_08_xxe_*`
+    - XPath/XSLT 等の"クエリ注入"は別論点
+    - JSON/YAMLのデシリアライズ → `05_input_13_deserialization_01_json` / `05_input_13_deserialization_02_yaml`
 
----
-
-## 前提：XMLが現れる“実務の入口”一覧（攻撃面の棚卸し）
+## XMLが現れる"実務の入口"一覧（攻撃面の棚卸し）
 - SAML / WS-Fed / SOAP（XML前提のプロトコル）
 - 監査・設定のimport/export（バックアップ復元、ルール定義、ポリシー）
 - Office系（docx/xlsx/pptxはZIP＋XML：中身はXML）
@@ -242,7 +227,7 @@ payload_bytes / max_depth / element_count
 
 ---
 
-## コマンド/リクエスト例（例示は最小限：概念のみ）
+## コマンド/リクエスト例（例示は最小限・意味の説明が主）
 ~~~~
 # 目的は「型決定/未知要素/属性分岐があるか」を差分で観測すること
 # - 要素名/名前空間だけ変えてエラー分類が変わるか
@@ -250,7 +235,41 @@ payload_bytes / max_depth / element_count
 # - 属性の付与で分岐（subtype）が起きるか
 ~~~~
 
----
+- この例で観測していること：
+  - 型決定/未知要素/属性分岐があるかを差分で観測
+- 出力のどこを見るか（注目点）：
+  - 要素名/名前空間だけ変えてエラー分類が変わるか
+  - 未知要素が拒否されるか無視されるか
+  - 属性の付与で分岐（subtype）が起きるか
+- この例が使えないケース（前提が崩れるケース）：
+  - XMLが単純なパースのみで、オブジェクトマッピングが行われていない場合
+
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS
+  - XMLの危険はXXE（外部実体）だけではなく、**XML→オブジェクト復元（binding/object mapping）**が「型決定」「暗黙変換」「フック実行」を含み、入力→実行境界になり得る点。
+  - 破綻パターンは、(1) 任意クラス/型を外部入力が選べる、(2) 反射/動的ロードにより"予期しない型"が生成される、(3) 復元後のフック（setter/callback/validation）が危険sinkへ到達、(4) パーサ機能（DTD/XInclude等）により到達性や情報漏えいが発生、(5) リソース制限不足でDoS。
+- WSTG
+  - XML入力を扱う機能（SAML、SOAP、RSS/Atom、Office系XML、独自Import）で、XXEに加えて **オブジェクトマッピング（JAXB/XStream/XmlSerializer等）**の境界（型・構造・深さ・未知要素・属性・名前空間）を差分で検証する。
+- PTES
+  - 情報収集：XMLが入る入口（SAML/SOAP/import/webhook/連携）と実装（言語・ライブラリ・設定）を特定。
+  - 脆弱性分析：object mapping の"型決定点"と"復元後に何が走るか（フック/変換/評価）"をモデル化。
+  - 侵害評価：RCEに短絡せず、まず「外部入力で型/構造が制御できる」→「危険な処理経路へ到達する」までを成立根拠として固める。
+- MITRE ATT&CK
+  - 初期侵入：T1190（公開アプリの脆弱性悪用：XML入力→unsafe mapping）
+  - 実行/影響（成立条件つき）：
+    - 型選択や危険フックが成立し、かつ実行権限・到達性がある場合に、SSRF/情報漏えい/改ざん/DoS、場合によりRCEへ接続。
+  - 参照：https://attack.mitre.org/techniques/T1190/
+
+## 参考（必要最小限）
+- CWE-502: Deserialization of Untrusted Data
+  - https://cwe.mitre.org/data/definitions/502.html
+- OWASP Deserialization Cheat Sheet
+  - https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+
+## リポジトリ内リンク（最大3つまで）
+- 関連 topics：`05_input_13_deserialization_01_json（polymorphism_typehint）.md`
+- 関連 topics：`05_input_13_deserialization_02_yaml（anchors_tags）.md`
+- 関連 labs：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
 
 ## 深掘りリンク（最大8）
 - `05_input_13_deserialization_01_json（polymorphism_typehint）.md`

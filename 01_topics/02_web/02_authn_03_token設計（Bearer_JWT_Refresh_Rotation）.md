@@ -1,11 +1,8 @@
 <<<BEGIN>>>
-# 02_authn_03_token設計（Bearer_JWT_Refresh_Rotation）.md
+# 02_authn_03_token設計（Bearer_JWT_Refresh_Rotation）
+「JWTっぽい」「Bearerっぽい」を雰囲気で扱わず、**どのトークンが、どの境界（資産/信頼/権限）を越えて、どこで検証されているか**を説明する
 
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-- ASVS：V2（Authentication）/ V3（Session Management）を中心に、V4（Access Control）/ V13（API）へ接続。トークンは「誰として扱うか」をAPI境界へ運ぶため、寿命・失効・スコープ設計が品質を決める。
-- WSTG：WSTG-ATHN / WSTG-SESS を横断。CookieではなくBearer/Tokenの場合でも、発行→提示→更新→失効を「観測→差分」で確定することが必須。
-- PTES：Vulnerability Analysis（成立条件の切り分け）→ Exploitation（最小再現）→ Reporting（根拠提示）。トークンは推測で断言しやすいので、unknown を許容しつつ証跡で潰す。
-- MITRE ATT&CK：Valid Accounts / Credential Access / Defense Evasion に接続。トークンの再利用窓・失効設計・スコープの粗さは、攻撃者の意思決定（何を優先するか）を直接変える。
+---
 
 ## 目的（この技術で到達する状態）
 - 「JWTっぽい」「Bearerっぽい」を雰囲気で扱わず、**どのトークンが、どの境界（資産/信頼/権限）を越えて、どこで検証されているか**を説明できる。
@@ -14,15 +11,25 @@
 
 ## 前提（対象・範囲・想定）
 - 対象：Authorizationヘッダ（Bearer）、Cookie内トークン、SPA/モバイル向けAPIトークン、SSO連携で発行されるID/Access/Refreshトークン。
-- 観測点（固定）：
-  - Proxyログ（必須）：`Authorization`、Set-Cookie、トークン更新API、401/403/200の差分
-  - 必要時：HAR（ブラウザ）、サーバログ（失効・検証エラー）、監査ログ（クラウド/IdP）
-- 依存（関連）：
-  - Cookie境界：`01_topics/02_web/02_authn_01_cookie属性と境界（Secure_HttpOnly_SameSite_Path_Domain）.md`
-  - セッション寿命：`01_topics/02_web/02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`
-  - 権限伝播：`01_topics/02_web/04_api_01_権限伝播モデル（フロント_バックエンド_ジョブ）.md`
-  - 親：`01_topics/02_web/02_authn_認証・セッション・トークン.md`
-  - 観測：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - SPA/モバイル向けAPI、SSO連携、CDN/WAFが一般的。
+- できること/やらないこと（安全に検証する範囲）：
+  - 観測は最小限の差分セットのみ（破壊的試験や過剰負荷は行わない）。
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
+  - `01_topics/02_web/02_authn_01_cookie属性と境界（Secure_HttpOnly_SameSite_Path_Domain）.md`
+  - `01_topics/02_web/02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - トークンの種類（Access/Refresh/ID）と役割の切り分け
+    - Bearer、JWT、署名検証、スコープ/ロール、RefreshとRotationの挙動
+    - 発行・提示・更新・失効・ローテーションの観測と差分検証
+  - 扱わない（別ユニットへ接続）：
+    - Cookie属性の詳細 → `01_topics/02_web/02_authn_01_cookie属性と境界（Secure_HttpOnly_SameSite_Path_Domain）.md`
+    - セッションライフサイクルの詳細 → `01_topics/02_web/02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`
+    - 権限伝播の詳細 → `01_topics/02_web/04_api_01_権限伝播モデル（フロント_バックエンド_ジョブ）.md`
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 ### 1) どこにトークンが載るか（提示点）
@@ -85,13 +92,19 @@
   - 更新APIの前後でRefreshが変わるか（Set-Cookie/レスポンス）、古いRefreshで更新ができるか（差分）を観測して結論を出す
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言えること（Proxy証跡で断定できる）
+- 何が"確定"できるか：
   - トークンがどこで提示され、どのAPIに効いているか（提示点の確定）
   - Access/Refresh相当の更新フローがあるか（更新API・Set-Cookie・レスポンス差分）
   - 有効期限や失効が挙動として現れるか（401/再認証/更新要求）
-- 言えないこと（追加証跡が必要）
+- 何が"推定"できるか（推定の根拠/前提）：
+  - トークン設計の意図（寿命・失効・スコープ設計）
+- 何は"言えない"か（不足情報・観測限界）：
   - 署名検証の内部詳細（鍵管理、JWK取得、検証ライブラリ）※ログ/設定が必要
-  - “なぜ失効しないのか”の内部理由（ブラックリスト方式か、参照方式か等）
+  - "なぜ失効しないのか"の内部理由（ブラックリスト方式か、参照方式か等）
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：Accessは短寿命だが、更新で無限に延命できそう → 更新APIの存在と呼ばれ方（自動更新/手動更新）をProxyで確定し、更新前後でトークン（Access/Refresh）がどう変わるか差分を取る
+  - パターンB：ログアウトしてもAPIが通ることがある → ログアウト直後に、同一トークンで状態参照APIを叩き、401/403/200の差分を保存する（Cookie削除だけか、サーバ失効かを切り分ける）
+  - パターンC：権限変更（ロール/テナント切替）の反映が怪しい → 権限変更の前後で、同一APIの結果差分を取り、トークンが変化する/しない、結果が即時に変わる/遅延するを観測する
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・想定パス）
 > 具体的手順ではなく「観測された状態が、次の意思決定にどう効くか」を整理する。
@@ -125,33 +138,96 @@
 - 期待する観測
   - 権限境界の位置（トークン固定/サーバ参照/キャッシュ）を推定ではなく挙動で絞れる
 
-## 手を動かす検証（最小：差分セット）
-~~~~
-# 目的：トークンの寿命・失効・更新（Rotation）を「観測→差分→結論」に落とす
+## 手を動かす検証（Labs連動：観測点を明確に）
+- 検証環境（関連する `04_labs/`）
+  - 参照ファイル：
+    - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+    - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 取得する証跡（目的ベースで最小限）：
+  - Proxyログ（必須）：`Authorization`、Set-Cookie、トークン更新API、401/403/200の差分
+  - 必要時：HAR（ブラウザ）、サーバログ（失効・検証エラー）、監査ログ（クラウド/IdP）
+  - 差分セット（最小）：ログイン直後、通常操作、更新、ログアウト、権限変更
+- 観測の取り方（どの視点で差分を見るか）：
+  - トークンの提示点（Authorization/Cookie/ボディ）、種類（Access/Refresh/ID）、変化（ログイン/更新/時間/操作）、失効（ログアウト後、期限切れ）
+- 実施方法（最高に具体的）：観測の準備と相関キー
+  - 証跡ディレクトリ（必須）
+    ~~~~
+    mkdir -p ~/keda_evidence/token_design 2>/dev/null
+    cd ~/keda_evidence/token_design
+    ~~~~
+  - 検証の前提を固定（スコープ事故を防ぐ）
+    - 必須で決める（レポート先頭に書く）
+      - 対象は **許可されたスコープ** のみ
+      - 観測は **最小限の差分セット** のみ
+      - トークンは秘匿情報。共有・提出・保管はルールに従う。
+  - 相関キー（最低限）を作る（後で必ず効く）
+    - Host、User、Time、トークン種類（Access/Refresh/ID）、提示点（Authorization/Cookie/ボディ）、変化タイミング（ログイン/更新/時間/操作）、失効状態（有効/失効/不明）、結果（401/403/200）
 
-# 差分セット（最小）
-# 1) ログイン直後：Access/Refresh相当がどこに入るかを保存（Authorization / Set-Cookie）
-# 2) 通常操作：同一APIを複数回実行し、トークンが変わる条件があるか確認
-# 3) 更新：更新API（もしあれば）の前後で、Access/Refreshが変わるか確認
-# 4) ログアウト：ログアウト後に同一トークンでAPIを呼び、拒否されるか確認
-# 5) 権限変更：ロール/テナント切替の前後で、同一API結果とトークン変化を比較
+## コマンド/リクエスト例（例示は最小限・意味の説明が主）
+> 例示は"手段"であり"結論"ではない。必ず「何を観測している例か」を添える。
 
-# 記録すべきもの
-# - どの値がAccess/Refresh相当か（実際の送信箇所で確定）
-# - いつ変わるか（ログイン/更新/時間/操作）
-# - 結果（401/403/200、レスポンス差分）
-# - 結論（yes/no/unknown）と根拠（Proxyログ保存先）
 ~~~~
+# 例：ログイン直後のトークン取得を観測
+curl -i https://example.com/login -d "username=test&password=test" -c cookies.txt
+
+# 例：トークンでAPIアクセスを観測
+curl -i https://api.example.com/me -H "Authorization: Bearer <token>"
+curl -i https://api.example.com/me -b cookies.txt
+
+# 例：トークン更新を観測
+curl -i https://api.example.com/refresh -H "Authorization: Bearer <refresh_token>"
+~~~~
+
+- この例で観測していること：
+  - トークンがどこで提示され、どのAPIに効いているか（提示点の確定）、Access/Refresh相当の更新フローがあるか（更新API・Set-Cookie・レスポンス差分）
+- 出力のどこを見るか（注目点）：
+  - Authorizationヘッダ、Set-Cookieヘッダ、ステータスコード（200/401/403）、レスポンスボディ（トークン更新時の新トークン）
+- この例が使えないケース（前提が崩れるケース）：
+  - JS必須/SSO必須の場合、curlだけでは成立しない（ブラウザ+HAR/Proxyで観測へ）
+
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：V2（Authentication）/ V3（Session Management）を中心に、V4（Access Control）/ V13（API）へ接続。トークンは「誰として扱うか」をAPI境界へ運ぶため、寿命・失効・スコープ設計が品質を決める。
+  - 該当要件（可能ならID）：V2（Authentication）、V3（Session Management）、V13（API）
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 満たす：トークンの設計上の論点（寿命・スコープ・対象サービス）を整理し、以後の検証観点を外さないための基盤。
+  - 参照：https://github.com/OWASP/ASVS
+- WSTG：
+  - 該当カテゴリ/テスト観点：WSTG-ATHN / WSTG-SESS を横断。CookieではなくBearer/Tokenの場合でも、発行→提示→更新→失効を「観測→差分」で確定することが必須。
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：トークン設計の観測と理解
+  - 参照：https://owasp.org/www-project-web-security-testing-guide/
+- PTES：
+  - 該当フェーズ：Vulnerability Analysis（成立条件の切り分け）→ Exploitation（最小再現）→ Reporting（根拠提示）。トークンは推測で断言しやすいので、unknown を許容しつつ証跡で潰す。
+  - 前後フェーズとの繋がり（1行）：成立条件の切り分け→最小再現→根拠提示の品質を上げる。
+  - 参照：https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：Valid Accounts / Credential Access / Defense Evasion
+  - 攻撃者の目的（この技術が支える意図）：トークンの再利用窓・失効設計・スコープの粗さは、攻撃者の意思決定（何を優先するか）を直接変える。
+  - 参照：https://attack.mitre.org/tactics/TA0001/（Initial Access - Valid Accounts）、https://attack.mitre.org/tactics/TA0006/（Credential Access）、https://attack.mitre.org/tactics/TA0005/（Defense Evasion）
 
 ## 参考（必要最小限）
-- 親：`01_topics/02_web/02_authn_認証・セッション・トークン.md`
-- 関連：`01_topics/02_web/02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`
-- 関連：`01_topics/02_web/04_api_01_権限伝播モデル（フロント_バックエンド_ジョブ）.md`
-- 観測：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+- OWASP Application Security Verification Standard: https://github.com/OWASP/ASVS
+- OWASP Web Security Testing Guide: https://owasp.org/www-project-web-security-testing-guide/
+- PTES (Penetration Testing Execution Standard): https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK: https://attack.mitre.org/
+- JWT (JSON Web Token): https://jwt.io/
 
-## 深掘りリンク（親ファイル末尾に追加する枠：最大8件）
-- （親）`01_topics/02_web/02_authn_認証・セッション・トークン.md` の末尾に本ファイルへのリンクを追加する
-  - `02_authn_03_token設計（Bearer_JWT_Refresh_Rotation）.md`
+## リポジトリ内リンク（最大3つまで）
+- 関連 topics：`01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
+- 関連 topics：`01_topics/02_web/02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`
+- 関連 topics：`01_topics/02_web/04_api_01_権限伝播モデル（フロント_バックエンド_ジョブ）.md`
+
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
+- `01_topics/02_web/02_authn_01_cookie属性と境界（Secure_HttpOnly_SameSite_Path_Domain）.md`
+- `01_topics/02_web/02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`
+- `01_topics/02_web/02_authn_04_sso_oidc_flow観測（state_nonce_code_PKCE）.md`
+- `01_topics/02_web/02_authn_17_refresh_token_rotation_盗用検知（reuse）.md`
+- `01_topics/02_web/04_api_00_権限伝播・入力・バックエンド連携.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+- `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ---
 

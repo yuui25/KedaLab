@@ -1,19 +1,7 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS：
-  - この技術で満たす/破れる点：重要操作の追加認証（step-up）、高リスク操作の多重防御（RBAC/ABAC+追加条件）、トランザクション整合（状態遷移と二重実行防止）、マルチテナント境界（03）、監査・否認防止（誰が何をいつ承認したか）
-  - 支える前提：通常のAuthZが正しくても、重要操作が“通常更新API”として露出すると、IDOR/MA/例外パスでImpactが最大化する。
-- WSTG：
-  - 該当テスト観点：Authorization Testing（Privilege Escalation）、Business Logic（承認/送金/権限付与）、Session Management（step-up境界）、API Testing（再実行・二重請求・不正状態遷移）
-  - どの観測に対応するか：重要操作を「入力→事前条件→承認→実行→監査」に分解し、どこが欠けると成立するかをHTTP差分で観測する
-- PTES：
-  - 該当フェーズ：Information Gathering（重要操作の列挙：ボタン/エンドポイント/イベント）、Vulnerability Analysis（成立条件と防御の欠落）、Exploitation（最小差分検証：テストトランザクション）
-  - 前後フェーズとの繋がり（1行）：02/05で見つかるIDOR/MAが、06の重要操作に波及すると一気に致命傷になるため、06では“追加ガードと整合性”で成立条件を閉じ、10（状態遷移）に接続する
-- MITRE ATT&CK：
-  - 戦術：Privilege Escalation / Impact / Defense Evasion
-  - 目的：承認・送金・権限付与などの高Impact操作を、例外パスや状態遷移の穴で成立させる（※手順ではなく成立条件の判断）
+# 03_authz_06_privileged_action_重要操作（承認_送金_権限）
+"重要操作"を、機能名ではなく「高Impactで取り返しがつきにくい」「不正が起きた時の責任が重い」「自動化されやすい」という観点で定義し、対象システムから漏れなく列挙する
 
-## タイトル
-privileged_action_重要操作（承認_送金_権限）
+---
 
 ## 目的（この技術で到達する状態）
 - “重要操作”を、機能名ではなく「高Impactで取り返しがつきにくい」「不正が起きた時の責任が重い」「自動化されやすい」という観点で定義し、対象システムから漏れなく列挙できる
@@ -22,15 +10,30 @@ privileged_action_重要操作（承認_送金_権限）
 - 02（IDOR）/05（MA）/03（越境）/10（状態遷移）を“重要操作に波及したときの危険度”として統合的に評価できる
 
 ## 前提（対象・範囲・想定）
-- 対象の代表カテゴリ（汎用）
+- 対象：重要操作の代表カテゴリ（汎用）
   - 承認：申請承認、公開、ワークフロー、KYC/本人確認、取引承認
   - 送金/支払：振込、払い戻し、請求確定、サブスク課金、クーポン付与
   - 権限：ロール付与、グループ管理、管理者昇格、APIキー発行、2FA/回復手段変更
   - セキュリティ設定：メール変更、パスワード変更、パスキー/2FA登録削除（AuthNの19/11と接続）
-- 検証の安全な範囲（実務的）
-  - 重要操作は“実行”を避け、可能なら確認画面/事前条件チェック/ドライラン/テスト環境での最小実行に留める
-  - 変更・課金・通知が走る場合は、テスト用の金額/宛先/ダミーで設計されている範囲に限定する
-  - 証跡（HTTP/監査ログ/状態遷移）を最優先に、少数回の差分観測で確定する
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - 通常のAuthZが正しくても、重要操作が"通常更新API"として露出すると、IDOR/MA/例外パスでImpactが最大化する
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：重要操作は"実行"を避け、可能なら確認画面/事前条件チェック/ドライラン/テスト環境での最小実行に留める、証跡（HTTP/監査ログ/状態遷移）を最優先に、少数回の差分観測で確定する
+  - やらないこと：変更・課金・通知が走る場合は、テスト用の金額/宛先/ダミーで設計されている範囲に限定する
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+  - `01_topics/02_web/03_authz_02_idor_典型パターン（一覧_検索_参照キー）.md`
+  - `01_topics/02_web/03_authz_05_mass-assignment_モデル結合境界.md`
+  - `01_topics/02_web/03_authz_10_object_state_状態遷移と権限（draft_approved）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - "重要操作"を、機能名ではなく「高Impactで取り返しがつきにくい」「不正が起きた時の責任が重い」「自動化されやすい」という観点で定義し、対象システムから漏れなく列挙する
+    - 重要操作を (1)認可（RBAC/ABAC）、(2)追加ガード（step-up/二人承認/上限/時間）、(3)トランザクション整合（idempotency/再実行防止/競合）、(4)監査・否認防止、に分解し、成立条件を短時間で評価する
+    - 02（IDOR）/05（MA）/03（越境）/10（状態遷移）を"重要操作に波及したときの危険度"として統合的に評価する
+  - 扱わない（別ユニットへ接続）：
+    - 金銭的損失の最大値（限度・実運用設定次第）。ただし成立条件からリスクは示せる → 別ユニット
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 ### 1) 重要操作は「専用コマンド（Command）」として扱われているか
@@ -117,16 +120,20 @@ privileged_action_重要操作（承認_送金_権限）
   - action_priority（P0/P1/P2）
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言える（確定できる）：
+- 何が"確定"できるか：
   - 重要操作が専用コマンドとして分離され、追加ガードと整合性があるか
   - 重要操作が通常更新（MA/状態更新）で成立していないか（危険設計）
   - テナント・ロール・状態の条件が入口ごとに一貫しているか（02/03/04/10の統合評価）
   - 二重実行防止と監査の強度（実務要件）
-- 推定（根拠付きで言える）：
+- 何が"推定"できるか（推定の根拠/前提）：
   - 重要操作がgeneric_update型なら、MA（05）と組み合わさって突破される可能性が高い
   - 追加ガードがUIのみなら、API/管理/ジョブ経路で抜ける可能性が高い（04/09）
-- 言えない（この段階では断定しない）：
+- 何は"言えない"か（不足情報・観測限界）：
   - 金銭的損失の最大値（限度・実運用設定次第）。ただし成立条件からリスクは示せる。
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：重要操作が通常更新（generic_update）で成立している → 重要操作が `/resource/{id}` の一般UPDATE（PATCH/PUT）で実現されている、`status=approved` や `role=admin` のような属性更新で重要操作が成立する（05/10の典型）
+  - パターンB：追加ガードがUIのみでAPI/管理/ジョブ経路で抜ける → 追加ガードがUIのみなら、API/管理/ジョブ経路で抜ける可能性が高い（04/09）
+  - パターンC：二重実行防止と監査の強度が弱い → 二重実行防止と監査の強度（実務要件）を観測
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
 - 優先度（P0/P1/P2）
@@ -212,19 +219,47 @@ Idempotency-Key: IK_...
 - この例が使えないケース（前提が崩れるケース）：
   - 重要操作が外部決済等の外部システムで完結（→戻りの状態遷移/監査/権限付与の境界を主対象にする）
 
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：重要操作の追加認証（step-up）、高リスク操作の多重防御（RBAC/ABAC+追加条件）、トランザクション整合（状態遷移と二重実行防止）、マルチテナント境界（03）、監査・否認防止（誰が何をいつ承認したか）
+  - 該当要件（可能ならID）：V4（Access Control）、V2（Authentication）
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 満たす：通常のAuthZが正しくても、重要操作が"通常更新API"として露出すると、IDOR/MA/例外パスでImpactが最大化することを観測で確定し、以後の検証観点を外さないための基盤。
+  - 参照：https://github.com/OWASP/ASVS
+- WSTG：
+  - 該当カテゴリ/テスト観点：Authorization Testing（Privilege Escalation）、Business Logic（承認/送金/権限付与）、Session Management（step-up境界）、API Testing（再実行・二重請求・不正状態遷移）
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：重要操作を「入力→事前条件→承認→実行→監査」に分解し、どこが欠けると成立するかをHTTP差分で観測する
+  - 参照：https://owasp.org/www-project-web-security-testing-guide/
+- PTES：
+  - 該当フェーズ：Information Gathering（重要操作の列挙：ボタン/エンドポイント/イベント）、Vulnerability Analysis（成立条件と防御の欠落）、Exploitation（最小差分検証：テストトランザクション）
+  - 前後フェーズとの繋がり（1行）：02/05で見つかるIDOR/MAが、06の重要操作に波及すると一気に致命傷になるため、06では"追加ガードと整合性"で成立条件を閉じ、10（状態遷移）に接続する。
+  - 参照：https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：Privilege Escalation / Impact / Defense Evasion
+  - 攻撃者の目的（この技術が支える意図）：承認・送金・権限付与などの高Impact操作を、例外パスや状態遷移の穴で成立させる（※手順ではなく成立条件の判断）。
+  - 参照：https://attack.mitre.org/tactics/TA0004/（Privilege Escalation）、https://attack.mitre.org/tactics/TA0040/（Impact）、https://attack.mitre.org/tactics/TA0005/（Defense Evasion）
+
 ## 参考（必要最小限）
-- OWASP ASVS（高リスク操作の保護、再認証、監査）
-- OWASP WSTG（Business Logic / Authorization：重要操作）
-- PTES（成立条件モデル化→最小差分観測）
-- MITRE ATT&CK（Impact：高価値操作の達成）
+- OWASP Application Security Verification Standard: https://github.com/OWASP/ASVS
+- OWASP Web Security Testing Guide: https://owasp.org/www-project-web-security-testing-guide/
+- PTES (Penetration Testing Execution Standard): https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK: https://attack.mitre.org/
 
 ## リポジトリ内リンク（最大3つまで）
+- 関連 topics：`01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+- 関連 topics：`01_topics/02_web/03_authz_05_mass-assignment_モデル結合境界.md`
+- 関連 topics：`01_topics/02_web/03_authz_10_object_state_状態遷移と権限（draft_approved）.md`
+
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+- `01_topics/02_web/03_authz_02_idor_典型パターン（一覧_検索_参照キー）.md`
+- `01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
+- `01_topics/02_web/03_authz_04_rbac_abac_判定点（policy_engine）.md`
 - `01_topics/02_web/03_authz_05_mass-assignment_モデル結合境界.md`
 - `01_topics/02_web/03_authz_10_object_state_状態遷移と権限（draft_approved）.md`
 - `01_topics/02_web/02_authn_16_step-up_再認証境界（重要操作_再確認）.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
 
-## 次（07以降）に進む前に確認したいこと（必要なら回答）
-- 07 GraphQL：
-  - GraphQLが実在しない場合でも、field-level authz を“概念として”一般APIのネスト/関連に置き換えて書いてよいか
-- 09 admin console：
-  - 管理UIが別ドメイン/別IdPか同一かで、例外パスの書き方が変わる（どちらも一般化は可能）
+---

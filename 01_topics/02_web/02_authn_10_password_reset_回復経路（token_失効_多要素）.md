@@ -1,6 +1,7 @@
-# 02_authn_10_password_reset_回復経路（token_失効_多要素）.md
+# 02_authn_10_password_reset_回復経路（token_失効_多要素）
+パスワードリセットを「便利機能」ではなく、**回復経路（Recovery Channel）** と **回復資産（Reset Token / Code）** と **失効境界（Session/Token/Trusted Device）** の3点で説明する
 
-ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）：本ファイル末尾の「ガイドライン対応」を参照。
+---
 
 ## 目的（この技術で到達する状態）
 - パスワードリセットを「便利機能」ではなく、**回復経路（Recovery Channel）** と **回復資産（Reset Token / Code）** と **失効境界（Session/Token/Trusted Device）** の3点で説明できる。
@@ -9,13 +10,29 @@
 
 ## 前提（対象・範囲・想定）
 - 対象：Webアプリのパスワードリセット（メールリンク、コード入力、SMS、アプリ内通知、管理者/サポート代行を含む）。
-- 回復は多くの場合、ログインより「弱い本人確認」になりやすく、MFA/端末信頼が強いほど回復側が相対的に弱点化しやすい（設計の力学）。
-- 依存（前段）
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - 回復は多くの場合、ログインより「弱い本人確認」になりやすく、MFA/端末信頼が強いほど回復側が相対的に弱点化しやすい（設計の力学）。
+- できること/やらないこと（安全に検証する範囲）：
+  - 本ユニットは「回復経路の成立条件と境界の観測」に集中する。ソーシャルエンジニアリング手順の最適化は扱わない。過剰試行でロックを誘発しない。
+- 依存する前提知識（必要最小限）：
   - `01_topics/02_web/02_authn_06_mfa_成立点と例外パス（step-up_device_trust）.md`（回復が例外パスになり得る）
   - `01_topics/02_web/02_authn_07_client_storage（localStorage_sessionStorage_memory）.md`（回復後に残る資産/消える資産）
   - `01_topics/02_web/02_authn_08_device_binding（端末紐付け_IP_UA_fingerprint）.md`（trusted device の回収/追加境界）
   - `01_topics/02_web/02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`（失効・再利用窓）
-- 制約：本ユニットは「回復経路の成立条件と境界の観測」に集中する。ソーシャルエンジニアリング手順の最適化は扱わない。
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - 回復フローの状態遷移（入口→資産発行→検証→更新→失効）の観測
+    - 回復資産（Reset Token / Code）の"形"と"露出面"の確定
+    - 成立点（どこで本人確認が完了した扱いになるか）の固定
+    - MFA/Step-up/端末信頼との結合点の観測
+    - 失効境界（セッション/トークン/端末信頼の回収）の確認
+    - アカウント列挙（存在有無の漏えい）を境界として扱う
+  - 扱わない（別ユニットへ接続）：
+    - ソーシャルエンジニアリング手順の最適化 → 別ユニット
+    - メール/SMS基盤の内部（配送遅延・中継ログ等） → 必要ならASM/OSINT・SaaS側で扱う
+    - ヘルプデスク運用の実態（手順・教育・監査） → 必要なら別ユニット
 
 ## 観測ポイント（何を見ているか：フロー/資産/境界）
 ### 1) 回復フローを“状態遷移”として分解する（入口→資産発行→検証→更新→失効）
@@ -84,17 +101,21 @@ MFAや端末信頼が強くても、回復が弱いと全体が崩れる。
   - 回復後の回収結果（セッション/refresh/trusted device：yes/no/unknown）
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言える（観測で断定できる）
+- 何が"確定"できるか：
   - 回復資産の露出面（どこに現れ、どこに残るか）
-  - 単回性/TTL/紐付けの有無（少なくとも“挙動として”）
+  - 単回性/TTL/紐付けの有無（少なくとも"挙動として"）
   - 回復後に既存セッション/長期資産が回収されるか（yes/no/unknown）
   - 回復がMFA/端末信頼の例外になっているか（例外パスの存在）
-- 推定（追加観測で強くなる）
+- 何が"推定"できるか（推定の根拠/前提）：
   - 列挙耐性（メッセージだけでなく時間差/副作用まで）
   - サポート代行等の運用回復がどれだけ強いか（別ユニットで深掘り推奨）
-- 言えない（この段階の限界）
+- 何は"言えない"か（不足情報・観測限界）：
   - メール/SMS基盤の内部（配送遅延・中継ログ等）※必要ならASM/OSINT・SaaS側で扱う
   - ヘルプデスク運用の実態（手順・教育・監査）※必要なら別ユニット
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：回復資産は単回・短TTL・強い紐付けで守られている → token検証成功後に、同一tokenで再度検証を試みた場合の挙動（拒否/無効化）を1回だけ確認（yes/no）
+  - パターンB：回復後の失効が弱く、既存セッション/長期資産が残る → 回復完了前から存在するログイン状態（別ブラウザ/別タブ/別端末が可能なら最小で）で、回復後に重要APIが通るかを確認
+  - パターンC：回復がMFA/端末信頼の例外として機能している → 回復後の初回ログイン（または重要操作）でMFAが再要求されるかを観測（yes/no）
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
 ※ここでは“手順”ではなく、診断としての優先順位付けを行う。
@@ -135,43 +156,94 @@ MFAや端末信頼が強くても、回復が弱いと全体が崩れる。
 - 期待する到達点
   - “MFAはログインでは効くが回復で崩れる”という境界評価を確定し、改善提案（回復にもStep-up等）へ繋げられる
 
-### コマンド/手順例（例示は最小限・意味が主）
+## 手を動かす検証（Labs連動：観測点を明確に）
+- 検証環境（関連する `04_labs/`）
+  - 参照ファイル：
+    - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+    - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 取得する証跡（目的ベースで最小限）：
+  - ブラウザHAR：入口→送信→検証→更新→完了まで（token値は必ずマスク）
+  - Proxyログ：Set-Cookie/Location/主要POST（秘匿値はマスク）
+  - 状態メモ（固定）：回復成立点（どのレスポンス以降か）、回復資産の露出面（URL/Body/Cookie/Code）、回復後の回収結果（セッション/refresh/trusted device：yes/no/unknown）
+- 観測の取り方（どの視点で差分を見るか）：
+  - 回復フローの状態遷移、回復資産の露出面、成立点、MFA/Step-up/端末信頼との結合点、失効境界、アカウント列挙
+- 実施方法（最高に具体的）：観測の準備と相関キー
+  - 証跡ディレクトリ（必須）
+    ~~~~
+    mkdir -p ~/keda_evidence/password_reset 2>/dev/null
+    cd ~/keda_evidence/password_reset
+    ~~~~
+  - 検証の前提を固定（スコープ事故を防ぐ）
+    - 必須で決める（レポート先頭に書く）
+      - 対象は **許可されたスコープ** のみ
+      - 観測は **最小限の差分セット** のみ
+      - 過剰試行でロックを誘発しない
+      - token値は必ずマスク
+  - 相関キー（最低限）を作る（後で必ず効く）
+    - Host、User、Time、回復フロー段階（入口/資産発行/検証/更新/失効）、回復資産の露出面（URL/Body/Cookie/Code）、単回性/TTL/紐付け（yes/no/unknown）、回復後の回収（セッション/refresh/trusted device：yes/no/unknown）
+
+## コマンド/リクエスト例（例示は最小限・意味の説明が主）
+> 例示は"手段"であり"結論"ではない。必ず「何を観測している例か」を添える。
+
 ~~~~
-# 目的：回復成立点の前後で Set-Cookie / Location の差分を取り、資産の増減を観測する（値は保存しない）
-# - 回復フローの各リクエストで、Set-Cookie と Location だけを確認する
+# 例：回復成立点の前後で Set-Cookie / Location の差分を取り、資産の増減を観測する（値は保存しない）
 curl -i "https://rp.example.com/forgot" | sed -n -e 's/^Set-Cookie: //p' -e 's/^Location: //p'
 
-# 目的：回復完了後に“既存セッションが回収されるか”の差分を取る（同一アカウントの別ブラウザ等で最小回数）
-# - 既存セッションCookieを保持した状態で、回復後に同じエンドポイントが通るかを見る（結果のみ比較）
+# 例：回復完了後に"既存セッションが回収されるか"の差分を取る（同一アカウントの別ブラウザ等で最小回数）
 curl -i "https://rp.example.com/account" -H "Cookie: session=REDACTED" | head
 ~~~~
 
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回）
-~~~~
-## ガイドライン対応
+- この例で観測していること：
+  - 回復フローの各リクエストで、Set-Cookie と Location だけを確認する、既存セッションCookieを保持した状態で、回復後に同じエンドポイントが通るかを見る（結果のみ比較）
+- 出力のどこを見るか（注目点）：
+  - Set-Cookieヘッダ（回復専用セッション/フラグ）、Locationヘッダ（token が URL に残るか）、ステータスコード（200/401/403/302）
+- この例が使えないケース（前提が崩れるケース）：
+  - JS必須/SSO必須の場合、curlだけでは成立しない（ブラウザ+HAR/Proxyで観測へ）
+
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
 - ASVS：
-  - V2（Authentication）：パスワード回復/リセットの本人確認、回復コード/トークンの強度、列挙耐性、Rate limit、回復後の再認証（必要なら）に接続する。
-  - V3（Session Management）：回復完了時のセッション失効、長期トークンの回収、trusted device の扱い（免除の回収）に接続する。
-  - （関連がある場合）V1（Architecture）：回復チャネル（メール/SMS/外部IdP/サポート）の信頼境界を明記する。
+  - 該当領域/章：V2（Authentication）：パスワード回復/リセットの本人確認、回復コード/トークンの強度、列挙耐性、Rate limit、回復後の再認証（必要なら）に接続する。V3（Session Management）：回復完了時のセッション失効、長期トークンの回収、trusted device の扱い（免除の回収）に接続する。
+  - 該当要件（可能ならID）：V2（Authentication）、V3（Session Management）
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 満たす：回復経路の成立条件と境界を観測で確定し、以後の検証観点を外さないための基盤。
+  - 参照：https://github.com/OWASP/ASVS
 - WSTG：
-  - Authentication Testing：Password Reset / Account Recovery のテスト観点（列挙・トークン単回性・TTL・本人確認）として扱う。
-  - Session Management：回復後のセッション回収・失効・再利用窓の観測として扱う。
-  - Client-side：回復資産がURL/Storageに露出する場合の漏えい経路（ログ/Referer/保存）を前提として接続する。
+  - 該当カテゴリ/テスト観点：Authentication Testing：Password Reset / Account Recovery のテスト観点（列挙・トークン単回性・TTL・本人確認）として扱う。Session Management：回復後のセッション回収・失効・再利用窓の観測として扱う。
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：回復経路の観測と理解
+  - 参照：https://owasp.org/www-project-web-security-testing-guide/
 - PTES：
-  - Intelligence Gathering：回復経路と資産形態の把握（成立点/露出面の固定）
-  - Vulnerability Analysis：単回性/TTL/列挙/失効の評価（yes/no/unknown）
-  - Exploitation：最小差分で影響確認（過剰試行を避ける）
-  - Reporting：証跡（HAR/Proxy/差分）と改善提案（回復にも強い本人確認・回収）へ接続
+  - 該当フェーズ：Intelligence Gathering（回復経路と資産形態の把握）→ Vulnerability Analysis（単回性/TTL/列挙/失効の評価）→ Exploitation（最小差分で影響確認）→ Reporting（証跡と改善提案）へ接続。
+  - 前後フェーズとの繋がり（1行）：回復経路と資産形態の把握→単回性/TTL/列挙/失効の評価→最小差分で影響確認→証跡と改善提案の品質を上げる。
+  - 参照：https://pentest-standard.readthedocs.io/
 - MITRE ATT&CK：
-  - Credential Access：アカウント回復/リセット経路の悪用で“認証資産”を再取得する目的に接続。
-  - Valid Accounts：回復により有効アカウント状態を奪う/維持する目的に接続。
-  - Defense Evasion：回復後も既存セッションが残る場合、検知回避・持続に寄与する前提として接続。
-~~~~
+  - 該当戦術（必要なら技術）：Credential Access / Valid Accounts / Defense Evasion
+  - 攻撃者の目的（この技術が支える意図）：Credential Access（アカウント回復/リセット経路の悪用で"認証資産"を再取得する目的）、Valid Accounts（回復により有効アカウント状態を奪う/維持する目的）、Defense Evasion（回復後も既存セッションが残る場合、検知回避・持続に寄与する前提）に接続。
+  - 参照：https://attack.mitre.org/tactics/TA0006/（Credential Access）、https://attack.mitre.org/tactics/TA0001/（Initial Access - Valid Accounts）、https://attack.mitre.org/tactics/TA0005/（Defense Evasion）
 
 ## 参考（必要最小限）
+- OWASP Forgot Password Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
+- OWASP Authentication Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+- OWASP Session Management Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+- OWASP Application Security Verification Standard: https://github.com/OWASP/ASVS
+- OWASP Web Security Testing Guide: https://owasp.org/www-project-web-security-testing-guide/
+- PTES (Penetration Testing Execution Standard): https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK: https://attack.mitre.org/
+
+## リポジトリ内リンク（最大3つまで）
+- 関連 topics：`01_topics/02_web/02_authn_06_mfa_成立点と例外パス（step-up_device_trust）.md`
+- 関連 topics：`01_topics/02_web/02_authn_07_client_storage（localStorage_sessionStorage_memory）.md`
+- 関連 topics：`01_topics/02_web/02_authn_08_device_binding（端末紐付け_IP_UA_fingerprint）.md`
+
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
+- `01_topics/02_web/02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`
 - `01_topics/02_web/02_authn_06_mfa_成立点と例外パス（step-up_device_trust）.md`
 - `01_topics/02_web/02_authn_07_client_storage（localStorage_sessionStorage_memory）.md`
 - `01_topics/02_web/02_authn_08_device_binding（端末紐付け_IP_UA_fingerprint）.md`
-- `01_topics/02_web/02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`
-- OWASP：Forgot Password Cheat Sheet（回復設計の論点整理）
-- OWASP：Authentication Cheat Sheet / Session Management Cheat Sheet（失効・再利用窓の整理）
+- `01_topics/02_web/02_authn_09_password_policy（強度_漏えい照合_禁止語）.md`
+- `01_topics/02_web/02_authn_11_account_recovery_本人確認（サポート代行_回復コード）.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+
+---

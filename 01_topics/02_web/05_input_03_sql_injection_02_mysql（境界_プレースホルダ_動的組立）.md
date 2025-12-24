@@ -1,22 +1,4 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回）
-
-- ASVS：
-  - 目的：SQLi（CWE-89）を「入力→SQL構文」越境として防ぐ（主に検証・サニタイズ・エンコード／安全なクエリ機構／エラーハンドリング／最小権限）
-  - このファイルで扱う管理策：
-    - パラメータ化（プレースホルダ）を“万能薬”にせず、**動的SQL組立（ORDER/LIMIT/IN/識別子/断片）**の境界を別枠で制御する
-    - DBコネクタ設定（例：multi-statements）を“境界条件”として固定し、攻撃面を縮退させる
-    - 例外・エラー差分を「存在オラクル／型オラクル／実装漏えい」にしない（観測点の縮退）
-- WSTG：
-  - WSTG-INPV-05（Testing for SQL Injection）を中核に、入力点ごとのコンテキスト（文字列/数値/識別子/式）を確定し、差分観測で成立根拠を固める
-- PTES：
-  - Vulnerability Analysis：入力点→SQL境界の同定、方言差分の当て込み、再現性のある最小差分PoC
-  - Exploitation：契約範囲内で影響（読み取り/改ざん/認可迂回）を“必要最小限”で実証（過剰なデータ抽出は避ける）
-  - Reporting：根本原因（動的組立・コネクタ設定・ORM誤用）と修正指針（設計変更）をセットで提示
-- MITRE ATT&CK：
-  - TA0001 Initial Access / TA0009 Collection / TA0006 Credential Access（アプリDBに資格情報がある場合）/ TA0005 Defense Evasion（エラー差分を利用した低ノイズ探索）
-  - 代表例：T1190 Exploit Public-Facing Application（SQLiは典型的な入口）
-
-# SQL Injection（MySQL）：境界_プレースホルダ_動的組立
+# 05_input_03_sql_injection_02_mysql（境界_プレースホルダ_動的組立）
 
 ## 目的（この技術で到達する状態）
 
@@ -27,19 +9,21 @@
   4) 修正を「エスケープ強化」ではなく、**設計（組立禁止・allowlist・クエリ生成器）**に落とす
 
 ## 前提（対象・範囲・想定）
-
-- 対象：
-  - 典型：Webフォーム／REST／GraphQL／管理UI／検索・フィルタ・ソート・ページングがある画面
-  - DB：MySQL / MariaDB（方言・機能差はあるが、まずMySQL基準で整理する）
-- 想定される実装：
-  - ドライバ：JDBC、PHP mysqli/PDO、Node mysql/mysql2、Go database/sql、Python MySQLdb 等
-  - ORM/Query Builder：Sequelize/TypeORM/Prisma/Knex、Hibernate（方言はMySQL）等
-- スコープ（本ファイルの焦点）：
-  - **プレースホルダの境界**：値のバインドは安全でも、SQL“構文”側に入力が混ざると破綻する
-  - **動的組立**：ORDER BY / LIMIT / テーブル名・カラム名 / INリスト / 条件断片（WHERE句の部分）など
-  - **コネクタ設定**：複文（multi-statements）やエミュレートドプリペア（client-side prepare）が境界を崩す
-- 非スコープ（ただし“影響”として言及はする）：
-  - 大量データ抽出の手順化、破壊的検証（本リポジトリは「意味→判断→次の一手」優先）
+- 対象：典型（Webフォーム／REST／GraphQL／管理UI／検索・フィルタ・ソート・ページングがある画面）、DB（MySQL / MariaDB（方言・機能差はあるが、まずMySQL基準で整理する））
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - 想定される実装：ドライバ（JDBC、PHP mysqli/PDO、Node mysql/mysql2、Go database/sql、Python MySQLdb 等）、ORM/Query Builder（Sequelize/TypeORM/Prisma/Knex、Hibernate（方言はMySQL）等）
+  - スコープ（本ファイルの焦点）：プレースホルダの境界（値のバインドは安全でも、SQL"構文"側に入力が混ざると破綻する）、動的組立（ORDER BY / LIMIT / テーブル名・カラム名 / INリスト / 条件断片（WHERE句の部分）など）、コネクタ設定（複文（multi-statements）やエミュレートドプリペア（client-side prepare）が境界を崩す）
+  - パラメータ化（プレースホルダ）を"万能薬"にせず、**動的SQL組立（ORDER/LIMIT/IN/識別子/断片）**の境界を別枠で制御する。DBコネクタ設定（例：multi-statements）を"境界条件"として固定し、攻撃面を縮退させる。例外・エラー差分を「存在オラクル／型オラクル／実装漏えい」にしない（観測点の縮退）。
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：プレースホルダ（Prepared Statement）で守れている範囲／守れていない範囲を切り分ける、守れていない典型である **動的SQL組立（ORDER/LIMIT/IN/識別子/断片）** を、黒箱でも差分観測で特定する、MySQL 方言（Oracle/PostgreSQL/MSSQLとの差分）を「成立根拠」として整理し、誤検知・見落としを減らす
+  - やらないこと：大量データ抽出の手順化、破壊的検証（本リポジトリは「意味→判断→次の一手」優先）、単発の500や単発の遅延だけでは主張しない（ネットワーク、バックエンド混雑、アプリ例外が混ざる）
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+  - `01_topics/02_web/05_input_03_sql_injection_01_oracle（境界_プレースホルダ_ORM）.md`
+  - `01_topics/02_web/04_api_03_rest_filters_検索・ソート・ページング境界.md`
+  - `01_topics/02_web/04_api_09_error_model_情報漏えい（例外_スタック）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 
@@ -125,35 +109,23 @@
   4) “安全なクエリ＋危険な断片”の混在（WHERE断片、ORDER断片）
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-
-### 1) 「SQLiがある」を言える条件（最小差分での確定）
-
-- 次が揃うと、黒箱でも“構文化”を主張しやすい：
-  - 同一エンドポイントで、1つの入力だけを変える
-  - その入力の変化に対し、**SQLパーサ由来の差分**（構文エラー／型エラー／演算子解釈差／コメントによる後続無効化差）が再現する
-  - さらに、入力位置（文字列/数値/識別子/断片）を推定できる
-
-> 逆に、単発の500や単発の遅延だけでは主張しない（ネットワーク、バックエンド混雑、アプリ例外が混ざる）。
-
-### 2) 「MySQL方言」を言える条件（断定ではなく根拠の積み上げ）
-
-- `#` コメントやバッククォート、MySQL特有の文言など、**複数の根拠が一致**したときに初めて「MySQL（互換）」を主張する
-- ただし、アプリ層でエラーメッセージが加工されると“方言当て”は難しい  
-  → 方言当ては目的ではなく、**検証の当て込み（成立根拠）**に使う
-
-### 3) 「プレースホルダがあるから安全」を否定できる条件
-
-- 観測上、値のバインドっぽい挙動でも、次が見えたら危険領域が残る：
-  - sort/direction/fields/limit 等が効いている（＝構文側が動いている）
-  - 一部入力だけが“別扱い”になり、エラー差分が出る（＝断片が混ざっている）
-  - 例外が“SQL構文”に寄る（＝文字列連結でSQLを組立している可能性）
-
-### 4) 何が言えないか（レポートで線を引く）
-
-- 言えない（または追加検証が必要）：
-  - “データが抜ける”断定（影響は契約・権限・DB権限で大きく変わる）
-  - “複文が可能”断定（MySQLはドライバ設定に依存）
-  - “DBがMySQL”断定（互換DB/抽象化/エラー隠蔽がある）
+- 何が"確定"できるか：
+  - 同一エンドポイントで、1つの入力だけを変え、その入力の変化に対し、**SQLパーサ由来の差分**（構文エラー／型エラー／演算子解釈差／コメントによる後続無効化差）が再現する場合、黒箱でも"構文化"を主張しやすい
+  - 入力位置（文字列/数値/識別子/断片）を推定できる
+  - `#` コメントやバッククォート、MySQL特有の文言など、**複数の根拠が一致**したときに初めて「MySQL（互換）」を主張できる
+  - 観測上、値のバインドっぽい挙動でも、次が見えたら危険領域が残る：sort/direction/fields/limit 等が効いている（＝構文側が動いている）、一部入力だけが"別扱い"になり、エラー差分が出る（＝断片が混ざっている）、例外が"SQL構文"に寄る（＝文字列連結でSQLを組立している可能性）
+- 何が"推定"できるか（推定の根拠/前提）：
+  - 方言当ては目的ではなく、**検証の当て込み（成立根拠）**に使う
+  - ただし、アプリ層でエラーメッセージが加工されると"方言当て"は難しい
+- 何は"言えない"か（不足情報・観測限界）：
+  - "データが抜ける"断定（影響は契約・権限・DB権限で大きく変わる）
+  - "複文が可能"断定（MySQLはドライバ設定に依存）
+  - "DBがMySQL"断定（互換DB/抽象化/エラー隠蔽がある）
+  - 単発の500や単発の遅延だけでは主張しない（ネットワーク、バックエンド混雑、アプリ例外が混ざる）
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：SQLiがある → 同一エンドポイントで、1つの入力だけを変え、その入力の変化に対し、**SQLパーサ由来の差分**（構文エラー／型エラー／演算子解釈差／コメントによる後続無効化差）が再現する
+  - パターンB：MySQL方言 → `#` コメントやバッククォート、MySQL特有の文言など、**複数の根拠が一致**したときに初めて「MySQL（互換）」を主張できる
+  - パターンC：プレースホルダがあるから安全を否定できる → sort/direction/fields/limit 等が効いている（＝構文側が動いている）、一部入力だけが"別扱い"になり、エラー差分が出る（＝断片が混ざっている）、例外が"SQL構文"に寄る（＝文字列連結でSQLを組立している可能性）
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
 
@@ -295,26 +267,68 @@ SELECT * FROM items WHERE id IN (?, ?, ?, ...)
 ... WHERE name LIKE ?
 param = "%" + q + "%"
 ~~~~
+- この例で観測していること：
+  - プレースホルダ（Prepared Statement）で守れている範囲／守れていない範囲を切り分ける、守れていない典型である **動的SQL組立（ORDER/LIMIT/IN/識別子/断片）** を、黒箱でも差分観測で特定する
+- 出力のどこを見るか（注目点）：
+  - 同一エンドポイントで、1つの入力だけを変え、その入力の変化に対し、**SQLパーサ由来の差分**（構文エラー／型エラー／演算子解釈差／コメントによる後続無効化差）が再現するか、入力位置（文字列/数値/識別子/断片）を推定できるか
+- この例が使えないケース（前提が崩れるケース）：
+  - 単発の500や単発の遅延だけでは主張しない（ネットワーク、バックエンド混雑、アプリ例外が混ざる）
 
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回）
+## 手を動かす検証（Labs連動：観測点を明確に）
+- 検証環境（関連する `04_labs/` ）：
+  - `04_labs/02_web/05_input/03_sql_injection/02_mysql_dynamic_assembly/`
+- 取得する証跡（目的ベースで最小限）：
+  - Proxyログ（入力がどのAPI/画面で送られ、どのレスポンス（または後続表示）で反映されたか）
+  - 必要時：アプリ例外ログ、入口ログ、クラウド監査ログ（例外の相関）
 
+## コマンド/リクエスト例（例示は最小限・意味の説明が主）
+~~~~
+# 危険：動的ORDER BY（列名はプレースホルダ化できない）
+SELECT * FROM items ORDER BY {sort} {dir} LIMIT ?
+
+# 安全：入力は選択肢→サーバ側で列名にマップ
+sort=createdAt|price|name のように受け、サーバで
+createdAt -> created_at
+price     -> price
+name      -> name
+に変換してSQL文字列を生成する（入力値をそのまま入れない）
+
+# 危険：INリストをCSVで連結
+SELECT * FROM items WHERE id IN ({csv_ids})
+
+# 安全：要素数分プレースホルダを展開
+SELECT * FROM items WHERE id IN (?, ?, ?, ...)
+
+# 危険：LIKEの%をSQL文字列側で連結（断片化）
+... WHERE name LIKE '%" + q + "%'
+
+# 安全：%を含めて値としてバインド
+... WHERE name LIKE ?
+param = "%" + q + "%"
+~~~~
+- この例で観測していること：
+  - プレースホルダ（Prepared Statement）で守れている範囲／守れていない範囲を切り分ける、守れていない典型である **動的SQL組立（ORDER/LIMIT/IN/識別子/断片）** を、黒箱でも差分観測で特定する
+- 出力のどこを見るか（注目点）：
+  - 同一エンドポイントで、1つの入力だけを変え、その入力の変化に対し、**SQLパーサ由来の差分**（構文エラー／型エラー／演算子解釈差／コメントによる後続無効化差）が再現するか、入力位置（文字列/数値/識別子/断片）を推定できるか
+- この例が使えないケース（前提が崩れるケース）：
+  - 単発の500や単発の遅延だけでは主張しない（ネットワーク、バックエンド混雑、アプリ例外が混ざる）
+
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
 - ASVS：
-  - V5（Validation / Sanitization / Encoding）を中心に、SQLiを“入力→実行”越境として防ぐ
-  - 追加で重要：エラー処理（情報漏えい防止）、ログ（相関ID）、最小権限（DBユーザ権限）
+  - 該当領域/章：V5（入力検証、サニタイズ、エンコーディング）、V7（ログとモニタリング）、V9（データ保護）、V12（ファイルとリソース）
+  - 該当要件（可能ならID）：V5.1（入力検証）、V7.1（ログ要件）、V9.1（データ保護）、V12.1（ファイルアップロード）
+  - このファイルの内容が「満たす/破れる」ポイント：SQLi（CWE-89）を「入力→SQL構文」越境として防ぐ（主に検証・サニタイズ・エンコード／安全なクエリ機構／エラーハンドリング／最小権限）。パラメータ化（プレースホルダ）を"万能薬"にせず、**動的SQL組立（ORDER/LIMIT/IN/識別子/断片）**の境界を別枠で制御する。DBコネクタ設定（例：multi-statements）を"境界条件"として固定し、攻撃面を縮退させる。例外・エラー差分を「存在オラクル／型オラクル／実装漏えい」にしない（観測点の縮退）。
 - WSTG：
-  - WSTG-INPV-05（SQL Injection）：
-    - 入力点ごとにコンテキストを確定（文字列/数値/識別子/断片）
-    - MySQL方言（コメント/識別子クォート/SQL MODE/複文設定）を“成立根拠”として使う
+  - 該当カテゴリ/テスト観点：Injection Testing（SQLi）、Error Handling Testing、Authorization Testing、Business Logic Testing、Logging Testing
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：WSTG-INPV-05（Testing for SQL Injection）を中核に、入力点ごとのコンテキスト（文字列/数値/識別子/式）を確定し、差分観測で成立根拠を固める。入力点ごとにコンテキストを確定（文字列/数値/識別子/断片）、MySQL方言（コメント/識別子クォート/SQL MODE/複文設定）を"成立根拠"として使う。
 - PTES：
-  - Vulnerability Analysis：動的組立の同定、方言差分での当て込み、差分観測での立証
-  - Exploitation：影響実証は必要最小限（過剰抽出・破壊的検証を避ける）
-  - Reporting：根本原因（動的組立・ORM raw・ドライバ設定）と再発防止（allowlist/設計）を明記
+  - 該当フェーズ：Information Gathering、Vulnerability Analysis、Exploitation
+  - 前後フェーズとの繋がり（1行）：Vulnerability Analysis（入力点→SQL境界の同定、方言差分の当て込み、再現性のある最小差分PoC）→ Exploitation（契約範囲内で影響（読み取り/改ざん/認可迂回）を"必要最小限"で実証（過剰なデータ抽出は避ける））→ Reporting（根本原因（動的組立・コネクタ設定・ORM誤用）と修正指針（設計変更）をセットで提示）。動的組立の同定、方言差分での当て込み、差分観測での立証。
 - MITRE ATT&CK：
-  - T1190（公開アプリの脆弱性悪用）に接続
-  - Discovery/Collectionへ連鎖し得るが、レポートは“到達可能性”と“前提（権限・設定）”を分離して記述する
+  - 該当戦術（必要なら技術）：TA0001（Initial Access）、TA0009（Collection）、TA0006（Credential Access）、TA0005（Defense Evasion）
+  - 攻撃者の目的（この技術が支える意図）：TA0001 Initial Access / TA0009 Collection / TA0006 Credential Access（アプリDBに資格情報がある場合）/ TA0005 Defense Evasion（エラー差分を利用した低ノイズ探索）。代表例：T1190 Exploit Public-Facing Application（SQLiは典型的な入口）。Discovery/Collectionへ連鎖し得るが、レポートは"到達可能性"と"前提（権限・設定）"を分離して記述する。
 
 ## 参考（必要最小限）
-
 - OWASP Web Security Testing Guide - Testing for SQL Injection  
   https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/05-Testing_for_SQL_Injection
 - OWASP Cheat Sheet Series - SQL Injection Prevention Cheat Sheet  
@@ -323,3 +337,22 @@ param = "%" + q + "%"
   https://owasp.org/Top10/2021/A03_2021-Injection/
 - IPA（参考：プレースホルダ/動的組立のリスク整理に有用）  
   https://www.ipa.go.jp/security/vuln/ps6vr70000011hc4-att/000017321.pdf
+
+## リポジトリ内リンク（最大3つまで）
+- `01_topics/02_web/05_input_03_sql_injection_01_oracle（境界_プレースホルダ_ORM）.md`
+- `01_topics/02_web/04_api_03_rest_filters_検索・ソート・ページング境界.md`
+- `01_topics/02_web/04_api_09_error_model_情報漏えい（例外_スタック）.md`
+
+---
+
+## 深掘りリンク（最大8）
+- 関連 topics：
+  - `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+  - `01_topics/02_web/05_input_03_sql_injection_01_oracle（境界_プレースホルダ_ORM）.md`
+  - `01_topics/02_web/05_input_03_sql_injection_03_postgre（境界_プレースホルダ_型キャスト）.md`
+  - `01_topics/02_web/05_input_03_sql_injection_04_mssql（境界_プレースホルダ_バッチ境界）.md`
+  - `01_topics/02_web/04_api_03_rest_filters_検索・ソート・ページング境界.md`
+  - `01_topics/02_web/04_api_09_error_model_情報漏えい（例外_スタック）.md`
+- 関連 labs / cases：
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`

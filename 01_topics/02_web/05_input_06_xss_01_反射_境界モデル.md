@@ -1,20 +1,4 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS：
-  - この技術で満たす/破れる点：出力エンコーディング（コンテキスト別）、テンプレート自動エスケープの前提崩し（Raw出力/unsafe API）、CSP 等のブラウザ制御、入力の信頼境界（第三者から到達するパラメータ）を“実行”に変えない設計
-- WSTG：
-  - Input Validation Testing：Testing for Reflected Cross Site Scripting（WSTG-INPV-01）に対応（反射＝単一レスポンス内で成立、被害はリンク/誘導に依存）
-- PTES：
-  - 該当フェーズ：Vulnerability Analysis → Exploitation（成立根拠の確定）→ Reporting（再現条件・影響範囲・修正の優先順位）
-  - 前後フェーズとの繋がり：Web recon で「反射しそうな入力面（検索、エラー表示、リダイレクト、ログイン失敗、トラッキング）」を絞り込み、入力→レスポンスの差分観測で “実行境界” を確定してから深掘りする
-- MITRE ATT&CK：
-  - 該当戦術：Initial Access / Execution（ユーザがページを開くことでクライアント側が侵害される導線）
-  - 参考技術：Drive-by Compromise（T1189）として「Web閲覧を起点にクライアント側を侵害」する枠に接続
-  - 攻撃者の目的：ユーザ操作の乗っ取り（被害者権限での操作・情報取得・追加侵害の足場）
-
----
-
-## タイトル
-反射XSS（Reflected XSS）境界モデル
+# 05_input_06_xss_01_反射_境界モデル
 
 ## 目的（この技術で到達する状態）
 - 反射XSSを「payloadが通る/通らない」ではなく、以下の“境界”として説明できるようにする
@@ -26,19 +10,17 @@
   - 修正の核が「入力フィルタ」ではなく「コンテキスト別出力処理＋テンプレ運用＋CSP」であることの説明（再発防止まで）
 
 ## 前提（対象・範囲・想定）
-- 対象：
-  - URLクエリ/パス/フォーム/ヘッダ等の入力が、そのまま（または整形後）HTMLレスポンスへ反映されるページ
-  - 典型：検索、フィルタ、エラーメッセージ、リダイレクト先表示、ログイン失敗表示、デバッグ表示
-- 想定する環境：
-  - CDN/WAFの前段がある場合あり（ただしWAFは本質対策ではなく、回避不能前提にしない）
-  - SPAでも “SSR/テンプレ描画/エラーページ/OGP生成” で反射が残ることがある
-  - 近年はCSP導入が増加（nonce/strict CSP の有無で現実の成立条件が大きく変わる）
+- 対象：URLクエリ/パス/フォーム/ヘッダ等の入力が、そのまま（または整形後）HTMLレスポンスへ反映されるページ、典型：検索、フィルタ、エラーメッセージ、リダイレクト先表示、ログイン失敗表示、デバッグ表示
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - CDN/WAFの前段がある場合あり（ただしWAFは本質対策ではなく、回避不能前提にしない）、SPAでも "SSR/テンプレ描画/エラーページ/OGP生成" で反射が残ることがある、近年はCSP導入が増加（nonce/strict CSP の有無で現実の成立条件が大きく変わる）
 - できること/やらないこと（安全に検証する範囲）：
-  - 目的は「反射→実行コンテキスト→成立根拠」の確定と影響見積り
-  - 侵害行為（情報窃取・継続侵害の具体化）に踏み込まず、PoCは最小の可観測（例：軽量な実行確認）に留める
+  - できること：どの入力が、どのレスポンス上のどの"実行コンテキスト"に入ったか（HTML/属性/JS/URL/CSS）、どの防御（テンプレ自動エスケープ、出力エンコーディング、CSP、フレームワーク）が"どの境界"を守っているか、どの差分観測で「実行された」を低侵襲に確定できるか（PoCは最小・現実の制約前提）、"再現性（リンク誘導が必要）" を踏まえたリスク評価（特に認証後ページ/SSO前後の影響差）、修正の核が「入力フィルタ」ではなく「コンテキスト別出力処理＋テンプレ運用＋CSP」であることの説明（再発防止まで）
+  - やらないこと：目的は「反射→実行コンテキスト→成立根拠」の確定と影響見積り、侵害行為（情報窃取・継続侵害の具体化）に踏み込まず、PoCは最小の可観測（例：軽量な実行確認）に留める
 - 依存する前提知識（必要最小限）：
-  - HTML/JS/URLの基本コンテキスト、出力エンコーディング（コンテキスト依存）
-  - CSPの基本（script-src、nonce/strict CSP）
+  - `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+  - HTML/JS/URLの基本コンテキスト、出力エンコーディング（コンテキスト依存）、CSPの基本（script-src、nonce/strict CSP）
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 - 観測対象（やり取りの単位）：
@@ -153,6 +135,23 @@ curl -i "https://example.test/search?q=keda_xss_marker_123"
   - 反射が認証後のみ：同一手順をログイン後に再実施し、権限境界を変えて影響評価する
   - レスポンスがJSONのみ：反射はDOM側で解釈される可能性があるため、DOM編（03）へ接続する
 
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：V5 Validation, Sanitization and Encoding、V7 Error Handling and Logging
+  - 該当要件（可能ならID）：V5.3.1、V5.3.2、V7.4.1
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 出力エンコーディング（コンテキスト別）、テンプレート自動エスケープの前提崩し（Raw出力/unsafe API）、CSP 等のブラウザ制御、入力の信頼境界（第三者から到達するパラメータ）を"実行"に変えない設計
+- WSTG：
+  - 該当カテゴリ/テスト観点：WSTG-INPV-01 Testing for Reflected Cross Site Scripting
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：
+    - Input Validation Testing：Testing for Reflected Cross Site Scripting（WSTG-INPV-01）に対応（反射＝単一レスポンス内で成立、被害はリンク/誘導に依存）
+- PTES：
+  - 該当フェーズ：Vulnerability Analysis、Exploitation、Reporting
+  - 前後フェーズとの繋がり（1行）：Web recon で「反射しそうな入力面（検索、エラー表示、リダイレクト、ログイン失敗、トラッキング）」を絞り込み、入力→レスポンスの差分観測で "実行境界" を確定してから深掘りする、Vulnerability Analysis → Exploitation（成立根拠の確定）→ Reporting（再現条件・影響範囲・修正の優先順位）
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：Initial Access / Execution（ユーザがページを開くことでクライアント側が侵害される導線）
+  - 攻撃者の目的（この技術が支える意図）：Drive-by Compromise（T1189）として「Web閲覧を起点にクライアント側を侵害」する枠に接続、ユーザ操作の乗っ取り（被害者権限での操作・情報取得・追加侵害の足場）
+
 ## 参考（必要最小限）
 - OWASP WSTG：Testing for Reflected Cross Site Scripting（反射XSSの定義と観測観点）
 - OWASP Cheat Sheet：Cross Site Scripting Prevention（コンテキスト別エンコーディング、URL属性の扱い）
@@ -161,5 +160,16 @@ curl -i "https://example.test/search?q=keda_xss_marker_123"
 
 ## リポジトリ内リンク（最大3つまで）
 - `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+- `01_topics/02_web/05_input_06_xss_02_格納_境界モデル.md`
+- `01_topics/02_web/02_authn_01_cookie属性と境界（Secure_HttpOnly_SameSite_Path_Domain）.md`
+
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+- `01_topics/02_web/05_input_06_xss_02_格納_境界モデル.md`
+- `01_topics/02_web/05_input_06_xss_03_DOM_境界モデル.md`
 - `01_topics/02_web/06_config_03_セキュリティヘッダ（CSP_HSTS_Frame_Referrer）.md`
 - `01_topics/02_web/02_authn_01_cookie属性と境界（Secure_HttpOnly_SameSite_Path_Domain）.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+- `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`

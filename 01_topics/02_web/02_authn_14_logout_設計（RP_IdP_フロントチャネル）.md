@@ -1,19 +1,7 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS：
-  - この技術で満たす/破れる点：セッション終了の完全性（サーバ側無効化、トークン失効）、ログアウトCSRF、SSO連携時の責任分界（RP/IdP）、フロントチャネル/バックチャネルでの状態整合、ログアウト後の再利用防止（キャッシュ/Remember-me/Refresh Token）
-  - 支える前提：ログアウトは「認証状態の終了」を宣言する境界であり、設計が弱いと“ユーザの期待”と“実際の認証状態”が乖離する
-- WSTG：
-  - 該当テスト観点：Session Management / Authentication Testing（Logout Functionality / Session Termination / CSRF）
-  - どの観測に対応するか：ログアウト要求、セッション破棄、トークン失効、SSOログアウト（SLO）、フロントチャネルでの多RP整合を観測する
-- PTES：
-  - 該当フェーズ：Vulnerability Analysis（状態遷移の欠陥、責任分界の穴）、Exploitation（許可範囲での最小検証）
-  - 前後フェーズとの繋がり（1行）：13のstate設計、15の同時ログイン、17のrefresh rotationと結合し「終了できないセッション/トークン」が残るかを確定する
-- MITRE ATT&CK：
-  - 戦術：Persistence / Defense Evasion
-  - 目的：ログアウト後も有効なセッション/トークンを残して継続利用、またはユーザ操作を妨害（ログアウト誘発）して再認証に誘導する（※手順ではなく成立条件の判断）
+# 02_authn_14_logout_設計（RP_IdP_フロントチャネル）
+ログアウトを「ブラウザ表示の退出」ではなく「認証状態（セッション/トークン/連携状態）の無効化」として分解し、何が"確実に終わる/終わらない"かを説明する
 
-## タイトル
-logout_設計（RP_IdP_フロントチャネル）
+---
 
 ## 目的（この技術で到達する状態）
 - ログアウトを「ブラウザ表示の退出」ではなく「認証状態（セッション/トークン/連携状態）の無効化」として分解し、何が“確実に終わる/終わらない”かを説明できる
@@ -27,14 +15,29 @@ logout_設計（RP_IdP_フロントチャネル）
   - RPの長期トークン（remember-me、refresh token、device token）
   - IdPセッション（SSOセッション、IdP cookie）
   - SLO（Single Logout）または同等のログアウト連携
-- 想定する境界：
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
   - RP単体（SSOなし）
   - RP + IdP（OIDC/SAML）でのログアウト（フロントチャネル/バックチャネル）
   - 複数RP（複数アプリが同一IdPにぶら下がる）
-- 安全な範囲（最小検証の基本方針）：
-  - テストアカウントで実施（ログアウト誘発は影響が軽いが、運用アカウントでは避ける）
-  - “ログアウトできていない” を確定するために必要な最小リクエストのみ行う（保護リソースへの到達性で判断）
-  - 破壊的操作ではないが、監査ログ・IdPログがある場合は必ず裏取りする
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：テストアカウントで実施（ログアウト誘発は影響が軽いが、運用アカウントでは避ける）、"ログアウトできていない" を確定するために必要な最小リクエストのみ行う（保護リソースへの到達性で判断）
+  - やらないこと：破壊的操作ではないが、監査ログ・IdPログがある場合は必ず裏取りする
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/02_authn_13_login_csrf_認証CSRFとstate設計.md`
+  - `01_topics/02_web/02_authn_15_session_concurrency（多端末_同時ログイン制御）.md`
+  - `01_topics/02_web/02_authn_17_refresh_token_rotation_盗用検知（reuse）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - ログアウトを「3層」に分解する（ブラウザ状態、RPサーバ側状態、IdP状態）
+    - ログアウト経路（入口）の列挙（UI/API/連携）
+    - ログアウトCSRF（強制ログアウト）の観測
+    - SSO（OIDC/SAML）ログアウトの責任分界の観測
+    - トークン（refresh/remember-me）とログアウトの観測
+  - 扱わない（別ユニットへ接続）：
+    - IdP内部の完全なSLO処理（ただしRP側の期待と実態の乖離は示せる） → 別ユニット
+    - 監査/運用（通知や監査ログの保存期間）までの断定（設定資料が必要） → 別ユニット
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 ### 1) ログアウトを「3層」に分解する（どこが終わっていないかを特定する）
@@ -105,17 +108,21 @@ logout_設計（RP_IdP_フロントチャネル）
   - action_priority（P0/P1/P2）
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言える（確定できる）：
+- 何が"確定"できるか：
   - ログアウトがどの層（ブラウザ/RP/IdP）まで効いているかの切り分け
   - ログアウト入口（GET/POST/API/連携）の一貫性と、CSRF耐性の有無
-  - ログアウト後に残る“再認証不要の抜け道”（refresh/remember-me等）の兆候
+  - ログアウト後に残る"再認証不要の抜け道"（refresh/remember-me等）の兆候
   - SSO環境での責任分界（RPだけ終わる/IdPまで終わる/不明）と、設計上の限界点
-- 推定（根拠付きで言える）：
+- 何が"推定"できるか（推定の根拠/前提）：
   - frontchannelのみのSLOでは完全性が難しく、端末・ブラウザ条件で残存が起き得る（設定と挙動から）
   - ログアウトCSRFが許容されている場合、フィッシング誘導と結合するリスクが上がる（13/20と接続）
-- 言えない（この段階では断定しない）：
+- 何は"言えない"か（不足情報・観測限界）：
   - IdP内部の完全なSLO処理（ただしRP側の期待と実態の乖離は示せる）
   - 監査/運用（通知や監査ログの保存期間）までの断定（設定資料が必要）
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：RPログアウトのみ（IdPセッションは残る） → 再ログインが即時に成立し、ユーザが「ログアウトできない」と感じる
+  - パターンB：IdPログアウトのみ（RPセッションは残る/別RPが残る） → RP側で保護リソースがまだ見える（危険）
+  - パターンC：RP + IdPの整合（SLO or それに準ずる） → 期待に近いが、フロントチャネル由来で「全RPの終了」を完全に保証できないことがある（限界を明示）
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
 - 優先度（P0/P1/P2）
@@ -198,12 +205,49 @@ POST /oauth/revoke { token=refresh_token }
 - この例が使えないケース（前提が崩れるケース）：
   - SPAでログアウトがクライアントのみ（localStorage削除）に見える場合（→API logout/refreshの挙動とセットで観測）
 
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：セッション終了の完全性（サーバ側無効化、トークン失効）、ログアウトCSRF、SSO連携時の責任分界（RP/IdP）、フロントチャネル/バックチャネルでの状態整合、ログアウト後の再利用防止（キャッシュ/Remember-me/Refresh Token）
+  - 該当要件（可能ならID）：V3（Session Management）
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 満たす：ログアウトは「認証状態の終了」を宣言する境界であり、設計が弱いと"ユーザの期待"と"実際の認証状態"が乖離することを観測で確定し、以後の検証観点を外さないための基盤。
+  - 参照：https://github.com/OWASP/ASVS
+- WSTG：
+  - 該当カテゴリ/テスト観点：Session Management / Authentication Testing（Logout Functionality / Session Termination / CSRF）
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：ログアウト要求、セッション破棄、トークン失効、SSOログアウト（SLO）、フロントチャネルでの多RP整合を観測する
+  - 参照：https://owasp.org/www-project-web-security-testing-guide/
+- PTES：
+  - 該当フェーズ：Vulnerability Analysis（状態遷移の欠陥、責任分界の穴）、Exploitation（許可範囲での最小検証）
+  - 前後フェーズとの繋がり（1行）：13のstate設計、15の同時ログイン、17のrefresh rotationと結合し「終了できないセッション/トークン」が残るかを確定する。
+  - 参照：https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：Persistence / Defense Evasion
+  - 攻撃者の目的（この技術が支える意図）：ログアウト後も有効なセッション/トークンを残して継続利用、またはユーザ操作を妨害（ログアウト誘発）して再認証に誘導する（※手順ではなく成立条件の判断）。
+  - 参照：https://attack.mitre.org/tactics/TA0003/（Persistence）、https://attack.mitre.org/tactics/TA0005/（Defense Evasion）
+
 ## 参考（必要最小限）
-- OWASP ASVS（セッション終了、トークン失効、SSO責任分界）
-- OWASP WSTG（Logout/Session Termination、CSRF）
-- OIDC/SAMLのログアウト（frontchannel/backchannel、SLOの限界と設計判断）
+- OWASP Application Security Verification Standard: https://github.com/OWASP/ASVS
+- OWASP Web Security Testing Guide: https://owasp.org/www-project-web-security-testing-guide/
+- OIDC Logout: https://openid.net/specs/openid-connect-session-1_0.html
+- SAML Logout: https://docs.oasis-open.org/security/saml/v2.0/saml-profiles-2.0-os.pdf
+- PTES (Penetration Testing Execution Standard): https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK: https://attack.mitre.org/
 
 ## リポジトリ内リンク（最大3つまで）
+- 関連 topics：`01_topics/02_web/02_authn_13_login_csrf_認証CSRFとstate設計.md`
+- 関連 topics：`01_topics/02_web/02_authn_15_session_concurrency（多端末_同時ログイン制御）.md`
+- 関連 topics：`01_topics/02_web/02_authn_17_refresh_token_rotation_盗用検知（reuse）.md`
+
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
 - `01_topics/02_web/02_authn_13_login_csrf_認証CSRFとstate設計.md`
 - `01_topics/02_web/02_authn_15_session_concurrency（多端末_同時ログイン制御）.md`
+- `01_topics/02_web/02_authn_16_step-up_再認証境界（重要操作_再確認）.md`
 - `01_topics/02_web/02_authn_17_refresh_token_rotation_盗用検知（reuse）.md`
+- `01_topics/02_web/02_authn_18_token_binding（DPoP_mTLS）観測.md`
+- `01_topics/02_web/02_authn_19_webauthn_passkeys_登録・回復境界.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+
+---

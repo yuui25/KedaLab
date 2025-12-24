@@ -1,19 +1,7 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS：
-  - この技術で満たす/破れる点：入力データの受理境界（許可フィールド制御）、権限属性（role/is_admin/owner/tenant_id）の保護、サーバ側のソース・オブ・トゥルース（誰が何を決めるか）、重要操作の追加ガード（06）、監査（変更したフィールドと理由）
-  - 支える前提：AuthNが強くても、モデル結合（DTO→ORM）が甘いと「権限属性を更新できる」＝AuthZ崩壊になる。IDORより静かに深刻化しやすい。
-- WSTG：
-  - 該当テスト観点：Authorization Testing（Privilege Escalation）、Input Validation（過剰受理）、API Testing（Mass Assignment）、Business Logic（仕様外フィールド更新）
-  - どの観測に対応するか：リクエスト本文（JSON/form/multipart）に“送ってはいけない属性”を混ぜたときの反映兆候を、差分（レスポンス/後続GET/監査ログ）で観測する
-- PTES：
-  - 該当フェーズ：Information Gathering（モデル/フィールドの発見：レスポンス/スキーマ/JS）、Vulnerability Analysis（結合境界の特定）、Exploitation（最小差分検証：テストアカウント）
-  - 前後フェーズとの繋がり（1行）：04で整理したPIP（属性の信頼境界）を、05で「入力→モデル結合→永続化」の境界として検証し、06/03/10へ波及（権限/tenant/state の改変）を評価する
-- MITRE ATT&CK：
-  - 戦術：Privilege Escalation / Persistence / Defense Evasion
-  - 目的：権限属性・所有者・テナント・状態・重要フラグを不正に更新し、昇格・永続化・検知回避を成立させる（※手順ではなく成立条件の判断）
+# 03_authz_05_mass-assignment_モデル結合境界
+Mass Assignment を「フレームワークの罠」ではなく、(1)入力受理（どのフィールドを受け取るか）、(2)結合（DTO/params→domain/ORM）、(3)権限決定（サーバ側の真実）、(4)永続化と監査、の境界として分解し、実務で再現性を持って評価する
 
-## タイトル
-mass-assignment_モデル結合境界
+---
 
 ## 目的（この技術で到達する状態）
 - Mass Assignment を「フレームワークの罠」ではなく、(1)入力受理（どのフィールドを受け取るか）、(2)結合（DTO/params→domain/ORM）、(3)権限決定（サーバ側の真実）、(4)永続化と監査、の境界として分解し、実務で再現性を持って評価できる
@@ -23,14 +11,23 @@ mass-assignment_モデル結合境界
 
 ## 前提（対象・範囲・想定）
 - 対象：REST/SPA/MVC いずれでも起きる（入力形態の違い：JSON/PATCH/form/multipart）
-- 想定する結合パターン（混在前提）
-  - 自動バインディング：リクエストボディをそのままモデルへ（危険）
-  - DTO/Serializer 経由：許可フィールドを宣言できる（堅牢化しやすいが漏れうる）
-  - 手動マッピング：安全になりやすいが、別の欠陥（漏れ・整合崩れ）が出る
-- 検証の安全な範囲（実務的）
-  - 変更系の検証はテストアカウント・テストデータで行い、必ず巻き戻し前提を持つ
-  - “大量フィールド送信”で壊すのではなく、危険属性の最小セットで差分観測する
-  - 直接の不正更新を避けたい場合は、反映兆候（レスポンス/監査/後続GET）で評価する
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - 想定する結合パターン（混在前提）：自動バインディング（リクエストボディをそのままモデルへ（危険））、DTO/Serializer 経由（許可フィールドを宣言できる（堅牢化しやすいが漏れうる））、手動マッピング（安全になりやすいが、別の欠陥（漏れ・整合崩れ）が出る）
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：変更系の検証はテストアカウント・テストデータで行い、必ず巻き戻し前提を持つ、"大量フィールド送信"で壊すのではなく、危険属性の最小セットで差分観測する
+  - やらないこと：直接の不正更新を避けたい場合は、反映兆候（レスポンス/監査/後続GET）で評価する
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+  - `01_topics/02_web/03_authz_04_rbac_abac_判定点（policy_engine）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - Mass Assignment を「フレームワークの罠」ではなく、(1)入力受理（どのフィールドを受け取るか）、(2)結合（DTO/params→domain/ORM）、(3)権限決定（サーバ側の真実）、(4)永続化と監査、の境界として分解し、実務で再現性を持って評価する
+    - "更新できてはいけない属性" を体系化し、IDOR/テナント越境/重要操作/状態遷移とどう繋がるかを即座に判断する
+    - エンジニアに対して「allowlist/denylist」「コマンドモデル分離」「サーバ側上書き」「監査ログ」を、どこに入れるかまで具体化する
+  - 扱わない（別ユニットへ接続）：
+    - すべてのフィールド網羅（スキーマ非公開の場合）。ただし分類により高リスク属性は十分評価できる → 別ユニット
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 ### 1) Mass Assignment は「入力受理の境界」そのもの（AuthZの別表現）
@@ -125,15 +122,20 @@ Mass Assignment は「受け取ったか」ではなく「反映されたか」�
   - action_priority（P0/P1/P2）
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言える（確定できる）：
+- 何が"確定"できるか：
   - どの更新入口で、危険属性が受理/反映される可能性があるか（特にtenant/role/owner/state）
   - 結合境界（binding_style）がどのモデルに近いか（自動/allowlist/手動）と、抜けが出やすい箇所（ネスト/管理API）
   - 認可チェックの順序（更新前/更新後）の兆候（TOCTOU型の危険）
-- 推定（根拠付きで言える）：
+- 何が"推定"できるか（推定の根拠/前提）：
   - client_influenced な属性が存在する場合、IDORや越境と組み合わさるとImpactが急増する（02/03）
   - ネストや配列で抜ける場合、GraphQL/バッチ/インポートで再発しやすい（07/09）
-- 言えない（この段階では断定しない）：
+- 何は"言えない"か（不足情報・観測限界）：
   - すべてのフィールド網羅（スキーマ非公開の場合）。ただし分類により高リスク属性は十分評価できる。
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：自動バインディングで広く受理している → 更新APIに、危険属性（role/tenant/owner/state）の最小セットを混ぜたときの反映兆候を観測
+  - パターンB：ネスト/関連で抜ける → ネスト構造（profile、members[]、settings{}）に危険属性があり得るかをレスポンス/JSから抽出し、最小差分で観測
+  - パターンC：管理API/インポートだけ緩い → /admin /internal /bulk /import /export の入力形態を観測し、DTOが広い兆候を探す
+  - パターンD：認可チェック順序が危険（更新後値で許可） → "権限条件となる属性"を更新するリクエストが通る兆候を観測（role/owner/state）
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
 - 優先度（P0/P1/P2）
@@ -214,19 +216,47 @@ PATCH /api/profile
 - この例が使えないケース（前提が崩れるケース）：
   - 更新APIがほぼ存在しない/すべてサーバ側自動処理（→06/10/09の“重要操作・状態・運用境界”が主戦場になる）
 
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：入力データの受理境界（許可フィールド制御）、権限属性（role/is_admin/owner/tenant_id）の保護、サーバ側のソース・オブ・トゥルース（誰が何を決めるか）、重要操作の追加ガード（06）、監査（変更したフィールドと理由）
+  - 該当要件（可能ならID）：V4（Access Control）、V5（Input Validation）
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 満たす：AuthNが強くても、モデル結合（DTO→ORM）が甘いと「権限属性を更新できる」＝AuthZ崩壊になる。IDORより静かに深刻化しやすいことを観測で確定し、以後の検証観点を外さないための基盤。
+  - 参照：https://github.com/OWASP/ASVS
+- WSTG：
+  - 該当カテゴリ/テスト観点：Authorization Testing（Privilege Escalation）、Input Validation（過剰受理）、API Testing（Mass Assignment）、Business Logic（仕様外フィールド更新）
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：リクエスト本文（JSON/form/multipart）に"送ってはいけない属性"を混ぜたときの反映兆候を、差分（レスポンス/後続GET/監査ログ）で観測する
+  - 参照：https://owasp.org/www-project-web-security-testing-guide/
+- PTES：
+  - 該当フェーズ：Information Gathering（モデル/フィールドの発見：レスポンス/スキーマ/JS）、Vulnerability Analysis（結合境界の特定）、Exploitation（最小差分検証：テストアカウント）
+  - 前後フェーズとの繋がり（1行）：04で整理したPIP（属性の信頼境界）を、05で「入力→モデル結合→永続化」の境界として検証し、06/03/10へ波及（権限/tenant/state の改変）を評価する。
+  - 参照：https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：Privilege Escalation / Persistence / Defense Evasion
+  - 攻撃者の目的（この技術が支える意図）：権限属性・所有者・テナント・状態・重要フラグを不正に更新し、昇格・永続化・検知回避を成立させる（※手順ではなく成立条件の判断）。
+  - 参照：https://attack.mitre.org/tactics/TA0004/（Privilege Escalation）、https://attack.mitre.org/tactics/TA0003/（Persistence）、https://attack.mitre.org/tactics/TA0005/（Defense Evasion）
+
 ## 参考（必要最小限）
-- OWASP ASVS（入力受理、権限属性の保護、監査）
-- OWASP WSTG（API：Mass Assignment、Authorization Testing）
-- PTES（差分観測で反映を確定し、例外パスを特定する）
-- MITRE ATT&CK（Privilege Escalation：権限属性の改変）
+- OWASP Application Security Verification Standard: https://github.com/OWASP/ASVS
+- OWASP Web Security Testing Guide: https://owasp.org/www-project-web-security-testing-guide/
+- PTES (Penetration Testing Execution Standard): https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK: https://attack.mitre.org/
 
 ## リポジトリ内リンク（最大3つまで）
-- `01_topics/02_web/03_authz_04_rbac_abac_判定点（policy_engine）.md`
-- `01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
-- `01_topics/02_web/03_authz_06_privileged_action_重要操作（承認_送金_権限）.md`
+- 関連 topics：`01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+- 関連 topics：`01_topics/02_web/03_authz_04_rbac_abac_判定点（policy_engine）.md`
+- 関連 topics：`01_topics/02_web/03_authz_06_privileged_action_重要操作（承認_送金_権限）.md`
 
-## 次（06以降）に進む前に確認したいこと（必要なら回答）
-- 06 privileged_action：
-  - 重要操作の代表例として「権限付与」「送金/支払」「承認/公開」「メール変更/2FA変更」まで含めて、強めに書いてよいか
-- 10 object_state：
-  - 状態（draft/approved/published）を持つ典型ドメイン（記事/請求/申請/取引）を例にしてよいか（汎用でも可）
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+- `01_topics/02_web/03_authz_02_idor_典型パターン（一覧_検索_参照キー）.md`
+- `01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
+- `01_topics/02_web/03_authz_04_rbac_abac_判定点（policy_engine）.md`
+- `01_topics/02_web/03_authz_06_privileged_action_重要操作（承認_送金_権限）.md`
+- `01_topics/02_web/03_authz_10_object_state_状態遷移と権限（draft_approved）.md`
+- `01_topics/02_web/03_authz_09_admin_console_運用UIの境界.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+
+---

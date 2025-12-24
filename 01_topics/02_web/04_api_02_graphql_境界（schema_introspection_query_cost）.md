@@ -1,19 +1,4 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS：
-  - この技術で満たす/破れる点：APIアクセス制御（認証・認可の強制点がresolver/fieldに分散）、最小開示（schema/field-level）、入力の信頼境界（variables/ID/tenant）、濫用耐性（レート・コスト制限）、監査（operation/field/decision/trace）
-  - 支える前提：GraphQLは「単一エンドポイントに機能が集約」「取得フィールドがクライアント主導」「ネストで爆発」する。従来の“エンドポイント単位の境界”が破綻しやすく、schema露出・introspection・クエリコストを設計として制御しないと、漏えいとDoSが同時に起きる。
-- WSTG：
-  - 該当テスト観点：Authorization Testing（GraphQL入口のIDOR/越境、field-level）、API Testing（GraphQL：introspection、operationName、persisted query、complexity/depth、エラー差分）
-  - どの観測に対応するか：同一 endpoint（/graphql）で「operation差分」「フィールド差分」「ネスト差分」「変数差分」を取り、(1)schema露出、(2)introspectionの可否と範囲、(3)コスト制御の有無（depth/complexity/timeout/rate）を確定する
-- PTES：
-  - 該当フェーズ：Information Gathering（schema/operationの把握、入口列挙）、Vulnerability Analysis（境界と防御の欠落特定）、Exploitation（最小差分で確定：2ユーザ/2テナント、低負荷でのコスト境界観測）
-  - 前後フェーズとの繋がり（1行）：AuthZ（03_authz_07）で扱ったfield-level認可を前提に、API設計としての「schema露出」「introspection運用」「query cost（濫用耐性）」を詰め、以降のREST filters / webhook / idempotency / async job に“境界の作り方”として接続する
-- MITRE ATT&CK：
-  - 戦術：Discovery / Collection / Impact
-  - 目的：schema/operationの発見（Discovery）→機微フィールド収集（Collection）→高負荷クエリで可用性低下（Impact）。GraphQLは1リクエストで多目的に進むため、境界設計の欠落が攻撃の“加速器”になる。
-
-## タイトル
-graphql_境界（schema_introspection_query_cost）
+# 04_api_02_graphql_境界（schema_introspection_query_cost）
 
 ## 目的（この技術で到達する状態）
 - GraphQLの“攻撃面”を、(1)schema公開面（型・フィールド・操作）、(2)introspectionの運用境界、(3)クエリコスト境界（depth/complexity/timeout/rate）、(4)persisted query/allowlist境界、(5)エラー・監査境界、に分解して評価できる
@@ -22,13 +7,21 @@ graphql_境界（schema_introspection_query_cost）
 
 ## 前提（対象・範囲・想定）
 - 対象：GraphQL API（典型：POST /graphql、場合によりGET、Persisted Query / APQ、Gateway/Federation、BFF）
-- 混在前提（現実運用に寄せる）
-  - 本番：introspection OFF か “ロール限定” のいずれか（運用事情で例外あり）
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - 本番：introspection OFF か "ロール限定" のいずれか（運用事情で例外あり）
   - 開発/ステージング：Playground/Explorerが有効で、誤公開が起きやすい
-  - 監視：WAF/Rate limit はあるが、GraphQLの“コスト”を理解しない設定が多い
-- 検証の安全な範囲（ペネトレ）
-  - DoSを狙う実行はしない。代わりに「低負荷でコスト境界が働くか」を観測する（深いネストを1段ずつ増やす等の差分観測）
-  - schema/operationの把握は、(a)introspection、(b)フロントJS/SDK、(c)エラー、(d)ドキュメント/メタAPI の順で、最小の侵襲で進める
+  - 監視：WAF/Rate limit はあるが、GraphQLの"コスト"を理解しない設定が多い
+  - GraphQLは「単一エンドポイントに機能が集約」「取得フィールドがクライアント主導」「ネストで爆発」する。従来の"エンドポイント単位の境界"が破綻しやすく、schema露出・introspection・クエリコストを設計として制御しないと、漏えいとDoSが同時に起きる。
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：DoSを狙う実行はしない。代わりに「低負荷でコスト境界が働くか」を観測する（深いネストを1段ずつ増やす等の差分観測）、schema/operationの把握は、(a)introspection、(b)フロントJS/SDK、(c)エラー、(d)ドキュメント/メタAPI の順で、最小の侵襲で進める
+  - やらないこと：実際にサービス停止できるか（DoSは実行しない）。ただし境界の欠落は"重大リスク"として示せる。
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/03_authz_07_graphql_authz（field_level）.md`
+  - `01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
+  - `01_topics/02_web/04_api_00_権限伝播・入力・バックエンド連携.md`
+  - `01_topics/02_web/04_api_09_error_model_情報漏えい（例外_スタック）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 ### 1) GraphQLの入口を固定する（単一endpointでも“入口は複数”）
@@ -142,18 +135,23 @@ GraphQLの負荷は「レスポンスサイズ」より「resolver実行回数�
   - evidence（HAR、レスポンス差分、UI露出、JS断片）
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言える（確定できる）：
+- 何が"確定"できるか：
   - schema discovery がどの経路で可能か（introspection/JS/エラー）
   - introspectionが誰にどこまで開いているか（運用境界）
   - cost制御（depth/complexity/timeout/rate/pagination cap）が存在し、どの層で強制されるか
   - persisted query/allowlist が運用されているか（探索抑制）
-  - エラーと監査が“境界の証跡”として整っているか（trace id、操作単位のログ）
-- 推定（根拠付きで言える）：
+  - エラーと監査が"境界の証跡"として整っているか（trace id、操作単位のログ）
+- 何が"推定"できるか（推定の根拠/前提）：
   - introspectionが公開で、cost制御が無い場合、Discovery→Collection→Impact（濫用/DoS）が現実的
   - persisted queryが必須でも、variablesの境界（AuthZ/filters）が弱いと漏洩は起きる
   - cost制御がWAFのみの場合、GraphQL特有の計算量を捉えきれず抜けやすい
-- 言えない（この段階では断定しない）：
-  - 実際にサービス停止できるか（DoSは実行しない）。ただし境界の欠落は“重大リスク”として示せる。
+- 何は"言えない"か（不足情報・観測限界）：
+  - 実際にサービス停止できるか（DoSは実行しない）。ただし境界の欠落は"重大リスク"として示せる。
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：introspection が公開/過剰に広い → Discoveryが無制限（P0）
+  - パターンB：cost制御が無い、または弱い → 境界が出ない（P0〜P1）
+  - パターンC：persisted query/allowlist が無い（探索が容易） → 任意queryが通る（P1、他要素と組み合わさるとP0）
+  - パターンD：エラーが探索オラクルになる → 型名/stack/内部ホストが出る（P0〜P1）
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
 - 優先度（P0/P1/P2）
@@ -243,6 +241,21 @@ POST /graphql
 - この例が使えないケース（前提が崩れるケース）：
   - query本文が完全に隠される（persisted only）場合：operationName/ID と variables の境界（AuthZ/filters）に観測を寄せる
 
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：V4（アクセス制御）、V13（API）
+  - 該当要件（可能ならID）：V4.1（一般的なアクセス制御設計）、V13.1（APIの認証・認可）、V13.2（API濫用耐性）
+  - このファイルの内容が「満たす/破れる」ポイント：APIアクセス制御（認証・認可の強制点がresolver/fieldに分散）、最小開示（schema/field-level）、入力の信頼境界（variables/ID/tenant）、濫用耐性（レート・コスト制限）、監査（operation/field/decision/trace）
+- WSTG：
+  - 該当カテゴリ/テスト観点：Authorization Testing（GraphQL入口のIDOR/越境、field-level）、API Testing（GraphQL：introspection、operationName、persisted query、complexity/depth、エラー差分）
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：同一 endpoint（/graphql）で「operation差分」「フィールド差分」「ネスト差分」「変数差分」を取り、(1)schema露出、(2)introspectionの可否と範囲、(3)コスト制御の有無（depth/complexity/timeout/rate）を確定する
+- PTES：
+  - 該当フェーズ：Information Gathering、Vulnerability Analysis、Exploitation
+  - 前後フェーズとの繋がり（1行）：AuthZ（03_authz_07）で扱ったfield-level認可を前提に、API設計としての「schema露出」「introspection運用」「query cost（濫用耐性）」を詰め、以降のREST filters / webhook / idempotency / async job に"境界の作り方"として接続する
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：TA0007（Discovery）、TA0009（Collection）、TA0040（Impact）
+  - 攻撃者の目的（この技術が支える意図）：schema/operationの発見（Discovery）→機微フィールド収集（Collection）→高負荷クエリで可用性低下（Impact）。GraphQLは1リクエストで多目的に進むため、境界設計の欠落が攻撃の"加速器"になる。
+
 ## 参考（必要最小限）
 - OWASP ASVS（Authorization、API濫用耐性、監査）
 - OWASP WSTG（API/Authorization Testing：GraphQL特有の入口・フィールド差分観測）
@@ -254,5 +267,16 @@ POST /graphql
 - `01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
 - `01_topics/02_web/04_api_09_error_model_情報漏えい（例外_スタック）.md`
 
-## 次（04_api_03 以降）に進む前に確認したいこと（必要なら回答）
-- 04_api_03（REST filters）では、GraphQLの「variablesによるfilters」と同型の事故（越境混入、並び替えでの推測、ページング差分）をREST側に写像して書く（地続きで理解できるようにする）
+---
+
+## 深掘りリンク（最大8）
+- 関連 topics：
+  - `01_topics/02_web/03_authz_07_graphql_authz（field_level）.md`
+  - `01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
+  - `01_topics/02_web/04_api_00_権限伝播・入力・バックエンド連携.md`
+  - `01_topics/02_web/04_api_01_権限伝播モデル（フロント_バックエンド_ジョブ）.md`
+  - `01_topics/02_web/04_api_03_rest_filters_検索・ソート・ページング境界.md`
+  - `01_topics/02_web/04_api_09_error_model_情報漏えい（例外_スタック）.md`
+- 関連 labs / cases：
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`

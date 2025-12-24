@@ -57,6 +57,10 @@ git add .
 
 # コミット（意味のあるメッセージを付ける）
 git commit -m "feat: 01_topics/01_asm-osint/XX_xxx.md を追加"
+git commit -m "fix: 01_topics/01_asm-osint/XX_xxx.md を追加"
+git commit -m "docs: 01_topics/01_asm-osint/XX_xxx.md を追加"
+git commit -m "refactor: 01_topics/01_asm-osint/XX_xxx.md を追加"
+git commit -m "chore: 01_topics/01_asm-osint/XX_xxx.md を追加"
 
 # プッシュ
 git push

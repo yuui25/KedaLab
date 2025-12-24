@@ -1,26 +1,4 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-
-- ASVS
-  - 入力→実行境界：ユーザ入力が **スクリプト本文（code）** として評価される経路が存在しないか（最優先で排除）
-  - 設計：スクリプトが必要な場合でも、入力は **パラメータ（data）** のみに閉じ、本文は固定（stored script/固定テンプレ）にする
-  - 可用性：スクリプトは高コスト化しやすく、DoS境界（timeout/expensive query制限/レート制限）と一体で評価する
-  - 例外/エラー：コンパイルエラー・ランタイムエラー・セキュリティ例外を外部へ詳細に返さない（oracle化防止）
-  - 監査：script使用（inline/stored）、拒否理由、異常頻度を trace_id で相関し検知できるか
-- WSTG
-  - Injection testing の中でも「コード評価」系（SQLiの動的SQLより危険側）
-  - エラー差分（compile/runtime）とBoolean差分（件数/長さ/並び順）を、低侵襲に再現できる形で証拠化する
-- PTES
-  - Vulnerability Analysis：入口（sort/score/script/runtime field）→生成点→入力がscript本文に入る条件を同定
-  - Exploitation：影響実証は最小限（成立根拠の確定まで）。高負荷検証・大量抽出は避ける
-  - Reporting：根本原因を「inline script採用」「本文組立」「stored script不使用」「設定不備」「監査不足」に分解して提示
-- MITRE ATT&CK
-  - TA0001 Initial Access / TA0009 Collection / TA0005 Defense Evasion（エラー統一下でブラインド化）
-  - 入口：T1190（公開アプリ）での入力→実行境界破壊として位置づける
-
----
-
-## タイトル
-NoSQL Injection（Elasticsearch）：Painless script_injection（入力→コード評価境界）
+# 05_input_04_nosql_injection_02_elasticsearch_03_painless（script_injection）
 
 ## 目的（この技術で到達する状態）
 - Elasticsearch の Painless スクリプト（script query / script_score / runtime fields 等）について、
@@ -31,17 +9,20 @@ NoSQL Injection（Elasticsearch）：Painless script_injection（入力→コー
   状態になる。
 
 ## 前提（対象・範囲・想定）
-- 対象
-  - 管理画面の詳細検索、監査ログ検索、分析ダッシュボード、ランキング/スコアリング、柔軟な並び替え、計算フィールド
-  - “条件式” “計算式” “カスタム式” “スクリプト” の文言がUIやAPIに存在する箇所
-- 想定アーキテクチャ
-  - アプリ（API）→ ES（_search）  
-  - ES側で inline script を許可/不許可にできる（運用要件で揺れがち）
-- 本ファイルの焦点
-  - Painless の **script_injection（本文の注入）** を、入力→実行境界としてモデル化する
-- 非スコープ（別ファイル）
-  - Query DSL（bool/filter）全体：前ファイル
-  - mustache template / stored search template：別ファイル（template）で扱う
+- 対象：管理画面の詳細検索、監査ログ検索、分析ダッシュボード、ランキング/スコアリング、柔軟な並び替え、計算フィールド、"条件式" "計算式" "カスタム式" "スクリプト" の文言がUIやAPIに存在する箇所
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - アプリ（API）→ ES（_search）、ES側で inline script を許可/不許可にできる（運用要件で揺れがち）
+  - 本ファイルの焦点：Painless の **script_injection（本文の注入）** を、入力→実行境界としてモデル化する
+  - 非スコープ（別ファイル）：Query DSL（bool/filter）全体：前ファイル、mustache template / stored search template：別ファイル（template）で扱う
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：スクリプトが使われる入口（UI/API）と生成点（サーバ側の組立）を特定できる、入力が "パラメータ（data）" ではなく "本文（code）" に入っているかを、差分観測で確定できる、影響を「認可境界」「情報露出（エラーモデル）」「可用性（高コスト）」に分解して評価できる、修正を「サニタイズ」ではなく **stored script化 + allowlist + 高コスト制限** に落とせる
+  - やらないこと：影響実証は最小限（成立根拠の確定まで）。高負荷検証・大量抽出は避ける
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+  - `01_topics/02_web/05_input_04_nosql_injection_02_elasticsearch_02_dsl（bool_filter_script）.md`
+  - `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ## 概念整理：Painlessは「機能」だが、境界としては“コード実行”
 - Painless は ES のスクリプト言語で、以下で利用される
@@ -200,8 +181,8 @@ NoSQL Injection（Elasticsearch）：Painless script_injection（入力→コー
   - サーバログ：trace_id、スクリプト利用の有無（id/inline）、params（マスク）、実行時間
   - ES側（Labsのみ）：slowlog、scriptの拒否/許可、took、拒否理由
 
-## コマンド/リクエスト例（例示は最小限：発想の固定）
-> 具体の悪用payloadは示さない。設計の違い（本文固定 vs 本文入力）だけを示す。
+## コマンド/リクエスト例（例示は最小限・意味の説明が主）
+> 例示は"手段"であり"結論"ではない。必ず「何を観測している例か」を添える。
 
 ~~~~
 # 安全設計例：本文は stored script（id参照）、入力は params のみ
@@ -217,15 +198,41 @@ NoSQL Injection（Elasticsearch）：Painless script_injection（入力→コー
   }
 }
 ~~~~
-- 観測していること：
-  - 本文が固定で、入力はparams（data）に閉じる
-- どこを見るか：
-  - エラーが統一されているか、paramsの型逸脱が400で落ちるか、tookが上限内か
+
+- この例で観測していること：本文が固定で、入力はparams（data）に閉じる設計
+- 出力のどこを見るか（注目点）：エラーが統一されているか、paramsの型逸脱が400で落ちるか、tookが上限内か
+- この例が使えないケース（前提が崩れるケース）：そもそも script が不要な検索（原則は使わない方が安全・運用も簡単）
 
 ~~~~
 # 危険設計の説明（例示は概念のみ）
 # 「ユーザ入力を script.source に連結する」実装は、入力→実行境界が開くため禁止
 ~~~~
+
+- この例で観測していること：本文が入力由来になっている危険な設計
+- 出力のどこを見るか（注目点）：入力の形で compile/runtime エラー差分、または並び順/件数の差分が再現性を持って出る
+- この例が使えないケース（前提が崩れるケース）：scriptがそもそも入力から到達不能、または stored script のみなどで制限されている
+
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：V5 Validation, Sanitization and Encoding、V7 Error Handling and Logging
+  - 該当要件（可能ならID）：V5.3.1、V5.3.2、V7.4.1
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 入力→実行境界：ユーザ入力が **スクリプト本文（code）** として評価される経路が存在しないか（最優先で排除）
+    - 設計：スクリプトが必要な場合でも、入力は **パラメータ（data）** のみに閉じ、本文は固定（stored script/固定テンプレ）にする
+    - 可用性：スクリプトは高コスト化しやすく、DoS境界（timeout/expensive query制限/レート制限）と一体で評価する
+    - 例外/エラー：コンパイルエラー・ランタイムエラー・セキュリティ例外を外部へ詳細に返さない（oracle化防止）
+    - 監査：script使用（inline/stored）、拒否理由、異常頻度を trace_id で相関し検知できるか
+- WSTG：
+  - 該当カテゴリ/テスト観点：WSTG-INPV-05 SQL Injection、WSTG-ERRH-01 Error Handling
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：
+    - Injection testing の中でも「コード評価」系（SQLiの動的SQLより危険側）
+    - エラー差分（compile/runtime）とBoolean差分（件数/長さ/並び順）を、低侵襲に再現できる形で証拠化する
+- PTES：
+  - 該当フェーズ：Vulnerability Analysis、Exploitation、Reporting
+  - 前後フェーズとの繋がり（1行）：入口（sort/score/script/runtime field）→生成点→入力がscript本文に入る条件を同定し、影響実証は最小限（成立根拠の確定まで）。高負荷検証・大量抽出は避ける、根本原因を「inline script採用」「本文組立」「stored script不使用」「設定不備」「監査不足」に分解して提示
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：TA0001 Initial Access / TA0009 Collection / TA0005 Defense Evasion（エラー統一下でブラインド化）
+  - 攻撃者の目的（この技術が支える意図）：T1190（公開アプリ）での入力→実行境界破壊として位置づける
 
 ## 参考（必要最小限）
 - Elastic Docs：Scripting and security（許可/制限の考え方）  
@@ -245,5 +252,12 @@ NoSQL Injection（Elasticsearch）：Painless script_injection（入力→コー
 
 ---
 
-## 次（作成候補順）
-- `01_topics/02_web/05_input_04_nosql_injection_02_elasticsearch_04_template（mustache_stored_template）.md`
+## 深掘りリンク（最大8）
+- `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+- `01_topics/02_web/05_input_04_nosql_injection_02_elasticsearch_01_query_string（lucene_querystring）.md`
+- `01_topics/02_web/05_input_04_nosql_injection_02_elasticsearch_02_dsl（bool_filter_script）.md`
+- `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+- `01_topics/02_web/04_api_03_rest_filters_検索・ソート・ページング境界.md`
+- `01_topics/02_web/04_api_09_error_model_情報漏えい（例外_スタック）.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+- `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`

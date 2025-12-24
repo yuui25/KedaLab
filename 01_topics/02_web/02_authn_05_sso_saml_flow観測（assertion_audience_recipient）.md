@@ -1,26 +1,40 @@
-# 02_authn_05_sso_saml_flow観測（assertion_audience_recipient）.md
+# 02_authn_05_sso_saml_flow観測（assertion_audience_recipient）
+SAMLの用語暗記ではなく、**どの通信で本人性が成立し、どの境界（資産/信頼/権限）へ伝播するか** を観測で説明する
 
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
+---
+
+## 目的（この技術で到達する状態）
 - ASVS：V2（Authentication）/ V3（Session Management）を中心に「外部IdPとの信頼境界」「認証結果（属性/セッション）の受け渡し」「失効/ログアウト境界」を扱う。ASVSはSAML固有の攻撃面を細粒度で網羅しない可能性があるため、SAML Security Cheat Sheet等で補完し、ASVS側は“境界の検証”として落とす。
 - WSTG：SAMLは認証（WSTG-ATHN）だけでなく、Identity Management（IdM）として“外部連携の成立点”を観測し、AuthnRequest/Response の検証点（署名/宛先/相関）を差分で確定する。
 - PTES：Intelligence Gathering（IdP/SP/ACS/境界特定）→ Vulnerability Analysis（成立点と検証点の切り分け）→ Exploitation（最小差分の再現）→ Reporting（証跡）に直結。
 - MITRE ATT&CK：T1606.002（Forge Web Credentials: SAML Tokens）、T1078（Valid Accounts）、T1199（Trusted Relationship）を“目的”として位置づける。SAMLフロー観測は「偽造/再利用の窓」と「信頼境界の固定点」を確定する作業。
 
-## 目的（この技術で到達する状態）
 - SAMLの用語暗記ではなく、**どの通信で本人性が成立し、どの境界（資産/信頼/権限）へ伝播するか** を観測で説明できる。
 - `SAMLRequest` / `SAMLResponse` を **「存在する/しない」「どこに出る/出ない」** で確定し、次の検証（MFA、属性マッピング、ログアウト境界、クライアント保存）に繋げられる。
 - Assertion内の最重要フィールド（Audience/Recipient/InResponseTo/NotOnOrAfter/Issuer/NameID/Attributes/署名位置）を、証跡（HAR/Proxyログ/デコード結果）付きで整理できる。
 
 ## 前提（対象・範囲・想定）
 - 対象：許可された範囲のWebアプリ（SP: Service Provider）と、連携するIdP（Identity Provider）。
-- 想定プロファイル：Browser SSO（Redirect/POST Binding）が主。SP-initiated / IdP-initiated の両方があり得る。
-- 依存（観測基盤）
-  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
-  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
-- 前段の接続（境界の前提）
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - Browser SSO（Redirect/POST Binding）が主。SP-initiated / IdP-initiated の両方があり得る。
+- できること/やらないこと（安全に検証する範囲）：
+  - 観測は最小限の差分セットのみ（破壊的試験や過剰負荷は行わない）。
+- 依存する前提知識（必要最小限）：
   - `01_topics/02_web/02_authn_01_cookie属性と境界（Secure_HttpOnly_SameSite_Path_Domain）.md`
   - `01_topics/02_web/02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`
   - `01_topics/01_asm-osint/03_http_観測（ヘッダ/挙動）と意味.md`（302/Location/Set-Cookie観測）
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - SAMLフローの入口・越境点・戻り点の観測
+    - AuthnRequest（SAMLRequest）とResponse（SAMLResponse）の観測
+    - Assertion内の最重要フィールド（Audience/Recipient/InResponseTo/NotOnOrAfter/Issuer/NameID/Attributes/署名位置）の観測
+    - セッション橋渡し（IdP→SP→アプリ状態）の確定
+  - 扱わない（別ユニットへ接続）：
+    - MFAの詳細 → `01_topics/02_web/02_authn_06_mfa_成立点と例外パス（step-up_device_trust）.md`
+    - 属性マッピングの詳細 → `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+    - ログアウト境界の詳細 → `01_topics/02_web/02_authn_14_logout_設計（RP_IdP_フロントチャネル）.md`
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 ### 1) 入口・越境点・戻り点（境界）を確定する
@@ -81,18 +95,22 @@
   - 属性（権限伝播に関係しそうなもの：role/group/email など“種類だけ”）
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言える（観測で断定できる）
+- 何が"確定"できるか：
   - SAMLが「どのBinding/どの越境点」で動いているか（Redirect/POST、SP-initiated/IdP-initiatedの痕跡）
   - SPのログイン成立点（どのレスポンスでSP側セッションが確定するか）
   - Audience/Recipient/Destination/InResponseTo が存在するか（まずyes/no）
   - 署名が存在するか／どこに掛かっているか（Response/Assertion）
-  - Assertionが暗号化されているか（暗号化なら“中身は見えないが、暗号化の有無は観測できる”）
-- 推定（追加観測で強くなる）
-  - それらが“検証されているか”（改変1点差分で拒否されるか、ログに残るか、unknown を潰せるか）
+  - Assertionが暗号化されているか（暗号化なら"中身は見えないが、暗号化の有無は観測できる"）
+- 何が"推定"できるか（推定の根拠/前提）：
+  - それらが"検証されているか"（改変1点差分で拒否されるか、ログに残るか、unknown を潰せるか）
   - IdP-initiated（unsolicited）を許容するか（相関の有無と挙動で判断）
-- 言えない（この段階の限界）
+- 何は"言えない"か（不足情報・観測限界）：
   - SP/IdP内部のメタデータ設定（許可ACS一覧、証明書ローテーション運用、署名検証実装の詳細）
-  - “安全/危険”の断定（まず境界と検証点の所在を固め、次で差分検証する）
+  - "安全/危険"の断定（まず境界と検証点の所在を固め、次で差分検証する）
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：SP-initiatedで相関・宛先・署名検証が強い（一般的な堅い実装） → SAML属性（role/group/email等）が、アプリ権限にどう結びつくか（AuthZへの接続点）を特定する
+  - パターンB：IdP-initiated（unsolicited）や相関が弱く、再利用/注入の窓が疑われる → デコードしたSAMLResponseを**オフライン**で確認し、相関/宛先/期限の"存在"をyes/noで固める
+  - パターンC：署名の扱いが曖昧（署名なし受理/署名あるのに改変が通る等） → 「署名が無い/弱い/参照がズレている」可能性を、改変の拒否挙動で最小確認する（大量試行しない）
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
 - 優先度（最初に固める判断材料）
@@ -129,10 +147,35 @@
 - 期待する観測
   - “検証点の欠落”を推測ではなく差分で説明できる
 
-### コマンド/リクエスト例（例示は最小限・意味が主）
+## 手を動かす検証（Labs連動：観測点を明確に）
+- 検証環境（関連する `04_labs/`）
+  - 参照ファイル：
+    - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+    - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 取得する証跡（目的ベースで最小限）：
+  - HAR（ブラウザ）＋ Proxyログ（Location/POST/Set-Cookie）＋ デコードしたXML（マスク済み）
+  - SP/IdP/ACSのURL（ドメイン境界）、AuthnRequest ID と Response InResponseTo の相関（yes/no/unknown）、Audience / Recipient / Destination の一致有無（yes/no/unknown）、署名の位置（Response/Assertion/両方/なし）、属性（権限伝播に関係しそうなもの：role/group/email など"種類だけ"）
+- 観測の取り方（どの視点で差分を見るか）：
+  - フローの入口・越境点・戻り点、AuthnRequest（SAMLRequest）とResponse（SAMLResponse）の観測、Assertion内の最重要フィールド、署名の位置と検証対象
+- 実施方法（最高に具体的）：観測の準備と相関キー
+  - 証跡ディレクトリ（必須）
+    ~~~~
+    mkdir -p ~/keda_evidence/saml_flow 2>/dev/null
+    cd ~/keda_evidence/saml_flow
+    ~~~~
+  - 検証の前提を固定（スコープ事故を防ぐ）
+    - 必須で決める（レポート先頭に書く）
+      - 対象は **許可されたスコープ** のみ
+      - 観測は **最小限の差分セット** のみ
+      - SAMLResponseの値自体は秘匿扱い。共有時はマスク。
+  - 相関キー（最低限）を作る（後で必ず効く）
+    - SPドメイン、IdPドメイン、ACS URL、AuthnRequest ID、Response InResponseTo、Audience/Recipient/Destination、署名の位置、属性の種類
+
+## コマンド/リクエスト例（例示は最小限・意味の説明が主）
+> 例示は"手段"であり"結論"ではない。必ず「何を観測している例か」を添える。
+
 ~~~~
-# 目的：SAMLResponse（Base64）をオフラインでデコードして「何が入っているか」を観測する
-# - まずは Audience / Recipient / InResponseTo / NotOnOrAfter / 署名位置 を“存在確認”する
+# 例：SAMLResponse（Base64）をオフラインでデコードして「何が入っているか」を観測する
 python - <<'PY'
 import base64, sys
 b64 = sys.stdin.read().strip()
@@ -141,8 +184,55 @@ print(xml.decode('utf-8', errors='replace'))
 PY
 ~~~~
 
+- この例で観測していること：
+  - Audience / Recipient / InResponseTo / NotOnOrAfter / 署名位置 を"存在確認"する
+- 出力のどこを見るか（注目点）：
+  - Audience、Recipient、Destination、InResponseTo、NotOnOrAfter、Issuer、NameID、Attributes、署名の位置（Response/Assertion）
+- この例が使えないケース（前提が崩れるケース）：
+  - Assertionが暗号化されている場合、デコードしても中身は見えない（暗号化の有無は観測できる）
+
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：V2（Authentication）/ V3（Session Management）を中心に「外部IdPとの信頼境界」「認証結果（属性/セッション）の受け渡し」「失効/ログアウト境界」を扱う。ASVSはSAML固有の攻撃面を細粒度で網羅しない可能性があるため、SAML Security Cheat Sheet等で補完し、ASVS側は"境界の検証"として落とす。
+  - 該当要件（可能ならID）：V2（Authentication）、V3（Session Management）
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 満たす：SAMLフローの境界と成立点を観測で確定し、以後の検証観点を外さないための基盤。
+  - 参照：https://github.com/OWASP/ASVS
+- WSTG：
+  - 該当カテゴリ/テスト観点：SAMLは認証（WSTG-ATHN）だけでなく、Identity Management（IdM）として"外部連携の成立点"を観測し、AuthnRequest/Response の検証点（署名/宛先/相関）を差分で確定する。
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：SAMLフローの観測と理解
+  - 参照：https://owasp.org/www-project-web-security-testing-guide/
+- PTES：
+  - 該当フェーズ：Intelligence Gathering（IdP/SP/ACS/境界特定）→ Vulnerability Analysis（成立点と検証点の切り分け）→ Exploitation（最小差分の再現）→ Reporting（証跡）に直結。
+  - 前後フェーズとの繋がり（1行）：IdP/SP/ACS/境界特定→成立点と検証点の切り分け→最小差分の再現→証跡の品質を上げる。
+  - 参照：https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：T1606.002（Forge Web Credentials: SAML Tokens）、T1078（Valid Accounts）、T1199（Trusted Relationship）
+  - 攻撃者の目的（この技術が支える意図）：SAMLフロー観測は「偽造/再利用の窓」と「信頼境界の固定点」を確定する作業。
+  - 参照：https://attack.mitre.org/techniques/T1606/002/（Forge Web Credentials: SAML Tokens）、https://attack.mitre.org/tactics/TA0001/（Initial Access - Valid Accounts）、https://attack.mitre.org/techniques/T1199/（Trusted Relationship）
+
 ## 参考（必要最小限）
-- OWASP Cheat Sheet Series：SAML Security Cheat Sheet（InResponseTo/署名検証/XSW等の検証点）
-- MITRE ATT&CK：T1606.002 Forge Web Credentials: SAML Tokens / T1078 Valid Accounts / T1199 Trusted Relationship
-- OWASP WSTG：Authentication Testing / Identity Management Testing（SAMLを“外部連携の認証境界”として落とす）
-- ASVS：SAML固有の粒度が薄い場合があるため、ASVSは“認証/セッション/境界”として適用し、SAMLの検証点はCheat Sheet等で補完する
+- OWASP SAML Security Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/SAML_Security_Cheat_Sheet.html
+- OWASP Application Security Verification Standard: https://github.com/OWASP/ASVS
+- OWASP Web Security Testing Guide: https://owasp.org/www-project-web-security-testing-guide/
+- PTES (Penetration Testing Execution Standard): https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK: https://attack.mitre.org/
+
+## リポジトリ内リンク（最大3つまで）
+- 関連 topics：`01_topics/02_web/02_authn_01_cookie属性と境界（Secure_HttpOnly_SameSite_Path_Domain）.md`
+- 関連 topics：`01_topics/02_web/02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`
+- 関連 topics：`01_topics/02_web/02_authn_04_sso_oidc_flow観測（state_nonce_code_PKCE）.md`
+
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
+- `01_topics/02_web/02_authn_01_cookie属性と境界（Secure_HttpOnly_SameSite_Path_Domain）.md`
+- `01_topics/02_web/02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`
+- `01_topics/02_web/02_authn_04_sso_oidc_flow観測（state_nonce_code_PKCE）.md`
+- `01_topics/02_web/02_authn_06_mfa_成立点と例外パス（step-up_device_trust）.md`
+- `01_topics/02_web/02_authn_14_logout_設計（RP_IdP_フロントチャネル）.md`
+- `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+
+---

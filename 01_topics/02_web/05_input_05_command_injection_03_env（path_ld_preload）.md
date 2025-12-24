@@ -1,25 +1,6 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-- ASVS
-  - 入力→実行境界：外部コマンド起動は「コマンド文字列」だけでなく **実行環境（env）** が実質的な“第二入力面”。PATH/LD_PRELOAD 等で「呼ばれる実体」がすり替わる設計を許さない
-  - 安全な実行：絶対パス固定、引数配列、**環境変数のallowlist**、プロセス権限分離、作業ディレクトリ固定
-  - 監査：プロセス生成（親子、argv、cwd、envの要約/ハッシュ）を trace_id と相関
-- WSTG
-  - コマンド注入（Command Injection）の派生として、**環境変数の汚染（environment poisoning）** を検証に含める（入力が直接コマンドに見えなくても成立）
-- PTES
-  - Vulnerability Analysis：外部コマンド呼出し箇所の特定 → “envがどこ由来か（継承/上書き/ユーザ入力）” を分解
-  - Exploitation：影響実証は最小限（「別実体が呼ばれ得る」「ライブラリ/設定が注入され得る」成立根拠の確定まで）。本番での破壊的実証は避ける
-  - Reporting：原因を「絶対パス不使用」「環境allowlist不在」「実行権限過大」「作業dir不定」「second-order設定経路」に分解
-- MITRE ATT&CK
-  - Execution：Command and Scripting Interpreter（T1059）
-  - Defense Evasion / Privilege Escalation：環境汚染で“意図しない実体”を起動、またはロード挙動を変える
-  - Discovery/Collection：実行環境の情報取得（環境変数・パス・プロキシ設定）を起点に横展開の足場
+# 05_input_05_command_injection_03_env（path_ld_preload）
 
----
-
-## タイトル
-command_injection_env（path_ld_preload）
-
-## 目的（この技術で到達する状態）
+## 目的（このファイルで到達する状態）
 - 「メタ文字が効かない＝安全」でも、「argvが固定＝安全」でもなく、**envが制御できると“実行結果”が変わる**ことを、現実の実装パターンに即して評価できる
 - 具体的に次をできるようにする
   1) 外部コマンド起動の“実体決定”に env が関与しているか（PATH/ローダ/言語ランタイム/プロキシ/設定）を分類できる  
@@ -27,19 +8,20 @@ command_injection_env（path_ld_preload）
   3) 低侵襲な差分観測で「env汚染で挙動が変わる」成立根拠を確定できる  
   4) 対策を “入力フィルタ” ではなく **絶対パス＋env allowlist＋権限分離＋cwd固定** に落とせる
 
----
-
-## 背景：envは“見えにくい入力”で、実装者の想定外で混入しやすい
-- Webアプリは多くの場合、プロセス環境（env）を継承して外部コマンドを起動する
-- その env は
-  - デプロイ設定（K8s env / systemd Environment / .env）
-  - 代理実行（ジョブワーカー/バッチ）
-  - リクエスト由来の値（管理機能やヘッダを転写する実装）
-  の合成になり、**どこか一箇所がユーザに触れると全体が汚染**される
-- 実務で危険なのは “直入力” より **second-order（保存した設定が後で実行環境に混ざる）**：
-  - 「Webhookの疎通テスト設定」「外部連携のプロキシ設定」「変換ジョブのオプション」など
-
----
+## 前提（対象・範囲・想定）
+- 対象：Webアプリが外部コマンドを実行する機能、特に環境変数（env）が実行結果に影響する箇所
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - Webアプリは多くの場合、プロセス環境（env）を継承して外部コマンドを起動する、その env はデプロイ設定（K8s env / systemd Environment / .env）、代理実行（ジョブワーカー/バッチ）、リクエスト由来の値（管理機能やヘッダを転写する実装）の合成になり、**どこか一箇所がユーザに触れると全体が汚染**される
+  - 実務で危険なのは "直入力" より **second-order（保存した設定が後で実行環境に混ざる）**：「Webhookの疎通テスト設定」「外部連携のプロキシ設定」「変換ジョブのオプション」など
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：外部コマンド起動の"実体決定"に env が関与しているか（PATH/ローダ/言語ランタイム/プロキシ/設定）を分類できる、入力が env に到達する経路（直入力/ヘッダ/管理画面設定/ジョブ保存＝second-order）を特定できる、低侵襲な差分観測で「env汚染で挙動が変わる」成立根拠を確定できる、対策を "入力フィルタ" ではなく **絶対パス＋env allowlist＋権限分離＋cwd固定** に落とせる
+  - やらないこと：影響実証は最小限（「別実体が呼ばれ得る」「ライブラリ/設定が注入され得る」成立根拠の確定まで）。本番での破壊的実証は避ける
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+  - `01_topics/02_web/05_input_05_command_injection_01_shell（metachar_pipeline）.md`
+  - `01_topics/02_web/05_input_05_command_injection_02_args（option_injection）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ## 境界モデル（入力→env→実体決定→実行）
 
@@ -126,7 +108,30 @@ command_injection_env（path_ld_preload）
   3) **通信差分**：外部到達が変わる（SSRFと同様に、実環境での到達実証は抑制し、設計不備として示す）
   4) **時間差分**：最終手段（DoS境界に近いので慎重に）
 
----
+## 結果の意味（その出力が示す状態：何が言える/言えない）
+- 何が"確定"できるか：
+  - 外部コマンド起動の"実体決定"に env が関与しているか（PATH/ローダ/言語ランタイム/プロキシ/設定）を分類できる、入力が env に到達する経路（直入力/ヘッダ/管理画面設定/ジョブ保存＝second-order）を特定できる、低侵襲な差分観測で「env汚染で挙動が変わる」成立根拠を確定できる、対策を "入力フィルタ" ではなく **絶対パス＋env allowlist＋権限分離＋cwd固定** に落とせる
+- 何が"推定"できるか（推定の根拠/前提）：
+  - まず Boolean oracle（エラー差分、生成物差分、通信差分）で確定する（推奨）
+  - エラー差分は補助（失敗理由が「実体が違う/設定が違う」方向へ変わる（ただし詳細露出は別問題として切る））
+  - 時間差分は最後（短時間・少回数で、他指標と組み合わせる）
+- 何は"言えない"か（不足情報・観測限界）：
+  - "任意コマンド実行が可能"の断定（環境/設定/権限で差が大きい）、"DoSが可能"の断定（性能試験は別枠、契約と安全配慮が必要）
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：絶対パス不使用（PATHに依存） → 起動対象は絶対パス固定、依存コマンドも固定（内部で呼ぶものも含めて棚卸し）
+  - パターンB：env allowlist がない（継承し放題/マージし放題） → 子プロセスへ渡す env は **最小セット**（PATHも固定値）、不要な env はクリア（特にローダ系/ランタイム系/プロキシ系）
+  - パターンC：second-order 設定が実行環境へ混入（認可・検証不足） → 設定の編集権限、承認フロー、変更監査、実行環境へ反映する値は型拘束＋allowlist（URL/ドメイン/パス等）
+
+## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
+- この状態が示す"狙い目"：
+  - 管理画面：プロキシ設定、外部連携、ジョブテンプレ、変換プロファイル、リクエスト転写：`X-Forwarded-*` や任意ヘッダを env に入れる実装（まれだが一撃で危険）、ファイル名/パス：作業ディレクトリや出力先が "PATH 汚染" と結びつくケース
+- 優先度の付け方（時間制約がある場合の順序）：
+  - まず「絶対パスか？」を推定する（最短で当たりを付ける）、絶対パスで起動していれば PATH 汚染の余地は大幅に減る、ただし "内部的に別コマンドを呼ぶ"ケースもあるため、単純には断定しない
+- 代表的な攻め筋（この観測から自然に繋がるもの）：
+  - 攻め筋1：env が入力由来で変わる経路を探す（直入力より second-order） → 管理画面：プロキシ設定、外部連携、ジョブテンプレ、変換プロファイル、同じ機能でも "管理設定を変えると" 実行結果（通信先/ログ/生成物）が変わる
+  - 攻め筋2：second-order 設定が実行環境へ混入（認可・検証不足） → 管理者が設定したつもりの "外部連携設定" を一般ユーザが編集できる、それがワーカー環境へ反映され、別テナントのデータへアクセスする導線になる
+- 「見える/見えない」による戦略変更（例：CDN配下、SSO前提、外部委託先など）：
+  - コマンド注入（Command Injection）の派生として、**環境変数の汚染（environment poisoning）** を検証に含める（入力が直接コマンドに見えなくても成立）、外部コマンド呼出し箇所の特定 → "envがどこ由来か（継承/上書き/ユーザ入力）" を分解
 
 ## command_injection_env_key（正規化キー：診断メモをブレさせない）
 - 推奨キー：command_injection_env_key
@@ -215,7 +220,9 @@ command_injection_env（path_ld_preload）
 
 ---
 
-## 例（最小限：設計の差だけ示す）
+## コマンド/リクエスト例（例示は最小限・意味の説明が主）
+> 例示は"手段"であり"結論"ではない。必ず「何を観測している例か」を添える。
+
 ~~~~
 # 悪い例（概念）：PATH依存・env継承
 execve(["convert", input, output], env=inherited_env)
@@ -223,20 +230,57 @@ execve(["convert", input, output], env=inherited_env)
 # 良い例（概念）：絶対パス固定・env allowlist
 safe_env = { "PATH": "/usr/bin:/bin", "LANG": "C" }  # 必要最小限
 execve(["/usr/bin/convert", input, output], env=safe_env)
+~~~~
 
+- この例で観測していること：絶対パス固定、env allowlist、PATH依存の有無
+- 出力のどこを見るか（注目点）：エラー差分、生成物差分、通信差分、実行ユーザ、作業dir
+- この例が使えないケース（前提が崩れるケース）：絶対パスがそもそも使用されていない場合、または完全に静的なコマンドのみを使用している場合
+
+~~~~
 # 悪い例（概念）：ユーザ設定をenvへマージ（second-orderの温床）
 safe_env = inherited_env + user_config_env
 execve([ABS_CMD, ...], env=safe_env)
 ~~~~
 
----
+- この例で観測していること：second-order設定の統制、envのマージ処理、設定の認可・検証
+- 出力のどこを見るか（注目点）：設定変更→実行→結果の差分、同じ機能でも "管理設定を変えると" 実行結果（通信先/ログ/生成物）が変わる
+- この例が使えないケース（前提が崩れるケース）：設定がそもそも実行環境に反映されない場合、または完全に静的な設定のみを使用している場合
+
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：V5 Validation, Sanitization and Encoding、V7 Error Handling and Logging
+  - 該当要件（可能ならID）：V5.3.1、V5.3.2、V7.4.1
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 入力→実行境界：外部コマンド起動は「コマンド文字列」だけでなく **実行環境（env）** が実質的な"第二入力面"。PATH/LD_PRELOAD 等で「呼ばれる実体」がすり替わる設計を許さない
+    - 安全な実行：絶対パス固定、引数配列、**環境変数のallowlist**、プロセス権限分離、作業ディレクトリ固定
+    - 監査：プロセス生成（親子、argv、cwd、envの要約/ハッシュ）を trace_id と相関
+- WSTG：
+  - 該当カテゴリ/テスト観点：WSTG-INPV-12 Command Injection
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：
+    - コマンド注入（Command Injection）の派生として、**環境変数の汚染（environment poisoning）** を検証に含める（入力が直接コマンドに見えなくても成立）
+- PTES：
+  - 該当フェーズ：Vulnerability Analysis、Exploitation、Reporting
+  - 前後フェーズとの繋がり（1行）：外部コマンド呼出し箇所の特定 → "envがどこ由来か（継承/上書き/ユーザ入力）" を分解し、影響実証は最小限（「別実体が呼ばれ得る」「ライブラリ/設定が注入され得る」成立根拠の確定まで）。本番での破壊的実証は避ける、原因を「絶対パス不使用」「環境allowlist不在」「実行権限過大」「作業dir不定」「second-order設定経路」に分解
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：Execution：Command and Scripting Interpreter（T1059）
+  - 攻撃者の目的（この技術が支える意図）：Defense Evasion / Privilege Escalation：環境汚染で"意図しない実体"を起動、またはロード挙動を変える、Discovery/Collection：実行環境の情報取得（環境変数・パス・プロキシ設定）を起点に横展開の足場
+
+## 参考（必要最小限）
+- OWASP WSTG：Testing for Command Injection（WSTG-INPV-12）
+- CWE-78：OS Command Injection
+- MITRE ATT&CK：T1059 Command and Scripting Interpreter
 
 ## リポジトリ内リンク（最大3つまで）
 - `01_topics/02_web/05_input_05_command_injection_01_shell（metachar_pipeline）.md`
 - `01_topics/02_web/05_input_05_command_injection_02_args（option_injection）.md`
-- `01_topics/02_web/05_input_09_ssrf_01_reachability（internal_localhost_metadata）.md`（PROXY等の到達性接続）
+- `01_topics/02_web/05_input_09_ssrf_01_reachability（internal_localhost_metadata）.md`
 
 ---
 
-## 次（作成候補順）
-- `01_topics/02_web/05_input_06_xss_01_反射_境界モデル.md`
+## 深掘りリンク（最大8）
+- `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+- `01_topics/02_web/05_input_05_command_injection_01_shell（metachar_pipeline）.md`
+- `01_topics/02_web/05_input_05_command_injection_02_args（option_injection）.md`
+- `01_topics/02_web/05_input_09_ssrf_01_reachability（internal_localhost_metadata）.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+- `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`

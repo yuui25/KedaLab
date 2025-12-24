@@ -1,24 +1,4 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-
-- ASVS
-  - 満たす/破れる点（このファイルの主眼）
-    - 入力を「型」と「許可語彙（allowlist）」で拘束できているか（NoSQLは“文字列のエスケープ”より“オブジェクト構造の拘束”が本体）
-    - “クエリ構造”と“値”の境界が守られているか（入力がクエリ演算子 `$ne/$gt/$regex` を形成できると境界が破れる）
-    - 認可（tenant/org 条件、所有者条件）の付与が「クエリ改変」で崩れないか（BOLA/越境混入と直結）
-    - 例外/エラーモデルを統一し、差分（oracle）を潰せているか（キャスト/正規表現エラー/型不一致など）
-    - ログ/監査で異常クエリ（演算子出現、正規表現、スキャン傾向）を検知できるか
-- WSTG
-  - Injection testing（入力→実行境界）の一種として、SQLiと同じ手順で「入力点列挙→sink（クエリ生成点）→差分観測→成立根拠」を取る
-  - “パラメータ改ざん”ではなく「構造改ざん（JSON/フォームのネスト）」が核である点を明示し、観測点（リクエスト形式/Content-Type/バリデータ）を押さえる
-- PTES
-  - Vulnerability Analysis：入力点（query/body/form）→Mongoクエリ生成点→差分観測で最小PoC→越境混入（認可境界）まで評価
-  - Exploitation：影響実証は必要最小限（ログイン回避・他人データ参照の“成立”まで。大量抽出や高負荷は避ける）
-  - Reporting：根本原因を「型/スキーマ不在」「演算子allowlist不在」「クエリビルダ誤用」「テナント条件付与の欠陥」に分解して提示
-- MITRE ATT&CK
-  - TA0001 Initial Access（公開アプリ入口）/ TA0009 Collection（検索APIからのデータ収集）/ TA0006 Credential Access（ユーザDBやAPIキー格納がある場合）/ TA0005 Defense Evasion（エラー統一下でブラインド化）
-  - 代表：T1190 Exploit Public-Facing Application（NoSQLiも入口になり得る）
-
-# NoSQL Injection（MongoDB）：Operator Injection（$ne / $gt / $regex）
+# 05_input_04_nosql_injection_01_mongodb_01_operator（$ne_$gt_$regex）
 
 ## 目的（この技術で到達する状態）
 - MongoDB を使うWeb/APIで、入力が **“クエリ構造（演算子）”** を形成できてしまう境界破壊（NoSQLi）を、次の形で回せる状態になる。
@@ -28,16 +8,19 @@
   4) 修正を「フィルタ強化」ではなく、**型拘束・allowlist・クエリ生成の設計**に落とせる
 
 ## 前提（対象・範囲・想定）
-- 対象
-  - Node/Express、Java/Spring、Python、Go などで MongoDB（または互換）を利用する検索・ログイン・一覧API
-  - REST/GraphQL を問わず「条件検索」「柔軟フィルタ」「一覧ソート」がある箇所
-- 注入が成立しやすい典型
-  - JSON をそのままDBクエリに渡す設計（bodyの一部が find の条件になる等）
-  - form-urlencoded / multipart の “ネスト表現” をオブジェクトに復元している（`a[b]=...` → `{a:{b:...}}`）
-  - “汎用フィルタ”として `filter=` や `where=` のJSON文字列を受け、パースしてクエリにマージしている
-- 本ファイルの焦点
-  - `$ne/$gt/$regex` を「成立根拠（oracle）」として、Operator Injection の境界モデルを作る
-  - `$where`（JS評価）や集約パイプライン等は別ファイルで扱う（このファイルでは扱わない）
+- 対象：Node/Express、Java/Spring、Python、Go などで MongoDB（または互換）を利用する検索・ログイン・一覧API、REST/GraphQL を問わず「条件検索」「柔軟フィルタ」「一覧ソート」がある箇所
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - 注入が成立しやすい典型：JSON をそのままDBクエリに渡す設計（bodyの一部が find の条件になる等）、form-urlencoded / multipart の "ネスト表現" をオブジェクトに復元している（`a[b]=...` → `{a:{b:...}}`）、"汎用フィルタ"として `filter=` や `where=` のJSON文字列を受け、パースしてクエリにマージしている
+  - 本ファイルの焦点：`$ne/$gt/$regex` を「成立根拠（oracle）」として、Operator Injection の境界モデルを作る、`$where`（JS評価）や集約パイプライン等は別ファイルで扱う（このファイルでは扱わない）
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：入力が "値" を超えて "Mongoクエリ構造（演算子）" を形成できる（境界破壊）、その成立経路（JSON直渡し / ネスト復元 / filter JSONパース / マージ処理）がどれか、差分（oracle）がどこに出るか（件数/長さ/エラー/時間）と再現性、認可境界（tenant/org/owner 条件）に接続し得る入口か（設計上の危険性）
+  - やらないこと：DB種類の断定（互換実装・抽象化がある）、"データが全て抜ける" の断定（権限・投影・API制限・監査で変わる）、"高負荷攻撃が可能" の断定（負荷検証は契約と安全配慮が必要）
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+  - `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+  - `01_topics/02_web/04_api_03_rest_filters_検索・ソート・ページング境界.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ## 観測ポイント（何を見ているか：入力→クエリ構造→実行→反応）
 
@@ -82,17 +65,23 @@ Operator Injection は “SQL構文エラー” のように露骨なエラー�
   - “他人データが見える” の断定ではなく、**権限条件がクエリ構造として揺らぐ** 証拠（差分）を取る
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-
-### 言える（確定できる）
-- 入力が “値” を超えて “Mongoクエリ構造（演算子）” を形成できる（境界破壊）
-- その成立経路（JSON直渡し / ネスト復元 / filter JSONパース / マージ処理）がどれか
-- 差分（oracle）がどこに出るか（件数/長さ/エラー/時間）と再現性
-- 認可境界（tenant/org/owner 条件）に接続し得る入口か（設計上の危険性）
-
-### 断定しない（追加根拠が必要）
-- DB種類の断定（互換実装・抽象化がある）
-- “データが全て抜ける” の断定（権限・投影・API制限・監査で変わる）
-- “高負荷攻撃が可能” の断定（負荷検証は契約と安全配慮が必要）
+- 何が"確定"できるか：
+  - 入力が "値" を超えて "Mongoクエリ構造（演算子）" を形成できる（境界破壊）
+  - その成立経路（JSON直渡し / ネスト復元 / filter JSONパース / マージ処理）がどれか
+  - 差分（oracle）がどこに出るか（件数/長さ/エラー/時間）と再現性
+  - 認可境界（tenant/org/owner 条件）に接続し得る入口か（設計上の危険性）
+- 何が"推定"できるか（推定の根拠/前提）：
+  - まず Boolean oracle（件数/長さ）で確定する（推奨）
+  - エラーが見えるなら、型不一致、正規表現エラーなどが返る場合は「DB到達」の補助証拠に使う（主証拠はBoolean）
+  - 時間差分は最後（短時間・少回数で、他指標と組み合わせる）
+- 何は"言えない"か（不足情報・観測限界）：
+  - DB種類の断定（互換実装・抽象化がある）
+  - "データが全て抜ける" の断定（権限・投影・API制限・監査で変わる）
+  - "高負荷攻撃が可能" の断定（負荷検証は契約と安全配慮が必要）
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：入力が "値" を超えて "Mongoクエリ構造（演算子）" を形成できる（境界破壊） → JSON直渡し / ネスト復元 / filter JSONパース / マージ処理で発生
+  - パターンB：認可境界（tenant/org/owner 条件）に接続し得る入口か（設計上の危険性） → フィルタ統合（merge）が雑だと、ユーザ入力が権限条件と"同じ階層"に混ざる
+  - パターンC：差分（oracle）がどこに出るか（件数/長さ/エラー/時間）と再現性 → Boolean oracle（推奨）、Error oracle（補助）、Time oracle（原則は補助）
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・想定パス）
 ※悪用手順の提供ではなく、ペンテストの優先順位・仮説の立て方として整理する。
@@ -146,8 +135,8 @@ Operator Injection は “SQL構文エラー” のように露骨なエラー�
   - サーバログ（trace_id、受理した入力の型、組み立てたクエリ構造の要約※機微はマスク）
   - Mongoクエリログ（Labsのみ）：実際に `$ne/$gt/$regex` がクエリに入ったか
 
-## 例（最小限：設計の違いを理解するための形）
-> ここでは「危険な形／安全な形」を“境界モデル”として示す。実際の送信は許可された検証環境・契約範囲で行う。
+## コマンド/リクエスト例（例示は最小限・意味の説明が主）
+> 例示は"手段"であり"結論"ではない。必ず「何を観測している例か」を添える。
 
 ~~~~
 # 危険：入力をクエリ条件としてそのまま渡す（構造注入の余地）
@@ -159,17 +148,25 @@ assert(typeof username === "string")
 find({ username: username })
 ~~~~
 
+- この例で観測していること：入力がクエリ条件としてそのまま渡されているか、型検証が行われているかを確認する設計の違い
+- 出力のどこを見るか（注目点）：クエリの生成方法、入力値が直接クエリに埋め込まれているか、型検証が行われているか
+- この例が使えないケース（前提が崩れるケース）：ORMが自動的に型検証を行っている場合、または完全に静的なクエリのみを使用している場合
+
 ~~~~
 # 危険：汎用filterをパースしてマージ（allowlist不在だと演算子が混入）
 base = { tenant_id: currentTenant }
 userFilter = JSON.parse(req.query.filter)
 query = { ...base, ...userFilter }   # ←同階層マージが危険
 
-# 安全：受理するフィールド/演算子を明示し、型も拘束（“構造”を入力にさせない）
+# 安全：受理するフィールド/演算子を明示し、型も拘束（"構造"を入力にさせない）
 - field allowlist（例：name, status, createdAt）
 - op allowlist（例：eq, lt, gt のようなアプリ独自DSL）
 - value は型変換してから使用
 ~~~~
+
+- この例で観測していること：汎用filterのマージ処理、allowlistの有無、演算子の混入可能性
+- 出力のどこを見るか（注目点）：マージ処理の方法、allowlistの有無、演算子の受理方法
+- この例が使えないケース（前提が崩れるケース）：固定数のフィルタのみを使用している場合、または完全に静的なクエリのみを使用している場合
 
 ~~~~
 # 危険：formネスト復元で operator キーがオブジェクトになる（境界破壊）
@@ -179,10 +176,51 @@ username[$ne]=x   ->  { username: { $ne: "x" } }
 username: object は 400 で拒否、ログに trace_id と共に記録
 ~~~~
 
+- この例で観測していること：formネスト復元の処理、型検証の有無、演算子の混入可能性
+- 出力のどこを見るか（注目点）：ネスト復元の方法、型検証の有無、エラーハンドリング
+- この例が使えないケース（前提が崩れるケース）：formネスト復元を使用していない場合、または完全に静的なクエリのみを使用している場合
+
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：V5 Validation, Sanitization and Encoding、V7 Error Handling and Logging
+  - 該当要件（可能ならID）：V5.3.1、V5.3.2、V7.4.1
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 入力を「型」と「許可語彙（allowlist）」で拘束できているか（NoSQLは"文字列のエスケープ"より"オブジェクト構造の拘束"が本体）
+    - "クエリ構造"と"値"の境界が守られているか（入力がクエリ演算子 `$ne/$gt/$regex` を形成できると境界が破れる）
+    - 認可（tenant/org 条件、所有者条件）の付与が「クエリ改変」で崩れないか（BOLA/越境混入と直結）
+    - 例外/エラーモデルを統一し、差分（oracle）を潰せているか（キャスト/正規表現エラー/型不一致など）
+    - ログ/監査で異常クエリ（演算子出現、正規表現、スキャン傾向）を検知できるか
+- WSTG：
+  - 該当カテゴリ/テスト観点：WSTG-INPV-05 SQL Injection、WSTG-ERRH-01 Error Handling
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：
+    - Injection testing（入力→実行境界）の一種として、SQLiと同じ手順で「入力点列挙→sink（クエリ生成点）→差分観測→成立根拠」を取る
+    - "パラメータ改ざん"ではなく「構造改ざん（JSON/フォームのネスト）」が核である点を明示し、観測点（リクエスト形式/Content-Type/バリデータ）を押さえる
+- PTES：
+  - 該当フェーズ：Vulnerability Analysis、Exploitation、Reporting
+  - 前後フェーズとの繋がり（1行）：入力点（query/body/form）→Mongoクエリ生成点→差分観測で最小PoC→越境混入（認可境界）まで評価し、影響実証は必要最小限（ログイン回避・他人データ参照の"成立"まで。大量抽出や高負荷は避ける）、根本原因を「型/スキーマ不在」「演算子allowlist不在」「クエリビルダ誤用」「テナント条件付与の欠陥」に分解して提示
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：TA0001 Initial Access（公開アプリ入口）/ TA0009 Collection（検索APIからのデータ収集）/ TA0006 Credential Access（ユーザDBやAPIキー格納がある場合）/ TA0005 Defense Evasion（エラー統一下でブラインド化）
+  - 攻撃者の目的（この技術が支える意図）：T1190 Exploit Public-Facing Application（NoSQLiも入口になり得る）
+
+## 参考（必要最小限）
+- MongoDB Documentation: https://docs.mongodb.com/
+- OWASP NoSQL Injection: https://owasp.org/www-community/attacks/NoSQL_Injection
+- OWASP Injection Prevention Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html
+- MongoDB Security Best Practices: https://docs.mongodb.com/manual/administration/security-checklist/
+
 ## リポジトリ内リンク（最大3つまで）
 - `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
 - `01_topics/02_web/04_api_03_rest_filters_検索・ソート・ページング境界.md`
 - `01_topics/02_web/04_api_09_error_model_情報漏えい（例外_スタック）.md`
 
-## 次（作成候補順）
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+- `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+- `01_topics/02_web/04_api_03_rest_filters_検索・ソート・ページング境界.md`
+- `01_topics/02_web/04_api_09_error_model_情報漏えい（例外_スタック）.md`
 - `01_topics/02_web/05_input_04_nosql_injection_01_mongodb_02_where_eval（$where_js）.md`
+- `01_topics/02_web/05_input_04_nosql_injection_01_mongodb_03_aggregation（pipeline_$lookup）.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+- `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`

@@ -1,19 +1,4 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS：
-  - この技術で満たす/破れる点：アクセス制御（一覧/検索は越境混入の最頻出）、最小開示（返却列/サマリの設計）、入力検証（filter/sort/pageの信頼境界）、濫用耐性（ページング上限・検索負荷・レート）、監査（検索条件と結果範囲の追跡）
-  - 支える前提：RESTの一覧/検索は「業務で最も使われる」＝「最も攻撃に使われる」。IDORは詳細参照だけではなく、検索・ソート・ページングの“条件の穴”で静かに成立する。
-- WSTG：
-  - 該当テスト観点：Authorization Testing（IDOR/BOLA、マルチテナント分離）、API Testing（検索条件、ページング、並び替え、エラー差分）、Business Logic（検索で見えてはいけない状態/属性）
-  - どの観測に対応するか：同一一覧APIで「filter差分」「sort差分」「paging差分」「列（fields）差分」を取り、(1)越境混入、(2)推測/列挙のオラクル、(3)過剰返却、(4)負荷境界欠落、を確定する
-- PTES：
-  - 該当フェーズ：Information Gathering（一覧/検索エンドポイント列挙、パラメータ体系の把握）、Vulnerability Analysis（境界の欠落：tenant/権限/状態/上限）、Exploitation（最小差分検証：2ユーザ/2テナント、低負荷での列挙可能性確認）
-  - 前後フェーズとの繋がり（1行）：AuthZ（03）で定義した“境界モデル（tenant/role/state）”を、API設計（REST filters）として「検索条件に埋め込むのではなくサーバが強制する」形に落とし込み、以降のwebhook/async/export/error/versioningの“例外パス”でも同様に崩れないよう接続する
-- MITRE ATT&CK：
-  - 戦術：Discovery / Collection / Impact
-  - 目的：検索条件とソートを利用して対象の存在・関係・件数を推測（Discovery）、大量に収集（Collection）、負荷を上げて可用性へ影響（Impact）。検索は“静かな列挙”の主戦場。
-
-## タイトル
-rest_filters_検索・ソート・ページング境界
+# 04_api_03_rest_filters_検索・ソート・ページング境界
 
 ## 目的（この技術で到達する状態）
 - RESTの一覧/検索APIを、(1)テナント境界（03）、(2)認可条件（RBAC/ABAC：04）、(3)状態（10）、(4)最小開示（列/フィールド）、(5)濫用耐性（上限・コスト）、(6)観測オラクル（エラー差分/件数差分）、の観点でモデル化し、短時間で“越境混入/静かな漏洩”を確定できる
@@ -22,18 +7,22 @@ rest_filters_検索・ソート・ページング境界
 
 ## 前提（対象・範囲・想定）
 - 対象：一覧/検索API（例：/users, /projects, /orders, /invoices, /tickets など）
-- 想定される検索実装（現実運用の混在）
-  - DBのWHERE（SQL/ORM）
-  - NoSQLクエリ（Mongo等）
-  - 検索基盤（Elasticsearch/OpenSearch等）
-  - キャッシュ＋バックエンド検索（BFF/集約）
-- フィルタ/ソート/ページングの表現は多様（混在前提）
-  - filter：query string（?status=...&org_id=...）、JSON body、RSQL、OData風、独自DSL
-  - sort：?sort=created_at,-id など
-  - paging：offset/limit、page/per_page、cursor（after/before）、keyset（since_id）
-- 検証の安全な範囲（ペネトレ）
-  - 大量列挙はしない。代わりに「件数」「次ページトークン」「ソート差分」「存在の匂い」で列挙可能性を示す
-  - 2ユーザ×2テナントで差分観測（同一条件で結果が混ざるか）を優先する
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - 想定される検索実装（現実運用の混在）：DBのWHERE（SQL/ORM）、NoSQLクエリ（Mongo等）、検索基盤（Elasticsearch/OpenSearch等）、キャッシュ＋バックエンド検索（BFF/集約）
+  - フィルタ/ソート/ページングの表現は多様（混在前提）：filter（query string（?status=...&org_id=...）、JSON body、RSQL、OData風、独自DSL）、sort（?sort=created_at,-id など）、paging（offset/limit、page/per_page、cursor（after/before）、keyset（since_id））
+  - RESTの一覧/検索は「業務で最も使われる」＝「最も攻撃に使われる」。IDORは詳細参照だけではなく、検索・ソート・ページングの"条件の穴"で静かに成立する。
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：大量列挙はしない。代わりに「件数」「次ページトークン」「ソート差分」「存在の匂い」で列挙可能性を示す、2ユーザ×2テナントで差分観測（同一条件で結果が混ざるか）を優先する
+  - やらないこと：大規模データでの実際の負荷限界（DoSは実行しない）。ただし"上限設計不在"は重大リスクとして示せる。
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/03_authz_02_idor_典型パターン（一覧_検索_参照キー）.md`
+  - `01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
+  - `01_topics/02_web/03_authz_04_rbac_abac_判定点（policy_engine）.md`
+  - `01_topics/02_web/03_authz_10_object_state_状態遷移と権限（draft_approved）.md`
+  - `01_topics/02_web/04_api_00_権限伝播・入力・バックエンド連携.md`
+  - `01_topics/02_web/04_api_09_error_model_情報漏えい（例外_スタック）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 ### 1) 検索APIは“認可の入口”であり、境界条件はサーバが付与するべき
@@ -161,17 +150,23 @@ RESTでも「返却列を増やすパラメータ」がよく存在する。
   - evidence（HAR、レスポンス差分、エラー断片）
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言える（確定できる）：
+- 何が"確定"できるか：
   - 検索条件の中で、境界条件（tenant/role/state）がサーバ強制か、クライアント影響か
   - filter/sort/paging/fields の allowlist と上限があるか
   - cursorが検索条件とスコープに束縛されているか（再利用で越境しないか）
   - 一覧/検索が越境混入や過剰開示の入口になっていないか
   - オラクル（件数/トークン/エラー差分）として利用できる余地があるか
-- 推定（根拠付きで言える）：
+- 何が"推定"できるか（推定の根拠/前提）：
   - allowlist無し＋limit cap無し＋横断検索あり は、情報漏えいと濫用の両面で高リスク
-  - cursor束縛が弱い場合、ページングトークンが“横断のパス”になり得る
-- 言えない（この段階では断定しない）：
-  - 大規模データでの実際の負荷限界（DoSは実行しない）。ただし“上限設計不在”は重大リスクとして示せる。
+  - cursor束縛が弱い場合、ページングトークンが"横断のパス"になり得る
+- 何は"言えない"か（不足情報・観測限界）：
+  - 大規模データでの実際の負荷限界（DoSは実行しない）。ただし"上限設計不在"は重大リスクとして示せる。
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：tenant越境混入（server-forcedではない） → 混入/上書き（P0）
+  - パターンB：limit capが無い → 境界無し（P0〜P1）
+  - パターンC：cursor束縛が弱い → 再利用成立（P0）
+  - パターンD：fields/expandで過剰開示 → 機微が増える（P1〜P0、内容次第）
+  - パターンE：オラクル（存在判定）が強い → 明確に区別できる（P1、攻撃の加速器）
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
 - 優先度（P0/P1/P2）
@@ -260,6 +255,21 @@ GET /api/orders?status=paid&fields=id,amount,customer_email&expand=customer
 - この例が使えないケース（前提が崩れるケース）：
   - 検索がPOST bodyのDSLの場合：同じ観測軸（allowlist/境界強制/上限/オラクル）をbodyパラメータに写像する
 
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：V4（アクセス制御）、V5（入力検証）、V13（API）
+  - 該当要件（可能ならID）：V4.1（一般的なアクセス制御設計）、V5.1（入力検証）、V13.1（APIの認証・認可）、V13.2（API濫用耐性）
+  - このファイルの内容が「満たす/破れる」ポイント：アクセス制御（一覧/検索は越境混入の最頻出）、最小開示（返却列/サマリの設計）、入力検証（filter/sort/pageの信頼境界）、濫用耐性（ページング上限・検索負荷・レート）、監査（検索条件と結果範囲の追跡）
+- WSTG：
+  - 該当カテゴリ/テスト観点：Authorization Testing（IDOR/BOLA、マルチテナント分離）、API Testing（検索条件、ページング、並び替え、エラー差分）、Business Logic（検索で見えてはいけない状態/属性）
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：同一一覧APIで「filter差分」「sort差分」「paging差分」「列（fields）差分」を取り、(1)越境混入、(2)推測/列挙のオラクル、(3)過剰返却、(4)負荷境界欠落、を確定する
+- PTES：
+  - 該当フェーズ：Information Gathering、Vulnerability Analysis、Exploitation
+  - 前後フェーズとの繋がり（1行）：AuthZ（03）で定義した"境界モデル（tenant/role/state）"を、API設計（REST filters）として「検索条件に埋め込むのではなくサーバが強制する」形に落とし込み、以降のwebhook/async/export/error/versioningの"例外パス"でも同様に崩れないよう接続する
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：TA0007（Discovery）、TA0009（Collection）、TA0040（Impact）
+  - 攻撃者の目的（この技術が支える意図）：検索条件とソートを利用して対象の存在・関係・件数を推測（Discovery）、大量に収集（Collection）、負荷を上げて可用性へ影響（Impact）。検索は"静かな列挙"の主戦場。
+
 ## 参考（必要最小限）
 - OWASP ASVS（認可、最小開示、API濫用耐性、監査）
 - OWASP WSTG（Authorization / API Testing：一覧・検索・ページングの境界）
@@ -271,5 +281,17 @@ GET /api/orders?status=paid&fields=id,amount,customer_email&expand=customer
 - `01_topics/02_web/03_authz_02_idor_典型パターン（一覧_検索_参照キー）.md`
 - `01_topics/02_web/04_api_09_error_model_情報漏えい（例外_スタック）.md`
 
-## 次（04_api_04 以降）に進む前に確認したいこと（必要なら回答）
-- 次のWebhook（04/05）では、REST filtersで出た「クライアント入力を信頼しない」「再送/重複/欠落の扱い」を、署名・idempotency・到達性（SSRF）に写像して同じ軸で扱う
+---
+
+## 深掘りリンク（最大8）
+- 関連 topics：
+  - `01_topics/02_web/03_authz_02_idor_典型パターン（一覧_検索_参照キー）.md`
+  - `01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
+  - `01_topics/02_web/03_authz_04_rbac_abac_判定点（policy_engine）.md`
+  - `01_topics/02_web/03_authz_10_object_state_状態遷移と権限（draft_approved）.md`
+  - `01_topics/02_web/04_api_00_権限伝播・入力・バックエンド連携.md`
+  - `01_topics/02_web/04_api_02_graphql_境界（schema_introspection_query_cost）.md`
+  - `01_topics/02_web/04_api_09_error_model_情報漏えい（例外_スタック）.md`
+- 関連 labs / cases：
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`

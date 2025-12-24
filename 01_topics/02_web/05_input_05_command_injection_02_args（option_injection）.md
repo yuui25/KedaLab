@@ -1,25 +1,6 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-- ASVS
-  - 入力→実行境界：shell を呼ばなくても、外部コマンドの **引数解釈（getopt 等）** が“第二の言語”になる。入力が「値」ではなく「オプション」として解釈されない設計が必要
-  - 重要：フィルタ（危険文字除去）ではなく、(1) 引数配列の固定、(2) allowlist、(3) `--`（end-of-options）の強制、(4) 位置引数の固定（入力をオプション位置へ置かない）
-  - 監査：プロセス生成、argv、呼出元（trace_id）を相関し、オプション注入の探索行為（--help/--version等の揺さぶり）を検知できるか
-- WSTG
-  - Command Injection の一形態として扱うが、焦点は「メタ文字」ではなく **argv 境界**（`shell=False`でも成立する）
-  - テストは payload ではなく「差分＝成立根拠」（挙動/エラー/出力/生成物）で確定する
-- PTES
-  - Vulnerability Analysis：外部コマンドの候補（画像/PDF/ネットワーク/アーカイブ/ログ整形）→ 実行関数（spawn/execve）→ argv構造を仮説化
-  - Exploitation：影響実証は最小限（“値がオプションとして解釈された”根拠 + 影響の方向性まで）。高負荷/外部到達/大量出力は避ける
-  - Reporting：原因を「argvの位置設計ミス」「end-of-options未使用」「allowlist不在」「入力正規化不備」「実行権限過大」に分解して提案
-- MITRE ATT&CK
-  - 実行（Execution）に接続（外部コマンドを“意図しないモード”で動かす）
-  - 典型の後続：収集（Collection）、持ち出し（Exfiltration）、権限悪用（Privilege Escalation）は環境依存。まずは“制御点がargvにある”ことを確定する
+# 05_input_05_command_injection_02_args（option_injection）
 
----
-
-## タイトル
-command_injection_args（option_injection）
-
-## 目的（この技術で到達する状態）
+## 目的（このファイルで到達する状態）
 - shell を使っていない（メタ文字が効かない）状況でも成立する **argvベースのコマンド注入**を、
   1) どの入力が argv のどの位置に入るか（値位置か、オプション位置か）  
   2) そのコマンドの引数パーサ（getopt / subcommand / @file / config）に何を許しているか  
@@ -28,13 +9,18 @@ command_injection_args（option_injection）
   まで説明・判断できる状態になる。
 
 ## 前提（対象・範囲・想定）
-- 対象：Webアプリが外部コマンドを「引数配列」で実行している箇所
-  - 画像/PDF変換、アーカイブ、ネットワーク疎通、ログ整形、バックアップ、動画処理など
-- 本ファイルの範囲：**shell=False を前提**（メタ文字は効きにくい）
-  - それでも「入力が `-` で始まる」「引数位置が曖昧」「end-of-options未使用」などで、入力が“オプション”として扱われ得る
-- 非スコープ（他ファイル）
-  - メタ文字/パイプ等：`01_shell`
-  - 環境（PATH/LD_PRELOAD等）：`03_env`
+- 対象：Webアプリが外部コマンドを「引数配列」で実行している箇所、画像/PDF変換、アーカイブ、ネットワーク疎通、ログ整形、バックアップ、動画処理など
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - 本ファイルの範囲：**shell=False を前提**（メタ文字は効きにくい）、それでも「入力が `-` で始まる」「引数位置が曖昧」「end-of-options未使用」などで、入力が"オプション"として扱われ得る
+  - 非スコープ（他ファイル）：メタ文字/パイプ等：`01_shell`、環境（PATH/LD_PRELOAD等）：`03_env`
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：どの入力が argv のどの位置に入るか（値位置か、オプション位置か）、そのコマンドの引数パーサ（getopt / subcommand / @file / config）に何を許しているか、低侵襲な差分観測で「オプションとして解釈された」を確定できるか、修正案を "入力フィルタ" ではなく "argv設計" に落とせるか
+  - やらないこと：影響実証は最小限（"値がオプションとして解釈された"根拠 + 影響の方向性まで）。高負荷/外部到達/大量出力は避ける
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+  - `01_topics/02_web/05_input_05_command_injection_01_shell（metachar_pipeline）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ## なぜ“攻撃より”に見るべきか：option injectionは「RCE」ではなく「モード切替」で壊す
 - 典型的な誤解
@@ -112,7 +98,30 @@ command_injection_args（option_injection）
 - blind系での補助。だがDoSと紙一重になりやすい
 - 「時間差が出る＝成立」ではなく、他の根拠（エラー/状態/生成物）と組み合わせる
 
----
+## 結果の意味（その出力が示す状態：何が言える/言えない）
+- 何が"確定"できるか：
+  - どの入力が argv のどの位置に入るか（値位置か、オプション位置か）、そのコマンドの引数パーサ（getopt / subcommand / @file / config）に何を許しているか、低侵襲な差分観測で「オプションとして解釈された」を確定できるか、修正案を "入力フィルタ" ではなく "argv設計" に落とせるか
+- 何が"推定"できるか（推定の根拠/前提）：
+  - まず Boolean oracle（挙動差分、エラー差分、生成物差分）で確定する（推奨）
+  - エラー差分は補助（parserエラーの形が変わる、usage/help っぽくなる）
+  - 時間差分は最後（短時間・少回数で、他指標と組み合わせる）
+- 何は"言えない"か（不足情報・観測限界）：
+  - "任意コマンド実行が可能"の断定（環境/設定/権限で差が大きい）、"DoSが可能"の断定（性能試験は別枠、契約と安全配慮が必要）
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：ファイル名/パスが第一引数に入る（最頻） → "パスは安全"という思い込み（しかし先頭 `-` のパス、相対、特殊文字がある）、"値としてのパス"を"オプション"に昇格させて、実行モードを変える
+  - パターンB：ユーザが "検索条件式" を渡す（grep/awk/sed/ffmpeg等の引数世界） → 高機能ゆえに、引数が"ミニ言語"になる、式の自由度を使って情報・可用性へ影響
+  - パターンC：サブコマンド型ツール（git等）をラップしている → "運用者向け"機能が一般ユーザ経由で叩けると、入力面が爆発する、subcommand/option の組合せで、想定外の対象へ到達（情報/書込み/ネットワーク）
+
+## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
+- この状態が示す"狙い目"：
+  - 画像/PDF変換、アーカイブ、ネットワーク疎通、ログ整形、バックアップ、動画処理など、外部コマンドを「引数配列」で実行している箇所
+- 優先度の付け方（時間制約がある場合の順序）：
+  - まず外部コマンド利用が疑わしい機能を"現実起点"で列挙する（変換/圧縮/ダウンロード/バックアップ/診断系（ping等）/ログ整形/レポート生成）、argvの位置を推定する（どこに入るか）、入力が「パス」か「検索語」か「オプション相当」かを分類する
+- 代表的な攻め筋（この観測から自然に繋がるもの）：
+  - 攻め筋1：end-of-options（`--`）を使っていない → 多くのCLIは `--` でオプション解釈を止められる、"ユーザ入力をpositionalとして渡す"場合は、必ず `--` を挿入する（コマンドが対応している前提）
+  - 攻め筋2：入力が「オプション位置」に入っている（argvレイアウト不良） → `cmd <USER> <FIXED>` のように、固定引数より前にユーザ入力がある
+- 「見える/見えない」による戦略変更（例：CDN配下、SSO前提、外部委託先など）：
+  - Command Injection の一形態として扱うが、焦点は「メタ文字」ではなく **argv 境界**（`shell=False`でも成立する）、テストは payload ではなく「差分＝成立根拠」（挙動/エラー/出力/生成物）で確定する
 
 ## 典型シナリオ（現実寄り）：どういう機能で起きるか
 
@@ -259,14 +268,22 @@ command_injection_args（option_injection）
 
 ---
 
-## 例（最小限：意味が伝わる“擬似”）
+## コマンド/リクエスト例（例示は最小限・意味の説明が主）
+> 例示は"手段"であり"結論"ではない。必ず「何を観測している例か」を添える。
+
 ~~~~
 # 悪い例（概念）：ユーザ入力が第一引数、end-of-optionsがない
 execve(["tool", USER_INPUT])
 
 # 良い例（概念）：end-of-optionsを入れ、入力はpositionalとして固定
 execve(["tool", "--", USER_INPUT])
+~~~~
 
+- この例で観測していること：end-of-options（`--`）の使用、argvの位置設計、入力がオプション位置に入っているか
+- 出力のどこを見るか（注目点）：挙動差分、エラー差分、生成物差分、`--` を入れた場合に挙動差分が収束するか
+- この例が使えないケース（前提が崩れるケース）：`--` 非対応のツールもある。非対応なら allowlist/拒否（先頭 `-`）/専用APIへ置換が必要
+
+~~~~
 # 悪い例（概念）：ユーザ入力を分割してargvが増える（語彙が混ざる）
 args = ["tool"] + USER_INPUT.split(" ")
 execve(args)
@@ -276,14 +293,47 @@ args = ["tool", "--", item1, item2]  # itemNは検証済み
 execve(args)
 ~~~~
 
----
+- この例で観測していること：正規化・分割の不備、入力の配列化、argv構造の固定
+- 出力のどこを見るか（注目点）：argv構造（長さ、位置、固定フラグの有無）、exit code、stderr分類
+- この例が使えないケース（前提が崩れるケース）：入力がそもそも配列として扱われていない場合、または完全に静的な引数のみを使用している場合
+
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：V5 Validation, Sanitization and Encoding、V7 Error Handling and Logging
+  - 該当要件（可能ならID）：V5.3.1、V5.3.2、V7.4.1
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 入力→実行境界：shell を呼ばなくても、外部コマンドの **引数解釈（getopt 等）** が"第二の言語"になる。入力が「値」ではなく「オプション」として解釈されない設計が必要
+    - 重要：フィルタ（危険文字除去）ではなく、(1) 引数配列の固定、(2) allowlist、(3) `--`（end-of-options）の強制、(4) 位置引数の固定（入力をオプション位置へ置かない）
+    - 監査：プロセス生成、argv、呼出元（trace_id）を相関し、オプション注入の探索行為（--help/--version等の揺さぶり）を検知できるか
+- WSTG：
+  - 該当カテゴリ/テスト観点：WSTG-INPV-12 Command Injection
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：
+    - Command Injection の一形態として扱うが、焦点は「メタ文字」ではなく **argv 境界**（`shell=False`でも成立する）
+    - テストは payload ではなく「差分＝成立根拠」（挙動/エラー/出力/生成物）で確定する
+- PTES：
+  - 該当フェーズ：Vulnerability Analysis、Exploitation、Reporting
+  - 前後フェーズとの繋がり（1行）：外部コマンドの候補（画像/PDF/ネットワーク/アーカイブ/ログ整形）→ 実行関数（spawn/execve）→ argv構造を仮説化し、影響実証は最小限（"値がオプションとして解釈された"根拠 + 影響の方向性まで）。高負荷/外部到達/大量出力は避ける、原因を「argvの位置設計ミス」「end-of-options未使用」「allowlist不在」「入力正規化不備」「実行権限過大」に分解して提案
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：Execution
+  - 攻撃者の目的（この技術が支える意図）：外部コマンドを"意図しないモード"で動かす、典型の後続：収集（Collection）、持ち出し（Exfiltration）、権限悪用（Privilege Escalation）は環境依存。まずは"制御点がargvにある"ことを確定する
+
+## 参考（必要最小限）
+- OWASP WSTG：Testing for Command Injection（WSTG-INPV-12）
+- CWE-78：OS Command Injection
+- MITRE ATT&CK：T1059 Command and Scripting Interpreter
 
 ## リポジトリ内リンク（最大3つまで）
 - `01_topics/02_web/05_input_05_command_injection_01_shell（metachar_pipeline）.md`
-- `01_topics/02_web/05_input_11_path_traversal_01_normalization（dotdot_encoding）.md`（“パス＝安全”の思い込みを壊す観点として接続）
+- `01_topics/02_web/05_input_11_path_traversal_01_normalization（dotdot_encoding）.md`
 - `01_topics/02_web/04_api_09_error_model_情報漏えい（例外_スタック）.md`
 
 ---
 
-## 次（作成候補順）
+## 深掘りリンク（最大8）
+- `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+- `01_topics/02_web/05_input_05_command_injection_01_shell（metachar_pipeline）.md`
 - `01_topics/02_web/05_input_05_command_injection_03_env（path_ld_preload）.md`
+- `01_topics/02_web/05_input_11_path_traversal_01_normalization（dotdot_encoding）.md`
+- `01_topics/02_web/04_api_09_error_model_情報漏えい（例外_スタック）.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+- `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`

@@ -1,19 +1,7 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS：
-  - この技術で満たす/破れる点：リソース単位の認可（BOLA/IDOR）、最小権限（フィールド単位の開示制御）、マルチテナント分離（03）、重要操作の保護（06）、入力の信頼境界（05）、監査（誰がどのフィールドにアクセス/実行したか）
-  - 支える前提：GraphQLは「1つのエンドポイントに複数のデータ取得/操作が集約」され、従来の“エンドポイント単位の認可”が破綻しやすい。AuthZをresolver/field単位で成立させないと、静かに漏れる。
-- WSTG：
-  - 該当テスト観点：Authorization Testing（IDOR/BOLA、アクセス制御の迂回）、API Testing（GraphQL特有：field-level、nested access、introspectionの露出は設計判断として扱う）
-  - どの観測に対応するか：同一Queryでも「フィールド差分」「ネスト差分」「変数差分」でAuthZの抜けを特定し、入口不一致（RESTでは守るがGraphQLで漏れる等）を確定する
-- PTES：
-  - 該当フェーズ：Information Gathering（Schema/Operationの把握、型・関係の地図化）、Vulnerability Analysis（field/resolverの認可漏れ、tenantコンテキスト崩壊）、Exploitation（許可範囲での最小差分検証：2ユーザ/2テナント）
-  - 前後フェーズとの繋がり（1行）：02/03/04/05/06の“境界モデル”をGraphQLの「PEP=resolver」「PDP=policy」「PIP=context/loader」に写像し、漏れをfield-levelで特定して08/09/10へ波及を評価する
-- MITRE ATT&CK：
-  - 戦術：Discovery / Collection / Privilege Escalation / Impact
-  - 目的：GraphQLの集約性（1リクエストで多情報）とfield-levelの抜けを利用して、越境閲覧・権限昇格・重要操作の成立条件を満たす（※手順ではなく成立条件の判断）
+# 03_authz_07_graphql_authz（field_level）
+GraphQLの認可を「エンドポイントの権限」ではなく、(1)Schema上の公開面（型/フィールド/操作）、(2)Resolverでの強制点（PEP）、(3)コンテキスト/属性の信頼境界（PIP）、(4)データローダ/キャッシュ/フェデレーションなどの例外経路、に分解し、実務で再現性ある評価をする
 
-## タイトル
-graphql_authz（field_level）
+---
 
 ## 目的（この技術で到達する状態）
 - GraphQLの認可を「エンドポイントの権限」ではなく、(1)Schema上の公開面（型/フィールド/操作）、(2)Resolverでの強制点（PEP）、(3)コンテキスト/属性の信頼境界（PIP）、(4)データローダ/キャッシュ/フェデレーションなどの例外経路、に分解し、実務で再現性ある評価ができる
@@ -23,15 +11,26 @@ graphql_authz（field_level）
 
 ## 前提（対象・範囲・想定）
 - 対象：GraphQL API（単一エンドポイント `/graphql` が多いが、複数endpoint/サブグラフも想定）
-- 想定する構成（混在前提）
-  - BFF（SPA用GraphQL）＋バックエンドREST/DB
-  - Apollo等のFederation（サブグラフ）/Gateway
-  - DataLoader等のバッチ/キャッシュ
-  - Persisted Query（クエリ固定）/複数操作（operationName切替）
-- 検証の安全な範囲（ペネトレ/TLPT/バグバウンティで実務的）
-  - 2ユーザ×2テナント（可能なら）で、同一Queryをフィールド差分・変数差分で比較し、漏れを最小回数で確定する
-  - “大量列挙”より「漏れるフィールド/ resolver」を特定し、Impact（漏洩量/操作成立）を根拠付きで示す
-  - 重要操作（Mutation）は、確認画面・dry-run・テストデータでの最小実行に留め、監査/状態差分を証跡化する
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - 想定する構成（混在前提）：BFF（SPA用GraphQL）＋バックエンドREST/DB、Apollo等のFederation（サブグラフ）/Gateway、DataLoader等のバッチ/キャッシュ、Persisted Query（クエリ固定）/複数操作（operationName切替）
+  - GraphQLは「1つのエンドポイントに複数のデータ取得/操作が集約」され、従来の"エンドポイント単位の認可"が破綻しやすい。AuthZをresolver/field単位で成立させないと、静かに漏れる。
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：2ユーザ×2テナント（可能なら）で、同一Queryをフィールド差分・変数差分で比較し、漏れを最小回数で確定する、"大量列挙"より「漏れるフィールド/ resolver」を特定し、Impact（漏洩量/操作成立）を根拠付きで示す
+  - やらないこと：重要操作（Mutation）は、確認画面・dry-run・テストデータでの最小実行に留め、監査/状態差分を証跡化する
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+  - `01_topics/02_web/03_authz_02_idor_典型パターン（一覧_検索_参照キー）.md`
+  - `01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
+  - `01_topics/02_web/03_authz_04_rbac_abac_判定点（policy_engine）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - GraphQLの認可を「エンドポイントの権限」ではなく、(1)Schema上の公開面（型/フィールド/操作）、(2)Resolverでの強制点（PEP）、(3)コンテキスト/属性の信頼境界（PIP）、(4)データローダ/キャッシュ/フェデレーションなどの例外経路、に分解し、実務で再現性ある評価をする
+    - "一覧/検索/参照（02）"の考え方をGraphQLに移植し、ネスト（関係）・フィールド（最小開示）・ノード参照（グローバルID）で起きる典型バグを短時間で切る
+    - エンジニアに対して、どこで強制すべきか（resolver/policy/DB/RLS/loader）、何を信頼すべきでないか（クライアント提供ID/tenant）、どう監査すべきか（operation/field/decision）を具体化する
+  - 扱わない（別ユニットへ接続）：
+    - Schema全体の完全網羅（introspectionが無い/運用で隠される場合）。ただし入口固定と差分観測で高リスク部位は評価できる → 別ユニット
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 ### 1) GraphQL AuthZの地図：Query/Mutation/Subscription と Field-level
@@ -167,17 +166,22 @@ GraphQLは、レスポンスの一部だけエラーでも、他フィールド�
   - evidence（HAR、レスポンス差分、エラー断片、設定断片）
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言える（確定できる）：
+- 何が"確定"できるか：
   - GraphQLにおける入口（node/search/connection/mutation）ごとの認可強制の一貫性
   - フィールド単位での最小開示が成立しているか（PII/権限情報/状態依存）
   - tenantコンテキストがresolver/loader/キャッシュまで一貫して適用されているか（03）
-  - Mutationが“専用コマンド化”され、重要操作の追加ガード（06/16）があるか
-- 推定（根拠付きで言える）：
+  - Mutationが"専用コマンド化"され、重要操作の追加ガード（06/16）があるか
+- 何が"推定"できるか（推定の根拠/前提）：
   - PEPがrootのみの場合、nested field/resolverで漏れる可能性が高い（入口増殖）
   - Loader/キャッシュにtenantキーが無い兆候がある場合、越境混入の事故が起き得る（高リスク）
   - directive宣言が多いのに挙動差分が薄い場合、宣言が強制に繋がっていない可能性
-- 言えない（この段階では断定しない）：
+- 何は"言えない"か（不足情報・観測限界）：
   - Schema全体の完全網羅（introspectionが無い/運用で隠される場合）。ただし入口固定と差分観測で高リスク部位は評価できる。
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：node/search/connection で他人/他テナントのオブジェクトへ到達し、機微フィールドが返る → 同一Queryでも「フィールド差分」「ネスト差分」「変数差分」でAuthZの抜けを特定し、入口不一致（RESTでは守るがGraphQLで漏れる等）を確定する
+  - パターンB：Mutationで role/tenant/state/owner など危険属性が更新できる（05/06/10の複合） → Mutationが"専用コマンド化"され、重要操作の追加ガード（06/16）があるかを観測
+  - パターンC：Loader/キャッシュ混入の兆候（ユーザ切替で不自然に同一応答、tenant境界が崩れる） → Loader/キャッシュにtenantキーが無い兆候がある場合、越境混入の事故が起き得る（高リスク）を観測
+  - パターンD：rootは守るが、nested fieldで一部フィールドだけ漏れる（最小開示違反） → PEPがrootのみの場合、nested field/resolverで漏れる可能性が高い（入口増殖）を観測
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
 - 優先度（P0/P1/P2）
@@ -264,21 +268,48 @@ POST /graphql
 - この例が使えないケース（前提が崩れるケース）：
   - Persisted Queryでquery本文を送れない（→operationName/IDで固定化された操作を差分観測し、返却フィールドの境界を評価する）
 
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：リソース単位の認可（BOLA/IDOR）、最小権限（フィールド単位の開示制御）、マルチテナント分離（03）、重要操作の保護（06）、入力の信頼境界（05）、監査（誰がどのフィールドにアクセス/実行したか）
+  - 該当要件（可能ならID）：V4（Access Control）、V13（API）
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 満たす：GraphQLは「1つのエンドポイントに複数のデータ取得/操作が集約」され、従来の"エンドポイント単位の認可"が破綻しやすい。AuthZをresolver/field単位で成立させないと、静かに漏れることを観測で確定し、以後の検証観点を外さないための基盤。
+  - 参照：https://github.com/OWASP/ASVS
+- WSTG：
+  - 該当カテゴリ/テスト観点：Authorization Testing（IDOR/BOLA、アクセス制御の迂回）、API Testing（GraphQL特有：field-level、nested access、introspectionの露出は設計判断として扱う）
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：同一Queryでも「フィールド差分」「ネスト差分」「変数差分」でAuthZの抜けを特定し、入口不一致（RESTでは守るがGraphQLで漏れる等）を確定する
+  - 参照：https://owasp.org/www-project-web-security-testing-guide/
+- PTES：
+  - 該当フェーズ：Information Gathering（Schema/Operationの把握、型・関係の地図化）、Vulnerability Analysis（field/resolverの認可漏れ、tenantコンテキスト崩壊）、Exploitation（許可範囲での最小差分検証：2ユーザ/2テナント）
+  - 前後フェーズとの繋がり（1行）：02/03/04/05/06の"境界モデル"をGraphQLの「PEP=resolver」「PDP=policy」「PIP=context/loader」に写像し、漏れをfield-levelで特定して08/09/10へ波及を評価する。
+  - 参照：https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：Discovery / Collection / Privilege Escalation / Impact
+  - 攻撃者の目的（この技術が支える意図）：GraphQLの集約性（1リクエストで多情報）とfield-levelの抜けを利用して、越境閲覧・権限昇格・重要操作の成立条件を満たす（※手順ではなく成立条件の判断）。
+  - 参照：https://attack.mitre.org/tactics/TA0007/（Discovery）、https://attack.mitre.org/tactics/TA0009/（Collection）、https://attack.mitre.org/tactics/TA0004/（Privilege Escalation）、https://attack.mitre.org/tactics/TA0040/（Impact）
+
 ## 参考（必要最小限）
-- OWASP ASVS（Authorization、最小権限、監査）
-- OWASP WSTG（Authorization Testing、API Testing：GraphQLの認可はfield/resolver単位で観測）
-- PTES（入口固定→差分観測→成立条件の確定）
-- MITRE ATT&CK（Discovery/Collection：GraphQLは1リクエストで多情報になり得るため、最小開示が重要）
+- OWASP Application Security Verification Standard: https://github.com/OWASP/ASVS
+- OWASP Web Security Testing Guide: https://owasp.org/www-project-web-security-testing-guide/
+- GraphQL Specification: https://spec.graphql.org/
+- PTES (Penetration Testing Execution Standard): https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK: https://attack.mitre.org/
 
 ## リポジトリ内リンク（最大3つまで）
-- `01_topics/02_web/03_authz_02_idor_典型パターン（一覧_検索_参照キー）.md`
-- `01_topics/02_web/03_authz_05_mass-assignment_モデル結合境界.md`
-- `01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
+- 関連 topics：`01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+- 関連 topics：`01_topics/02_web/03_authz_02_idor_典型パターン（一覧_検索_参照キー）.md`
+- 関連 topics：`01_topics/02_web/03_authz_05_mass-assignment_モデル結合境界.md`
 
-## 次（08以降）に進む前に確認したいこと（必要なら回答）
-- 08 file_access：
-  - GraphQLで署名URLを返す設計（`file { signedUrl }`）がある場合、field-levelと同時に「署名対象（tenant/期限/権限）」まで一体で書く（08と密結合）
-- 09 admin_console：
-  - GraphQLにadmin操作（ユーザ検索/権限付与/監査閲覧）が混在している場合、operationName/role境界と例外パスの観点を強める
-- 10 object_state：
-  - GraphQLは状態（draft/published）に応じたフィールド開示が崩れやすいので、state×fieldのマトリクスを強めに書く
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+- `01_topics/02_web/03_authz_02_idor_典型パターン（一覧_検索_参照キー）.md`
+- `01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
+- `01_topics/02_web/03_authz_04_rbac_abac_判定点（policy_engine）.md`
+- `01_topics/02_web/03_authz_05_mass-assignment_モデル結合境界.md`
+- `01_topics/02_web/03_authz_06_privileged_action_重要操作（承認_送金_権限）.md`
+- `01_topics/02_web/03_authz_08_file_access_ダウンロード認可（署名URL）.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+
+---

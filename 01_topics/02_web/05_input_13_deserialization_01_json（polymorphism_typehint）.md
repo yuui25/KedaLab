@@ -1,27 +1,4 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS
-  - この技術で満たす/破れる点：
-    - 「デシリアライズ＝入力の復元」は、実装上ほぼ必ず **“型選択（どのクラス/型として復元するか）”** を含む。ここが“入力→実行”境界になる。
-    - 破綻は、(1) 型ヒント（@type/$type/__type 等）を受け付ける、(2) DefaultTyping/TypeNameHandling 等で“外部入力から型が変えられる”、(3) 例外パスでブラックリスト回避、(4) 復元後に危険APIへ到達（テンプレ/SQL/コマンド/URLフェッチ）が典型。
-- WSTG
-  - 該当テスト観点：
-    - 入力処理（JSON）の「型・構造・境界」テスト（予期しない型、深いネスト、巨大配列、未知フィールド、型ヒント）を通じて、復元ロジックの制御点と例外挙動を確定する。
-- PTES
-  - 位置づけ：
-    - 情報収集：JSONを受け付ける面（REST/GraphQL/内部API/Webhook/ジョブ）と、パーサ/フレームワークを推定。
-    - 脆弱性分析：型ヒント・ポリモーフィズムの設定、復元先の型（interface/abstract/base class）、検証点（validation前後）、例外露出をモデル化。
-    - 侵害評価：RCEに短絡せず、まず「入力で型が変えられる」→「危険なsinkへ到達する」までを成立根拠として固める。
-- MITRE ATT&CK
-  - 初期侵入：T1190（公開アプリの脆弱性悪用）
-  - 実行/影響への接続（成立条件つき）：
-    - 型選択を操れると、復元後のオブジェクトが“別の処理経路（テンプレ評価/URLフェッチ/ファイルアクセス）”へ流れ、SSRF/情報漏えい/DoS、場合によりRCEに接続する。
-
----
-
-## タイトル
-JSONデシリアライズ（ポリモーフィズム/型ヒント）：型選択が“入力→実行経路”を切り替える境界
-
----
+# 05_input_13_deserialization_01_json（polymorphism_typehint）
 
 ## 目的（このファイルで到達する状態）
 - 「JSONはただの文字列」ではなく、実装では **型（class/type）とオブジェクトグラフを復元する** ため、入力が処理経路を切り替える点（境界）を説明できる。
@@ -34,19 +11,26 @@ JSONデシリアライズ（ポリモーフィズム/型ヒント）：型選択
 
 ---
 
-## 扱う範囲（このファイルの守備範囲）
-- 本ファイル：JSONの **ポリモーフィズム（型選択）** と **型ヒント（type hint）** に集中
-  - 例：`@type` / `$type` / `__type` / `type` / `class` 等のフィールドで型が指定される設計
-  - 例：DefaultTyping/TypeNameHandling/AutoType のような“機能で型が外部入力に開放される”設計
-  - 例：Map/Any/Object など “復元先が曖昧” で後段が動的ディスパッチする設計
-- 直接は扱わない（ただし接続は書く）：
-  - YAML/XMLのデシリアライズ（別ファイル）
-  - 具体的ガジェットチェーンや実行ペイロードの列挙（本プロジェクトでは“成立条件”と“境界”が主）
-- 接続先：
-  - `05_input_13_deserialization_02_yaml（anchors_tags）.md`
-  - `05_input_13_deserialization_03_xml（object_mapping）.md`
-  - `05_input_09_ssrf_*`（復元後にURLフェッチへ到達する場合）
-  - `05_input_01_入力→実行境界（テンプレート注入_SSTI）.md`（復元後にテンプレ評価へ到達する場合）
+## 前提（対象・範囲・想定）
+- 対象：許可範囲のWeb/API（必要なら検証環境）に限定。
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - JSONを受け付ける面（REST/GraphQL/内部API/Webhook/ジョブ）を持つWebアプリ
+  - パーサ/フレームワークが型ヒント・ポリモーフィズムをサポート
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：入力で型が変えられるか、危険なsinkへ到達するかを成立根拠として固める
+  - やらないこと：具体的ガジェットチェーンや実行ペイロードの列挙（本プロジェクトでは"成立条件"と"境界"が主）
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - JSONの **ポリモーフィズム（型選択）** と **型ヒント（type hint）** に集中
+    - 例：`@type` / `$type` / `__type` / `type` / `class` 等のフィールドで型が指定される設計
+    - 例：DefaultTyping/TypeNameHandling/AutoType のような"機能で型が外部入力に開放される"設計
+    - 例：Map/Any/Object など "復元先が曖昧" で後段が動的ディスパッチする設計
+  - 扱わない（別ユニットへ接続）：
+    - YAML/XMLのデシリアライズ → `05_input_13_deserialization_02_yaml（anchors_tags）.md` / `05_input_13_deserialization_03_xml（object_mapping）.md`
+    - 復元後にURLフェッチへ到達する場合 → `05_input_09_ssrf_*`
+    - 復元後にテンプレ評価へ到達する場合 → `05_input_01_入力→実行境界（テンプレート注入_SSTI）.md`
 
 ---
 
@@ -267,7 +251,7 @@ payload_size / max_depth / max_array_len
 
 ---
 
-## コマンド/リクエスト例（例示は最小限・意味中心）
+## コマンド/リクエスト例（例示は最小限・意味の説明が主）
 ~~~~
 # 例：安全なdiscriminator設計（概念）
 # 入力: {"type":"email", "to":"a@b", "body":"..."}
@@ -280,7 +264,43 @@ payload_size / max_depth / max_array_len
 # -> 外部入力で復元クラスが変わる = 入力→実行経路の切替点
 ~~~~
 
----
+- この例で観測していること：
+  - 安全なdiscriminator設計と危険な設計の違いを示す
+- 出力のどこを見るか（注目点）：
+  - 型が外部入力で直接指定できるか（@type/$type等）
+  - 型解決が動いているか（存在しない型名を与えたときのエラー差分）
+- この例が使えないケース（前提が崩れるケース）：
+  - 型ヒントが存在しない場合（復元先が固定）
+
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS
+  - この技術で満たす/破れる点：
+    - 「デシリアライズ＝入力の復元」は、実装上ほぼ必ず **"型選択（どのクラス/型として復元するか）"** を含む。ここが"入力→実行"境界になる。
+    - 破綻は、(1) 型ヒント（@type/$type/__type 等）を受け付ける、(2) DefaultTyping/TypeNameHandling 等で"外部入力から型が変えられる"、(3) 例外パスでブラックリスト回避、(4) 復元後に危険APIへ到達（テンプレ/SQL/コマンド/URLフェッチ）が典型。
+- WSTG
+  - 該当テスト観点：
+    - 入力処理（JSON）の「型・構造・境界」テスト（予期しない型、深いネスト、巨大配列、未知フィールド、型ヒント）を通じて、復元ロジックの制御点と例外挙動を確定する。
+- PTES
+  - 位置づけ：
+    - 情報収集：JSONを受け付ける面（REST/GraphQL/内部API/Webhook/ジョブ）と、パーサ/フレームワークを推定。
+    - 脆弱性分析：型ヒント・ポリモーフィズムの設定、復元先の型（interface/abstract/base class）、検証点（validation前後）、例外露出をモデル化。
+    - 侵害評価：RCEに短絡せず、まず「入力で型が変えられる」→「危険なsinkへ到達する」までを成立根拠として固める。
+- MITRE ATT&CK
+  - 初期侵入：T1190（公開アプリの脆弱性悪用）
+  - 実行/影響への接続（成立条件つき）：
+    - 型選択を操れると、復元後のオブジェクトが"別の処理経路（テンプレ評価/URLフェッチ/ファイルアクセス）"へ流れ、SSRF/情報漏えい/DoS、場合によりRCEに接続する。
+  - 参照：https://attack.mitre.org/techniques/T1190/
+
+## 参考（必要最小限）
+- CWE-502: Deserialization of Untrusted Data
+  - https://cwe.mitre.org/data/definitions/502.html
+- OWASP Deserialization Cheat Sheet
+  - https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+
+## リポジトリ内リンク（最大3つまで）
+- 関連 topics：`05_input_13_deserialization_02_yaml（anchors_tags）.md`
+- 関連 topics：`05_input_13_deserialization_03_xml（object_mapping）.md`
+- 関連 labs：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
 
 ## 深掘りリンク（最大8）
 - `05_input_13_deserialization_02_yaml（anchors_tags）.md`

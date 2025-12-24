@@ -1,19 +1,4 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS：
-  - この技術で満たす/破れる点：認証（ハンドシェイク時/再接続/トークン更新）、認可（チャネル/トピック/ルーム/購読単位）、セッション管理（長時間接続の失効反映、同時接続数）、入力検証（メッセージスキーマ、巨大payload）、出力制御（他人データ混入防止）、監査（接続/購読/送信の相関）、可用性（接続保持・ブロードキャスト濫用）
-  - 支える前提：WebSocket/SSEは“1回認証して長く流す”構造のため、HTTPの前提（リクエスト毎の認証/認可）からズレる。ズレた分がIDOR（購読）・越境混入・失効未反映・再接続穴として現れる。
-- WSTG：
-  - 該当テスト観点：Authorization Testing（チャネル/トピック単位の境界、購読IDOR）、Session Management（長時間接続、失効/再認証、同時接続）、API Testing（WebSocket/SSEの認証方式、再接続、CORS/Origin）、Input Validation（メッセージの型/サイズ）、Error Handling（エラー差分オラクル）
-  - どの観測に対応するか：入口（handshake/subscribe）→継続（push）→再接続（reconnect）→解除（unsubscribe/close）を分解し、(1)認証の運搬、(2)認可の判定点、(3)購読/ルームのIDOR、(4)テナント分離、(5)失効反映、(6)再接続穴、(7)濫用耐性、を差分観測で確定する
-- PTES：
-  - 該当フェーズ：Information Gathering（WS/SSEの入口URL、プロトコル、トピック/イベント名、再接続仕様）、Vulnerability Analysis（購読境界・失効反映・混線・オラクル）、Exploitation（低侵襲：2ユーザ差分で購読越境/混入を最小件数で証跡化）
-  - 前後フェーズとの繋がり（1行）：AuthN（セッション/更新）、AuthZ（IDOR/マルチテナント）、Async（07：イベント配信）、Error model（09）、Versioning（10）、gRPC（11）と同様に“別経路/長時間”で境界が崩れる。12はリアルタイム系の総仕上げとして扱う
-- MITRE ATT&CK：
-  - 戦術：Collection / Exfiltration / Impact / Discovery
-  - 目的：購読越境で継続収集（Collection）、イベントに含まれる機微の取得（Exfiltration）、接続/購読濫用で枯渇（Impact）、イベント名/トピック推定（Discovery）。
-
-## タイトル
-websocket_sse_認証・認可境界
+# 04_api_12_websocket_sse_認証・認可境界
 
 ## 目的（この技術で到達する状態）
 - WebSocket/SSE を「リアルタイム機能」ではなく「長時間接続の認証/認可境界」としてモデル化し、典型事故（購読IDOR、ルーム越境、失効未反映、再接続穴、Origin誤信頼、イベント混線、濫用）を実務ペネトレで差分観測により“確定”できる
@@ -21,16 +6,24 @@ websocket_sse_認証・認可境界
 - “HTTPは堅牢でもWS/SSEが穴”を防ぐための共通観測テンプレを持つ
 
 ## 前提（対象・範囲・想定）
-- 対象
+- 対象：
   - WebSocket：双方向（client→server、server→client）
   - SSE：単方向（server→client、HTTPで接続保持）
-- 現実の構成例
-  - 認証：Cookie（セッション）/Bearer（クエリorヘッダ）/サブプロトコル/初回メッセージでtoken送信
-  - 認可：subscribe時にtopic/room/channel を指定（JSONメッセージ）し、以降pushされる
-  - 再接続：自動再接続（指数バックオフ）やLast-Event-ID（SSE）
-- ペネトレ安全配慮
-  - 長時間接続・大量購読は可用性に影響するため、少数トピック・短時間で確認する
-  - “取得したイベント内容”は最小限のマスクで証跡化する（08と同型）
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - 現実の構成例：認証（Cookie（セッション）/Bearer（クエリorヘッダ）/サブプロトコル/初回メッセージでtoken送信）、認可（subscribe時にtopic/room/channel を指定（JSONメッセージ）し、以降pushされる）、再接続（自動再接続（指数バックオフ）やLast-Event-ID（SSE））
+  - WebSocket/SSEは"1回認証して長く流す"構造のため、HTTPの前提（リクエスト毎の認証/認可）からズレる。ズレた分がIDOR（購読）・越境混入・失効未反映・再接続穴として現れる。
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：長時間接続・大量購読は可用性に影響するため、少数トピック・短時間で確認する、"取得したイベント内容"は最小限のマスクで証跡化する（08と同型）
+  - やらないこと：pub/sub内部実装の健全性（Redis等）を完全には断定できないが、混線の有無は外形で評価できる
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
+  - `01_topics/02_web/03_authz_02_idor_典型パターン（一覧_検索_参照キー）.md`
+  - `01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
+  - `01_topics/02_web/04_api_00_権限伝播・入力・バックエンド連携.md`
+  - `01_topics/02_web/04_api_07_async_job_権限伝播（キュー_ワーカー）.md`
+  - `01_topics/02_web/04_api_08_file_export_エクスポート境界（CSV_PDF）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ## 観測ポイント（何を見ているか：入口→継続→再接続→解除）
 ### 1) 入口（handshake / connect）での認証：どこにtokenが載るか
@@ -144,18 +137,24 @@ websocket_sse_認証・認可境界
   - レート/サイズ制限の兆候
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言える（確定できる）：
+- 何が"確定"できるか：
   - 認証がどこで成立し、どの経路で漏えいし得るか（query token等）
   - 認可が接続単位/購読単位/メッセージ単位のどこで強制されているか
   - 購読IDOR（room/topic/Last-Event-ID）が成立するか
   - テナント分離がサーバ強制か、クライアント指定で崩れるか
   - 失効・権限変更が既存接続に反映されるか（長時間境界）
   - Originチェック/CSWSH耐性、濫用耐性（レート/バックプレッシャ）
-- 推定（根拠付きで言える）：
+- 何が"推定"できるか（推定の根拠/前提）：
   - subscribe_levelのAuthZが弱い場合、IDORと組み合わさって継続的なデータ収集が成立しやすい
   - revocation_handlingがnoneの場合、アカウント停止後も情報が流れ続ける可能性が高い
-- 言えない（この段階では断定しない）：
-  - pub/sub内部実装の健全性（Redis等）を完全には断定できないが、混線の有無は外形で評価できる
+- 何は"言えない"か（不足情報・観測限界）：
+  - pub/sub内部実装の健全性（Redis等）を完全には断定できないが、混線の有無は外形で評価できる。
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：購読IDOR（room/topic/Last-Event-ID）が成立する → 購読IDOR成立（P0）
+  - パターンB：テナント分離がサーバ強制でなく、クライアント指定で崩れる → テナント分離崩壊（P0）
+  - パターンC：失効・権限変更が既存接続に反映されない（長時間境界） → 失効未反映（P0〜P1）
+  - パターンD：Originチェック/CSWSH耐性が弱い → CSWSH成立（P1）
+  - パターンE：濫用耐性（レート/バックプレッシャ）が弱い → 濫用耐性不足（P1）
 
 ## 確認（最大限詳しく：どうやって“確定”したと言えるか）
 リアルタイム系は「接続が確立した」だけでは確認にならない。connect→subscribe→受信→再接続→失効反映→解除の一連を、2ユーザ差分で“最小イベント”を使って確定する。以下は、実務で再現性が高い手順に落とす。
@@ -358,7 +357,22 @@ Last-Event-ID: 9999
 - 出力のどこを見るか（注目点）：
   - authz_unit、subscription_idor_risk、revocation_handling、reconnect_hardening、origin_hardening、tenant_enforcement
 - この例が使えないケース（前提が崩れるケース）：
-  - subscribeモデルが無い場合でも、接続URLのパスやクエリでチャネル指定する設計がある。そこで同様に“チャネルID改変”の差分観測を行う
+  - subscribeモデルが無い場合でも、接続URLのパスやクエリでチャネル指定する設計がある。そこで同様に"チャネルID改変"の差分観測を行う
+
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：V2（認証）、V4（アクセス制御）、V7（ログとモニタリング）、V13（API）
+  - 該当要件（可能ならID）：V2.1（一般的な認証設計）、V4.1（一般的なアクセス制御設計）、V7.1（ログ要件）、V13.1（APIの認証・認可）
+  - このファイルの内容が「満たす/破れる」ポイント：認証（ハンドシェイク時/再接続/トークン更新）、認可（チャネル/トピック/ルーム/購読単位）、セッション管理（長時間接続の失効反映、同時接続数）、入力検証（メッセージスキーマ、巨大payload）、出力制御（他人データ混入防止）、監査（接続/購読/送信の相関）、可用性（接続保持・ブロードキャスト濫用）
+- WSTG：
+  - 該当カテゴリ/テスト観点：Authorization Testing（チャネル/トピック単位の境界、購読IDOR）、Session Management（長時間接続、失効/再認証、同時接続）、API Testing（WebSocket/SSEの認証方式、再接続、CORS/Origin）、Input Validation（メッセージの型/サイズ）、Error Handling（エラー差分オラクル）
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：入口（handshake/subscribe）→継続（push）→再接続（reconnect）→解除（unsubscribe/close）を分解し、(1)認証の運搬、(2)認可の判定点、(3)購読/ルームのIDOR、(4)テナント分離、(5)失効反映、(6)再接続穴、(7)濫用耐性、を差分観測で確定する
+- PTES：
+  - 該当フェーズ：Information Gathering、Vulnerability Analysis、Exploitation
+  - 前後フェーズとの繋がり（1行）：AuthN（セッション/更新）、AuthZ（IDOR/マルチテナント）、Async（07：イベント配信）、Error model（09）、Versioning（10）、gRPC（11）と同様に"別経路/長時間"で境界が崩れる。12はリアルタイム系の総仕上げとして扱う
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：TA0009（Collection）、TA0010（Exfiltration）、TA0040（Impact）、TA0007（Discovery）
+  - 攻撃者の目的（この技術が支える意図）：購読越境で継続収集（Collection）、イベントに含まれる機微の取得（Exfiltration）、接続/購読濫用で枯渇（Impact）、イベント名/トピック推定（Discovery）。
 
 ## 参考（必要最小限）
 - OWASP ASVS（セッション・認可・監査）
@@ -371,5 +385,17 @@ Last-Event-ID: 9999
 - `01_topics/02_web/04_api_07_async_job_権限伝播（キュー_ワーカー）.md`
 - `01_topics/02_web/04_api_09_error_model_情報漏えい（例外_スタック）.md`
 
-## 次（次トピック）に進む前に確認したいこと（必要なら回答）
-- 次に進む際、04_api配下は一通り揃ったため、運用上は「04_api_00_index.md（入口）」に各ファイルの“使いどころ（どの場面で参照するか）”を追記しておくと、実務で迷子になりにくい
+---
+
+## 深掘りリンク（最大8）
+- 関連 topics：
+  - `01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
+  - `01_topics/02_web/03_authz_02_idor_典型パターン（一覧_検索_参照キー）.md`
+  - `01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
+  - `01_topics/02_web/04_api_00_権限伝播・入力・バックエンド連携.md`
+  - `01_topics/02_web/04_api_07_async_job_権限伝播（キュー_ワーカー）.md`
+  - `01_topics/02_web/04_api_08_file_export_エクスポート境界（CSV_PDF）.md`
+  - `01_topics/02_web/04_api_09_error_model_情報漏えい（例外_スタック）.md`
+- 関連 labs / cases：
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`

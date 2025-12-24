@@ -1,19 +1,7 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS：
-  - この技術で満たす/破れる点：認可判断の一貫性（中央集権/統一）、最小権限、権限昇格防止、マルチテナント境界の一貫適用（03と接続）、重要操作の追加条件（06と接続）、監査（decision・理由・属性）
-  - 支える前提：RBAC/ABACは“方式”ではなく「判定点（どこで決めるか）」が重要。方式が正しくても判定点が分散・例外化すると破綻する。
-- WSTG：
-  - 該当テスト観点：Authorization Testing（Role/Attributeベース、Access Control Bypass）、Business Logic（権限境界の例外パス）、API Testing（policy適用漏れ）
-  - どの観測に対応するか：policyが適用される入口と適用されない入口を差分で特定し、判定理由（deny/allow）を証跡化する
-- PTES：
-  - 該当フェーズ：Information Gathering（権限モデル把握：role/attribute/tenant）、Vulnerability Analysis（判定点の欠落・例外パス）、Exploitation（最小差分検証：ロール差分/属性差分）
-  - 前後フェーズとの繋がり（1行）：02/03で抽出した“入口とスコープ軸”を、04で「どこで誰が判断しているか（PDP/PEP）」に落とし込み、05/06/09/10の具体欠陥へ分岐する
-- MITRE ATT&CK：
-  - 戦術：Privilege Escalation / Defense Evasion / Discovery / Impact
-  - 目的：判定点の例外（管理API、内部ジョブ、GraphQL resolver 等）を狙って権限昇格・横展開を成立させる（※手順ではなく成立条件の判断）
+# 03_authz_04_rbac_abac_判定点（policy_engine）
+RBAC/ABACを「用語説明」で終わらせず、(1)権限モデル（role/attribute）、(2)判定点（PEP/PDP）、(3)データスコープ（tenant/object/state）を結合した"実装の地図"として把握する
 
-## タイトル
-rbac_abac_判定点（policy_engine）
+---
 
 ## 目的（この技術で到達する状態）
 - RBAC/ABACを「用語説明」で終わらせず、(1)権限モデル（role/attribute）、(2)判定点（PEP/PDP）、(3)データスコープ（tenant/object/state）を結合した“実装の地図”として把握できる
@@ -23,16 +11,24 @@ rbac_abac_判定点（policy_engine）
 
 ## 前提（対象・範囲・想定）
 - 対象：Web/APIの認可（endpoint/操作/オブジェクト単位）
-- 前提：マルチテナント（03）とIDOR（02）が存在し得る（RBAC/ABACはそれらを“どこで防ぐか”の枠組み）
-- 用語（このファイル内で固定）
-  - PEP（Policy Enforcement Point）：実際にブロック/許可する場所（middleware/handler/gateway/resolver 等）
-  - PDP（Policy Decision Point）：許可/拒否を判断する場所（policy engine / policy関数）
-  - PIP（Policy Information Point）：判断に必要な属性を提供する場所（DB、Directory、トークンクレーム等）
-  - role：役割（admin/editor/viewer）
-  - attribute：属性（tenant_id、resource.owner_id、resource.state、risk_score、device_trust等）
-- 検証の安全な範囲（実務的）
-  - 2〜3ロール（例：viewer/editor/admin）× 2テナント × 代表操作（read/write/admin）で差分観測する
-  - “大量試行”ではなく、判定点の抜けを狙って入口差分を見つける（API/管理UI/非同期/GraphQL等）
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - マルチテナント（03）とIDOR（02）が存在し得る（RBAC/ABACはそれらを"どこで防ぐか"の枠組み）
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：2〜3ロール（例：viewer/editor/admin）× 2テナント × 代表操作（read/write/admin）で差分観測する
+  - やらないこと："大量試行"ではなく、判定点の抜けを狙って入口差分を見つける（API/管理UI/非同期/GraphQL等）
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+  - `01_topics/02_web/03_authz_02_idor_典型パターン（一覧_検索_参照キー）.md`
+  - `01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - RBAC/ABACを「用語説明」で終わらせず、(1)権限モデル（role/attribute）、(2)判定点（PEP/PDP）、(3)データスコープ（tenant/object/state）を結合した"実装の地図"として把握する
+    - 認可バグの根本原因を「ロール不足」ではなく、「判定点の抜け」「属性の信頼境界」「例外パス」「policy drift（仕様と実装のズレ）」として切り分ける
+    - エンジニアに対して、どこを統一/必須化すべきか（policy engine導入/統一ガード/DB制約/監査）を具体化する
+  - 扱わない（別ユニットへ接続）：
+    - policyの全容（内部実装が見えない場合）。ただし"観測された入口差分"から欠陥の所在は絞れる → 別ユニット
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 ### 1) まず「権限モデル」を3軸で表現する（RBAC/ABACを混在前提で扱う）
@@ -127,16 +123,21 @@ ABACは「属性が正しい」ことが前提。属性がクライアント入�
   - action_priority（P0/P1/P2）
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言える（確定できる）：
+- 何が"確定"できるか：
   - 認可がRBAC/ABACのどの混在モデルで、どこがPEP/PDPになっているか（入口別）
   - 属性（tenant/owner/state/role）がどこから来ていて、クライアント影響を受ける余地があるか
   - 例外パスや入口増殖によるpolicy適用漏れの可能性（重点検証ポイント）
-- 推定（根拠付きで言える）：
+- 何が"推定"できるか（推定の根拠/前提）：
   - PEPがhandler分散で、入口が多いほど、IDOR/越境/重要操作の抜けが起きやすい
   - PIPがクライアント入力に寄るほど、mass-assignmentや属性改ざんに弱くなる（05）
   - decisionログが弱いと、侵害時に検知・追跡が困難（運用上の重大リスク）
-- 言えない（この段階では断定しない）：
-  - policyの全容（内部実装が見えない場合）。ただし“観測された入口差分”から欠陥の所在は絞れる。
+- 何は"言えない"か（不足情報・観測限界）：
+  - policyの全容（内部実装が見えない場合）。ただし"観測された入口差分"から欠陥の所在は絞れる。
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：PEPが分散していて例外パスがある → 入口（api/admin/export/file/graphql/job）ごとに同一操作のdeny/allow差分が出るかを見る
+  - パターンB：PIPがクライアント影響を受ける（属性が信頼できない） → update/createで "本来サーバが決めるべき属性（owner/role/tenant/state）" が入力に含まれていないかを観測
+  - パターンC：tenant guard が一部入口で抜ける → テナントA/Bで代表API（search/file/admin/get）を固定して差分観測（03の手法を流用）
+  - パターンD：重要操作の追加ガードが無い → 承認/権限付与/送金など"重要操作"が、通常updateと同じ判定で成立する兆候を観測
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
 - 優先度（P0/P1/P2）
@@ -217,20 +218,47 @@ POST /jobs/run                      # 非同期/内部実行（権限文脈が�
 - この例が使えないケース（前提が崩れるケース）：
   - 入口が単一で単純なアプリ（→05/06/10のような“条件の複雑さ”が主戦場になる）
 
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：認可判断の一貫性（中央集権/統一）、最小権限、権限昇格防止、マルチテナント境界の一貫適用（03と接続）、重要操作の追加条件（06と接続）、監査（decision・理由・属性）
+  - 該当要件（可能ならID）：V4（Access Control）
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 満たす：RBAC/ABACは"方式"ではなく「判定点（どこで決めるか）」が重要。方式が正しくても判定点が分散・例外化すると破綻することを観測で確定し、以後の検証観点を外さないための基盤。
+  - 参照：https://github.com/OWASP/ASVS
+- WSTG：
+  - 該当カテゴリ/テスト観点：Authorization Testing（Role/Attributeベース、Access Control Bypass）、Business Logic（権限境界の例外パス）、API Testing（policy適用漏れ）
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：policyが適用される入口と適用されない入口を差分で特定し、判定理由（deny/allow）を証跡化する
+  - 参照：https://owasp.org/www-project-web-security-testing-guide/
+- PTES：
+  - 該当フェーズ：Information Gathering（権限モデル把握：role/attribute/tenant）、Vulnerability Analysis（判定点の欠落・例外パス）、Exploitation（最小差分検証：ロール差分/属性差分）
+  - 前後フェーズとの繋がり（1行）：02/03で抽出した"入口とスコープ軸"を、04で「どこで誰が判断しているか（PDP/PEP）」に落とし込み、05/06/09/10の具体欠陥へ分岐する。
+  - 参照：https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：Privilege Escalation / Defense Evasion / Discovery / Impact
+  - 攻撃者の目的（この技術が支える意図）：判定点の例外（管理API、内部ジョブ、GraphQL resolver 等）を狙って権限昇格・横展開を成立させる（※手順ではなく成立条件の判断）。
+  - 参照：https://attack.mitre.org/tactics/TA0004/（Privilege Escalation）、https://attack.mitre.org/tactics/TA0005/（Defense Evasion）、https://attack.mitre.org/tactics/TA0007/（Discovery）、https://attack.mitre.org/tactics/TA0040/（Impact）
+
 ## 参考（必要最小限）
-- OWASP ASVS（Authorization、最小権限、監査）
-- OWASP WSTG（Authorization Testing、RBAC/ABAC、アクセス制御の迂回）
-- PTES（入口差分と属性モデルで欠陥を絞る）
-- MITRE ATT&CK（Privilege Escalation：例外パス・判定点の抜けを狙う）
+- OWASP Application Security Verification Standard: https://github.com/OWASP/ASVS
+- OWASP Web Security Testing Guide: https://owasp.org/www-project-web-security-testing-guide/
+- PTES (Penetration Testing Execution Standard): https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK: https://attack.mitre.org/
 
 ## リポジトリ内リンク（最大3つまで）
+- 関連 topics：`01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+- 関連 topics：`01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
+- 関連 topics：`01_topics/02_web/03_authz_05_mass-assignment_モデル結合境界.md`
+
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+- `01_topics/02_web/03_authz_01_境界モデル（オブジェクト_ロール_テナント）.md`
+- `01_topics/02_web/03_authz_02_idor_典型パターン（一覧_検索_参照キー）.md`
 - `01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
 - `01_topics/02_web/03_authz_05_mass-assignment_モデル結合境界.md`
 - `01_topics/02_web/03_authz_06_privileged_action_重要操作（承認_送金_権限）.md`
+- `01_topics/02_web/03_authz_07_graphql_authz（field_level）.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
 
-## 次（05以降）に進む前に確認したいこと（必要なら回答）
-- 05 mass-assignment：
-  - APIがJSONで“部分更新（PATCH）”を多用するか、フォーム（MVC）中心か（どちらでも書けるが例が変わる）
-  - モデル結合（DTO→ORM）が自動（フレームワーク標準）か、手動マッピングか
-- 06 privileged_action：
-  - 重要操作の定義（承認/送金/権限付与/メール変更等）の代表例を、あなたの実務に合わせて強めに書いてよいか
+---

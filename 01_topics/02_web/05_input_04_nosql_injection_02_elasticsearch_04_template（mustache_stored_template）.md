@@ -1,28 +1,4 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-
-- ASVS
-  - 入力→実行境界：ユーザ入力が「検索パラメータ」ではなく **テンプレ（Mustache）展開後のQuery DSL構造** に影響しない設計か
-  - 設計：テンプレ（stored search template）を使う場合でも、入力は **params（data）** に限定し、テンプレ本文（code）に混ぜない
-  - 認可境界：tenant/org/owner の固定条件をテンプレ内で“入力と同列に合成”していないか（上書き・揺らぎ・適用範囲漏れ）
-  - 例外/エラー：テンプレ展開エラー・パースエラーを外部へ詳細に返さない（oracle化防止）
-  - 可用性：テンプレが“表現力”を持つため、複雑度（条件分岐/配列展開）と検索の高コスト要素（wildcard/script/runtime等）を制限する
-  - 監査：template id / params 形状 / 実行時間 / ヒット数 を相関し、探索・濫用を検知できるか
-- WSTG
-  - Injection：テンプレ展開は「入力→実行計画生成」の代表例（SQLiの動的SQL生成に近い）
-  - テスト方針：エラーより **Boolean oracle（件数/長さ/フィールド出現）** と **“テンプレ分岐の差分”** で成立根拠を取る
-  - Second-order：保存検索/共有検索条件で “保存時は無害、実行時に展開される” を重視
-- PTES
-  - Vulnerability Analysis：入口（search/report/saved view）→ テンプレ利用（_search/template or stored script）→ params の受理範囲 → 認可条件の適用位置 を特定
-  - Exploitation：影響実証は最小限（越境混入や情報露出の根拠まで）。高負荷・大量抽出は避ける
-  - Reporting：根本原因を「テンプレ本文の設計」「paramsの型拘束不足」「認可条件の混在」「監査不足」「高コスト制限不在」に分解して提示
-- MITRE ATT&CK
-  - TA0001 Initial Access（公開アプリ入口）/ TA0009 Collection（検索で横断収集）/ TA0005 Defense Evasion（エラー統一下でブラインド化）
-  - 代表：T1190 Exploit Public-Facing Application（検索入力→実行計画生成の悪用）
-
----
-
-## タイトル
-NoSQL Injection（Elasticsearch）：Mustache / stored template（_search/template）入力→実行境界
+# 05_input_04_nosql_injection_02_elasticsearch_04_template（mustache_stored_template）
 
 ## 目的（この技術で到達する状態）
 - Elasticsearch の Search Template（Mustache、stored template）を「便利機能」ではなく **入力→実行境界（テンプレ展開→Query DSL生成）** として扱い、
@@ -33,20 +9,20 @@ NoSQL Injection（Elasticsearch）：Mustache / stored template（_search/templa
   状態になる。
 
 ## 前提（対象・範囲・想定）
-- 対象
-  - 検索窓（サイト内検索）、監査ログ検索、管理UIの詳細検索、レポート/エクスポート、保存検索（saved search）、共有フィルタ
-  - “テンプレ/クエリ定義/検索条件テンプレ” 等の文言がある機能
-- 想定アーキテクチャ
-  - アプリ（API）→ ES（_search または _search/template）
-  - テンプレは
-    - アプリ内（サーバ側文字列テンプレ）で展開してESへ送る、または
-    - ESの stored template（_scripts）として保持し、id参照で呼ぶ
-- 本ファイルの焦点
-  - Mustache（テンプレ）＋ params の境界、stored template の運用とsecond-orderの危険性
-- 非スコープ（別ファイル）
-  - query_string（Lucene Query String）
-  - DSL（bool/filter/script）全般
-  - painless（script本文注入）
+- 対象：検索窓（サイト内検索）、監査ログ検索、管理UIの詳細検索、レポート/エクスポート、保存検索（saved search）、共有フィルタ、"テンプレ/クエリ定義/検索条件テンプレ" 等の文言がある機能
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - アプリ（API）→ ES（_search または _search/template）、テンプレはアプリ内（サーバ側文字列テンプレ）で展開してESへ送る、またはESの stored template（_scripts）として保持し、id参照で呼ぶ
+  - 本ファイルの焦点：Mustache（テンプレ）＋ params の境界、stored template の運用とsecond-orderの危険性
+  - 非スコープ（別ファイル）：query_string（Lucene Query String）、DSL（bool/filter/script）全般、painless（script本文注入）
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：テンプレが使われている入口（UI/API）を同定できる、入力が params（data）に閉じているか、テンプレ本文（code）に混入しているかを、差分観測で確定できる、認可境界（tenant/org/owner）をテンプレ内で安全に固定できているかを検証できる、second-order（保存検索/共有検索条件）まで含めて、設計・運用の修正案を提示できる
+  - やらないこと：影響実証は最小限（越境混入や情報露出の根拠まで）。高負荷・大量抽出は避ける
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+  - `01_topics/02_web/05_input_04_nosql_injection_02_elasticsearch_02_dsl（bool_filter_script）.md`
+  - `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ## 概念整理：Search Template は “サーバで動く動的クエリ生成”
 - “入力が文字列として安全” であっても、テンプレが
@@ -89,7 +65,32 @@ NoSQL Injection（Elasticsearch）：Mustache / stored template（_search/templa
   - テンプレ分岐で “消えない” 場所に置く（テンプレの分岐対象にしない）
   - 可能ならテンプレ外（アプリ共通部品）で強制し、テンプレは“検索条件の補助”に限定
 
-## oracle（成立根拠）の取り方：テンプレは“エラーより差分”
+## 結果の意味（その出力が示す状態：何が言える/言えない）
+- 何が"確定"できるか：
+  - テンプレが使われている入口（UI/API）を同定できる、入力が params（data）に閉じているか、テンプレ本文（code）に混入しているかを、差分観測で確定できる、認可境界（tenant/org/owner）をテンプレ内で安全に固定できているかを検証できる、second-order（保存検索/共有検索条件）まで含めて、設計・運用の修正案を提示できる
+- 何が"推定"できるか（推定の根拠/前提）：
+  - まず Boolean oracle（件数/長さ）で確定する（推奨）
+  - エラーが見えるなら、テンプレ展開エラー、パースエラーが返る場合（ただし外部へ詳細を返す時点で error model不備（情報露出）として独立に指摘する）
+  - 時間差分は最後（短時間・少回数で、他指標と組み合わせる）
+- 何は"言えない"か（不足情報・観測限界）：
+  - "検索範囲が確実に拡大した"の断定（仕様として高度検索が存在する可能性）、"DoSが可能"の断定（性能試験は別枠、契約と安全配慮が必要）
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：params が "data" ではなく "code（テンプレ本文/断片）" に混ざる → テンプレ本文に入力を連結している、部分テンプレや文字列生成で、入力が構文要素に影響する
+  - パターンB：分岐・配列展開で Query DSL の形が入力で変わる（構造生成リスク） → 入力が空なら $match を省く、複数条件なら should を増やす、など
+  - パターンC：second-order（保存検索/共有条件）で"実行時"に境界が開く → 保存時のバリデーションが浅い、またはテンプレ変更後に古いデータが想定外の分岐へ入る
+
+## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
+- この状態が示す"狙い目"：
+  - 検索窓（サイト内検索）、監査ログ検索、管理UIの詳細検索、レポート/エクスポート、保存検索（saved search）、共有フィルタ、"テンプレ/クエリ定義/検索条件テンプレ" 等の文言がある機能
+- 優先度の付け方（時間制約がある場合の順序）：
+  - まず入力の記号や形で展開/パースエラーが揺れる、または結果構造が不自然に変化するかを確認、入口（どのパラメータ/保存項目）がテンプレに流れるかを確定
+- 代表的な攻め筋（この観測から自然に繋がるもの）：
+  - 攻め筋1：テンプレ本文（code）に入力が混入している（最重） → 入力の記号や形で展開/パースエラーが揺れる、または結果構造が不自然に変化する
+  - 攻め筋2：second-order（保存→実行）にだけ問題がある → 直接検索では問題が出ず、保存済み条件を実行したときだけ差分が出る
+- 「見える/見えない」による戦略変更（例：CDN配下、SSO前提、外部委託先など）：
+  - テンプレ展開は「入力→実行計画生成」の代表例（SQLiの動的SQL生成に近い）、Second-order：保存検索/共有検索条件で "保存時は無害、実行時に展開される" を重視
+
+## oracle（成立根拠）の取り方：テンプレは"エラーより差分"
 - Boolean oracle（主）
   - 件数、レスポンス長、ページ数、集計値の有無、特定フィールド出現（source filteringの有無）
 - Error oracle（補助）
@@ -211,7 +212,9 @@ NoSQL Injection（Elasticsearch）：Mustache / stored template（_search/templa
   - サーバログ：trace_id、template id/version、params形状（型・配列長のみ）、検証結果、実行時間
   - ES側（Labsのみ）：slowlog、拒否/許可、took、テンプレ呼び出し痕跡
 
-## 例（最小限：設計の違いを固定する）
+## コマンド/リクエスト例（例示は最小限・意味の説明が主）
+> 例示は"手段"であり"結論"ではない。必ず「何を観測している例か」を添える。
+
 ~~~~
 # 安全：stored template（id参照）＋ params（data）のみ
 POST /<index>/_search/template
@@ -224,15 +227,43 @@ POST /<index>/_search/template
   }
 }
 ~~~~
-- 観測していること：
-  - 本文（code）が固定で、入力はparams（data）に閉じる
-  - paramsの型逸脱が400で落ちるか（型拘束）
-  - tenant条件が“入力に依存せず”常に適用されるか（認可境界）
+
+- この例で観測していること：本文（code）が固定で、入力はparams（data）に閉じる設計
+- 出力のどこを見るか（注目点）：paramsの型逸脱が400で落ちるか（型拘束）、tenant条件が"入力に依存せず"常に適用されるか（認可境界）
+- この例が使えないケース（前提が崩れるケース）：テンプレがそもそも使用されていない場合、または完全に静的なクエリのみを使用している場合
 
 ~~~~
 # 危険（概念）：テンプレ本文（JSON構文）にユーザ入力を連結する設計は、code/data境界が壊れるため禁止
 # ※悪用payloadは提示しない
 ~~~~
+
+- この例で観測していること：テンプレ本文（code）に入力が混入している危険な設計
+- 出力のどこを見るか（注目点）：入力の記号や形で展開/パースエラーが揺れる、または結果構造が不自然に変化する
+- この例が使えないケース（前提が崩れるケース）：テンプレがそもそも使用されていない場合、または完全に静的なクエリのみを使用している場合
+
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：V5 Validation, Sanitization and Encoding、V7 Error Handling and Logging
+  - 該当要件（可能ならID）：V5.3.1、V5.3.2、V7.4.1
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 入力→実行境界：ユーザ入力が「検索パラメータ」ではなく **テンプレ（Mustache）展開後のQuery DSL構造** に影響しない設計か
+    - 設計：テンプレ（stored search template）を使う場合でも、入力は **params（data）** に限定し、テンプレ本文（code）に混ぜない
+    - 認可境界：tenant/org/owner の固定条件をテンプレ内で"入力と同列に合成"していないか（上書き・揺らぎ・適用範囲漏れ）
+    - 例外/エラー：テンプレ展開エラー・パースエラーを外部へ詳細に返さない（oracle化防止）
+    - 可用性：テンプレが"表現力"を持つため、複雑度（条件分岐/配列展開）と検索の高コスト要素（wildcard/script/runtime等）を制限する
+    - 監査：template id / params 形状 / 実行時間 / ヒット数 を相関し、探索・濫用を検知できるか
+- WSTG：
+  - 該当カテゴリ/テスト観点：WSTG-INPV-05 SQL Injection、WSTG-ERRH-01 Error Handling
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：
+    - Injection：テンプレ展開は「入力→実行計画生成」の代表例（SQLiの動的SQL生成に近い）
+    - テスト方針：エラーより **Boolean oracle（件数/長さ/フィールド出現）** と **"テンプレ分岐の差分"** で成立根拠を取る
+    - Second-order：保存検索/共有検索条件で "保存時は無害、実行時に展開される" を重視
+- PTES：
+  - 該当フェーズ：Vulnerability Analysis、Exploitation、Reporting
+  - 前後フェーズとの繋がり（1行）：入口（search/report/saved view）→ テンプレ利用（_search/template or stored script）→ params の受理範囲 → 認可条件の適用位置 を特定し、影響実証は最小限（越境混入や情報露出の根拠まで）。高負荷・大量抽出は避ける、根本原因を「テンプレ本文の設計」「paramsの型拘束不足」「認可条件の混在」「監査不足」「高コスト制限不在」に分解して提示
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：TA0001 Initial Access（公開アプリ入口）/ TA0009 Collection（検索で横断収集）/ TA0005 Defense Evasion（エラー統一下でブラインド化）
+  - 攻撃者の目的（この技術が支える意図）：T1190 Exploit Public-Facing Application（検索入力→実行計画生成の悪用）
 
 ## 参考（必要最小限）
 - Elastic Docs：Search templates（Mustache / _search/template）  
@@ -251,5 +282,12 @@ POST /<index>/_search/template
 
 ---
 
-## 次（作成候補順）
-- `01_topics/02_web/05_input_04_nosql_injection_03_neo4j_cypher_01_query（cypher_injection）.md`
+## 深掘りリンク（最大8）
+- `01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
+- `01_topics/02_web/05_input_04_nosql_injection_02_elasticsearch_01_query_string（lucene_querystring）.md`
+- `01_topics/02_web/05_input_04_nosql_injection_02_elasticsearch_02_dsl（bool_filter_script）.md`
+- `01_topics/02_web/05_input_04_nosql_injection_02_elasticsearch_03_painless（script_injection）.md`
+- `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+- `01_topics/02_web/04_api_03_rest_filters_検索・ソート・ページング境界.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+- `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`

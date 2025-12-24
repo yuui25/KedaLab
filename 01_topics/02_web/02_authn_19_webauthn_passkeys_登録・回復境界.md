@@ -1,19 +1,7 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS：
-  - この技術で満たす/破れる点：強固な認証（フィッシング耐性）、認証器登録/管理の保護（step-up必須、本人確認）、回復導線の強度（回復でパスキーを迂回しない）、多要素の整合（MFA解除/回復コード再発行の保護）、セッション/端末信頼の扱い
-  - 支える前提：パスキーは強いが、登録・削除・回復が弱いと“強さが迂回”される（攻撃は認証器そのものより運用境界を狙う）
-- WSTG：
-  - 該当テスト観点：Authentication Testing（MFA/強固認証、Account Recovery）、Session Management（再認証境界）
-  - どの観測に対応するか：登録（attestation/credential creation）、認証（assertion）、認証器管理（rename/remove）、回復（fallback）を“境界”として観測し、例外パスを検出する
-- PTES：
-  - 該当フェーズ：Vulnerability Analysis（登録/回復境界の欠陥、例外パス抽出）、Exploitation（許可範囲での最小検証：テストアカウント）
-  - 前後フェーズとの繋がり（1行）：16（step-up）で登録/削除/回復の境界を締め、11（account recovery）と一体で「パスキーを回復で迂回」できないことを確認し、15/17/18でセッション/トークン盗用耐性を補完する
-- MITRE ATT&CK：
-  - 戦術：Credential Access / Persistence / Defense Evasion
-  - 目的：強固認証を回復導線・端末信頼・登録手続きの穴で迂回し、永続アクセス（登録済み認証器の追加/置換）を成立させる（※手順ではなく成立条件の判断）
+# 02_authn_19_webauthn_passkeys_登録・回復境界
+WebAuthn/Passkeys を「ログイン方式」ではなく「登録・管理・回復まで含む運用境界」として分解し、どこが弱点になり得るかを証跡付きで評価する
 
-## タイトル
-webauthn_passkeys_登録・回復境界
+---
 
 ## 目的（この技術で到達する状態）
 - WebAuthn/Passkeys を「ログイン方式」ではなく「登録・管理・回復まで含む運用境界」として分解し、どこが弱点になり得るかを証跡付きで評価できる
@@ -27,14 +15,30 @@ webauthn_passkeys_登録・回復境界
   - 認証（assertion）：/webauthn/auth/begin → /webauthn/auth/finish 等
   - 認証器管理：一覧、名称変更、削除、デフォルト設定、信頼端末管理
   - 回復：パスキーが使えない時のfallback（メール/OTP/回復コード/サポート）
-- 想定する境界：
-  - パスキーは“強い”が、必ず fallback が存在する（端末紛失・機種変更・同期失敗）
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - パスキーは"強い"が、必ず fallback が存在する（端末紛失・機種変更・同期失敗）
   - 端末同期パスキー（クラウド同期）と、セキュリティキー（外部キー）が混在し得る
   - 既存ログイン（パスワード/MFA）と共存し、アカウント設定で切替/無効化が起きる
-- 安全な範囲（最小検証の基本方針）：
-  - テストアカウントで、登録/削除/回復の“境界が働くか”を観測する（大量試行はしない）
-  - 物理デバイスが必要な部分は、設計・挙動・ログで評価する（無理に再現しない）
-  - 変更を伴う検証（認証器削除等）は巻き戻し（再登録）手順を確保する
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：テストアカウントで、登録/削除/回復の"境界が働くか"を観測する（大量試行はしない）、物理デバイスが必要な部分は、設計・挙動・ログで評価する（無理に再現しない）
+  - やらないこと：変更を伴う検証（認証器削除等）は巻き戻し（再登録）手順を確保する
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/02_authn_11_account_recovery_本人確認（サポート代行_回復コード）.md`
+  - `01_topics/02_web/02_authn_16_step-up_再認証境界（重要操作_再確認）.md`
+  - `01_topics/02_web/02_authn_15_session_concurrency（多端末_同時ログイン制御）.md`
+  - `01_topics/02_web/02_authn_17_refresh_token_rotation_盗用検知（reuse）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - パスキー導入で狙われるのは「登録・回復・管理」だと固定する
+    - 登録フローの境界：誰が、いつ、何を前提に登録できるか
+    - 認証フローの境界：パスキーが"強い"ことを弱い入口で壊していないか
+    - 認証器管理（devices/credentials）：ここが永続化・防御解除の中心
+    - 回復（fallback）境界：パスキーを迂回させない設計（11と直結）
+    - "信頼端末/同期" という現実：強度の過信を潰す
+  - 扱わない（別ユニットへ接続）：
+    - 認証器/プラットフォーム固有の内部挙動（iOS/Android/ブラウザ差）※ただし運用設計の弱点は示せる → 別ユニット
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 ### 1) パスキー導入で狙われるのは「登録・回復・管理」だと固定する
@@ -119,15 +123,20 @@ webauthn_passkeys_登録・回復境界
   - action_priority（P0/P1/P2）
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言える（確定できる）：
+- 何が"確定"できるか：
   - 登録/削除/回復に step-up が掛かるか、どこが例外パスか（UI/API差分含む）
   - fallback（回復導線）の強度と、回復後の状態遷移（全端末logout、refresh失効、再登録強制等）の有無
   - 認証器変更の通知/監査があるか（侵害検知・追跡可能性）
-- 推定（根拠付きで言える）：
+- 何が"推定"できるか（推定の根拠/前提）：
   - 登録/削除がstep-up無しなら、侵害セッション（盗用/放置端末）で永続化が成立し得る（15/16/17と連鎖）
-  - fallbackが弱いと、パスキーのフィッシング耐性が“実運用上は無効化”される可能性が高い
-- 言えない（この段階では断定しない）：
+  - fallbackが弱いと、パスキーのフィッシング耐性が"実運用上は無効化"される可能性が高い
+- 何は"言えない"か（不足情報・観測限界）：
   - 認証器/プラットフォーム固有の内部挙動（iOS/Android/ブラウザ差）※ただし運用設計の弱点は示せる
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：登録/削除に step-up が無い（永続化リスク） → 認証器追加（開始/完了）で step-up 要求が出るか、認証器削除で step-up 要求が出るかを観測
+  - パターンB：fallback回復が弱く、回復後に遮断が走らない → 回復手段（メール/回復コード/サポート）ごとに、本人確認強度の差を観測（11）、回復完了後に、他端末のセッションが切れるか（15）、refreshが死ぬか（17）を観測
+  - パターンC：通知/監査が薄い（侵害時に気づけない） → credential追加/削除の監査ログが残るか（相関キー含む）、本人通知（メール/プッシュ）があるかを観測
+  - パターンD：例外パス（mobile/api）が存在する → webとmobile（可能なら）で登録/削除の要求条件を比較
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
 - 優先度（P0/P1/P2）
@@ -212,12 +221,49 @@ POST /webauthn/credential/remove   { credential_id: "..." }
 - この例が使えないケース（前提が崩れるケース）：
   - IdP主導でWebAuthnが完結し、RP側で詳細が見えない（→RPが守るべき“管理/回復”に焦点を移し、IdPログ/設定で裏取り）
 
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：強固な認証（フィッシング耐性）、認証器登録/管理の保護（step-up必須、本人確認）、回復導線の強度（回復でパスキーを迂回しない）、多要素の整合（MFA解除/回復コード再発行の保護）、セッション/端末信頼の扱い
+  - 該当要件（可能ならID）：V2（Authentication）、V3（Session Management）
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 満たす：パスキーは強いが、登録・削除・回復が弱いと"強さが迂回"される（攻撃は認証器そのものより運用境界を狙う）ことを観測で確定し、以後の検証観点を外さないための基盤。
+  - 参照：https://github.com/OWASP/ASVS
+- WSTG：
+  - 該当カテゴリ/テスト観点：Authentication Testing（MFA/強固認証、Account Recovery）、Session Management（再認証境界）
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：登録（attestation/credential creation）、認証（assertion）、認証器管理（rename/remove）、回復（fallback）を"境界"として観測し、例外パスを検出する
+  - 参照：https://owasp.org/www-project-web-security-testing-guide/
+- PTES：
+  - 該当フェーズ：Vulnerability Analysis（登録/回復境界の欠陥、例外パス抽出）、Exploitation（許可範囲での最小検証：テストアカウント）
+  - 前後フェーズとの繋がり（1行）：16（step-up）で登録/削除/回復の境界を締め、11（account recovery）と一体で「パスキーを回復で迂回」できないことを確認し、15/17/18でセッション/トークン盗用耐性を補完する。
+  - 参照：https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：Credential Access / Persistence / Defense Evasion
+  - 攻撃者の目的（この技術が支える意図）：強固認証を回復導線・端末信頼・登録手続きの穴で迂回し、永続アクセス（登録済み認証器の追加/置換）を成立させる（※手順ではなく成立条件の判断）。
+  - 参照：https://attack.mitre.org/tactics/TA0006/（Credential Access）、https://attack.mitre.org/tactics/TA0003/（Persistence）、https://attack.mitre.org/tactics/TA0005/（Defense Evasion）
+
 ## 参考（必要最小限）
-- OWASP ASVS（強固認証、認証器管理、回復、重要操作の再認証）
-- OWASP WSTG（MFA/強固認証、Account Recovery、Session Management）
-- WebAuthn/Passkeys の設計原則（強さは“登録と回復”で決まる）
+- OWASP Application Security Verification Standard: https://github.com/OWASP/ASVS
+- OWASP Web Security Testing Guide: https://owasp.org/www-project-web-security-testing-guide/
+- WebAuthn Level 2: https://www.w3.org/TR/webauthn-2/
+- FIDO2/Passkeys: https://fidoalliance.org/passkeys/
+- PTES (Penetration Testing Execution Standard): https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK: https://attack.mitre.org/
 
 ## リポジトリ内リンク（最大3つまで）
+- 関連 topics：`01_topics/02_web/02_authn_11_account_recovery_本人確認（サポート代行_回復コード）.md`
+- 関連 topics：`01_topics/02_web/02_authn_16_step-up_再認証境界（重要操作_再確認）.md`
+- 関連 topics：`01_topics/02_web/02_authn_20_magic-link_メールリンク認証の成立条件.md`
+
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
+- `01_topics/02_web/02_authn_06_mfa_成立点と例外パス（step-up_device_trust）.md`
 - `01_topics/02_web/02_authn_11_account_recovery_本人確認（サポート代行_回復コード）.md`
+- `01_topics/02_web/02_authn_15_session_concurrency（多端末_同時ログイン制御）.md`
 - `01_topics/02_web/02_authn_16_step-up_再認証境界（重要操作_再確認）.md`
+- `01_topics/02_web/02_authn_17_refresh_token_rotation_盗用検知（reuse）.md`
 - `01_topics/02_web/02_authn_20_magic-link_メールリンク認証の成立条件.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+
+---

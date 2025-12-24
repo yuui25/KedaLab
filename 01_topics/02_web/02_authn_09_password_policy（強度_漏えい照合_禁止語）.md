@@ -1,29 +1,38 @@
-# 02_authn_09_password_policy（強度_漏えい照合_禁止語）.md
+# 02_authn_09_password_policy（強度_漏えい照合_禁止語）
+パスワードポリシーを「画面に書いてあるルール」ではなく、**サーバが強制している境界** として観測で確定する
 
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
+---
+
+## 目的（この技術で到達する状態）
 - ASVS：V2（Authentication）を中心に、V3（Session Management：変更時の再認証/失効）と結合して扱う。パスワードポリシーは「強度の話」だけでなく、**変更/回復/免除（MFA・端末信頼）** の例外パスと一体で評価する。
 - WSTG：Authentication Testing（認証ポリシー、パスワード変更/回復、レート制限/ロックアウト）として扱う。観測は「UI表示」ではなく **サーバ側強制の有無** と **境界（どの操作で再認証が必要か）** を確定する。
 - PTES：Information Gathering（ポリシー観測）→ Vulnerability Analysis（強度・漏えい照合・例外パス）→ Exploitation（最小差分で成立/不成立を確定）→ Reporting（改善案：例外パス含む）へ接続。
 - MITRE ATT&CK：Credential Access（Brute Force / Password Spraying / Credential Stuffing）を「成立しやすい条件の確定」として位置づける。ここでの目的は“手順”ではなく、**防御設計として何が足りないか** を説明できる状態にすること。
 
-## 目的（この技術で到達する状態）
 - パスワードポリシーを「画面に書いてあるルール」ではなく、**サーバが強制している境界** として観測で確定できる。
 - 強度（長さ/複雑性）・禁止語（辞書/ユーザー情報）・漏えい照合（breached password check）の有無を、推測ではなく **yes/no/unknown** に落とせる。
 - 変更・回復・再認証（step-up）・失効（既存セッション/端末信頼の回収）と結びつけ、「このアプリのアカウント乗っ取り耐性のボトルネック」を優先度付けできる。
 
 ## 前提（対象・範囲・想定）
 - 対象：ログイン/サインアップ/パスワード変更/パスワードリセットで入力されるパスワード。
-- 想定：SSO/IdP連携があっても、ローカルアカウントやサポート用回復経路が残るケースがある（その場合ここが例外パスになりやすい）。
-- できること（安全に検証する範囲）：
-  - 低頻度・最小回数での入力差分（受理/拒否、エラー形式、前後の資産変化）を観測する
-  - UI/JSバリデーションとサーバ側強制の差分を確認する（大量試行はしない）
-- やらないこと：
-  - 大量のパスワード試行、辞書攻撃、スプレー等の負荷を伴う検証
-  - 実ユーザーへの影響が出るロックアウト誘発
-- 依存（前段）：
-  - `02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`（変更/回復後の失効境界）
-  - `02_authn_06_mfa_成立点と例外パス（step-up_device_trust）.md`（再認証境界/免除の扱い）
-  - `02_authn_10_password_reset_回復経路（token_失効_多要素）.md`（回復経路が最弱になりやすい）
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - SSO/IdP連携があっても、ローカルアカウントやサポート用回復経路が残るケースがある（その場合ここが例外パスになりやすい）。
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：低頻度・最小回数での入力差分（受理/拒否、エラー形式、前後の資産変化）を観測する、UI/JSバリデーションとサーバ側強制の差分を確認する（大量試行はしない）
+  - やらないこと：大量のパスワード試行、辞書攻撃、スプレー等の負荷を伴う検証、実ユーザーへの影響が出るロックアウト誘発
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`（変更/回復後の失効境界）
+  - `01_topics/02_web/02_authn_06_mfa_成立点と例外パス（step-up_device_trust）.md`（再認証境界/免除の扱い）
+  - `01_topics/02_web/02_authn_10_password_reset_回復経路（token_失効_多要素）.md`（回復経路が最弱になりやすい）
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - パスワードポリシーのサーバ側強制の有無の観測
+    - 強度（長さ/複雑性）・禁止語（辞書/ユーザー情報）・漏えい照合（breached password check）の有無の観測
+    - 変更・回復・再認証（step-up）・失効（既存セッション/端末信頼の回収）との結合観測
+  - 扱わない（別ユニットへ接続）：
+    - パスワードの保存方式（ハッシュ/ソルト等）の内部実装 → 別ユニット
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 - 観測対象（やり取りの単位）：
@@ -95,57 +104,94 @@
 - 期待する観測
   - “変更は通るが、奪取済みセッションが生き残る”など、例外パスの成立可否が説明できる
 
-### コマンド/リクエスト例（例示は最小限・意味が主）
-~~~~
-# 目的：パスワード変更の「サーバ側強制」の有無を観測する（UI/JSを信用しない）
-# - 実際は対象アプリのAPIに合わせる。値は必ずマスクし、試行回数は最小にする。
-curl -i "https://rp.example.com/api/account/password" \
-  -H "Content-Type: application/json" \
-  -H "Cookie: session=REDACTED" \
-  -d '{"currentPassword":"REDACTED","newPassword":"REDACTED"}'
-
-# この例で観測していること：
-# - HTTPステータスとエラー形式（サーバが拒否しているか）
-# - 変更完了前後で Set-Cookie が変わるか（セッション再発行/失効回収の兆候）
-~~~~
-
 ## 手を動かす検証（Labs連動：観測点を明確に）
-- 検証環境（関連する `04_labs/` ）：
-  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`（改変で“サーバ強制”を確定）
-  - `04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`（HAR/Proxyログの最小セット）
-  - `04_labs/03_targets/01_web_targets_検証用アプリ選定.md`（検証対象の用意）
+- 検証環境（関連する `04_labs/`）
+  - 参照ファイル：
+    - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`（改変で"サーバ強制"を確定）
+    - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`（HAR/Proxyログの最小セット）
 - 取得する証跡（目的ベースで最小限）：
   - HAR（パスワード変更/回復の一連、値はマスク）
   - Proxyログ（該当APIのリクエスト/レスポンス、Set-Cookie/Location/エラー形式）
   - 差分メモ（yes/no/unknown）：サーバ強制、漏えい照合、禁止語、再認証、失効回収
-- 観測の取り方（差分の軸）
-  - UIで弾かれる入力 vs API改変で送った入力（同じ拒否か/通るか）
-  - 変更前 vs 変更後（セッション資産が回収されるか）
-  - SSOあり/なし（ローカル回復経路が残っているか）
+- 観測の取り方（どの視点で差分を見るか）：
+  - UIで弾かれる入力 vs API改変で送った入力（同じ拒否か/通るか）、変更前 vs 変更後（セッション資産が回収されるか）、SSOあり/なし（ローカル回復経路が残っているか）
+- 実施方法（最高に具体的）：観測の準備と相関キー
+  - 証跡ディレクトリ（必須）
+    ~~~~
+    mkdir -p ~/keda_evidence/password_policy 2>/dev/null
+    cd ~/keda_evidence/password_policy
+    ~~~~
+  - 検証の前提を固定（スコープ事故を防ぐ）
+    - 必須で決める（レポート先頭に書く）
+      - 対象は **許可されたスコープ** のみ
+      - 観測は **最小限の差分セット** のみ
+      - 大量のパスワード試行、辞書攻撃、スプレー等の負荷を伴う検証は行わない
+      - 実ユーザーへの影響が出るロックアウト誘発は行わない
+  - 相関キー（最低限）を作る（後で必ず効く）
+    - Host、User、Time、操作種類（サインアップ/パスワード変更/リセット完了）、入力内容（短すぎる/単純すぎる/禁止語/漏えいPW等）、サーバ側強制（yes/no/unknown）、エラー形式（HTTPステータス、エラーコード、メッセージ、フィールド単位エラー）、変更/回復後の失効（yes/no/unknown）
+
+## コマンド/リクエスト例（例示は最小限・意味の説明が主）
+> 例示は"手段"であり"結論"ではない。必ず「何を観測している例か」を添える。
+
+~~~~
+# 例：パスワード変更の「サーバ側強制」の有無を観測する（UI/JSを信用しない）
+curl -i "https://rp.example.com/api/account/password" \
+  -H "Content-Type: application/json" \
+  -H "Cookie: session=REDACTED" \
+  -d '{"currentPassword":"REDACTED","newPassword":"REDACTED"}'
+~~~~
+
+- この例で観測していること：
+  - HTTPステータスとエラー形式（サーバが拒否しているか）、変更完了前後で Set-Cookie が変わるか（セッション再発行/失効回収の兆候）
+- 出力のどこを見るか（注目点）：
+  - HTTPステータス（200/400/401/403）、エラー形式（エラーコード、メッセージ、フィールド単位エラー）、Set-Cookieヘッダ（セッション再発行/失効回収の兆候）
+- この例が使えないケース（前提が崩れるケース）：
+  - 実際は対象アプリのAPIに合わせる。値は必ずマスクし、試行回数は最小にする。
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
 - ASVS：
-  - 該当領域/章：V2 Authentication、（結合）V3 Session Management
+  - 該当領域/章：V2（Authentication）を中心に、V3（Session Management：変更時の再認証/失効）と結合して扱う。パスワードポリシーは「強度の話」だけでなく、**変更/回復/免除（MFA・端末信頼）** の例外パスと一体で評価する。
+  - 該当要件（可能ならID）：V2（Authentication）、V3（Session Management）
   - このファイルの内容が「満たす/破れる」ポイント：
-    - サーバ側で強度・禁止語・漏えい照合が強制されているか（境界の所在）
-    - 変更/回復が重要操作として再認証・失効回収を伴うか（例外パスの有無）
+    - 満たす：サーバ側で強度・禁止語・漏えい照合が強制されているか（境界の所在）、変更/回復が重要操作として再認証・失効回収を伴うか（例外パスの有無）。
+  - 参照：https://github.com/OWASP/ASVS
 - WSTG：
-  - 該当カテゴリ/テスト観点：Authentication（パスワードポリシー、変更/回復、レート制限/ロックアウト）
-  - 該当が薄い場合：この技術が支える前提（認証の入口強度、例外パスの潰し込み）
+  - 該当カテゴリ/テスト観点：Authentication Testing（認証ポリシー、パスワード変更/回復、レート制限/ロックアウト）として扱う。観測は「UI表示」ではなく **サーバ側強制の有無** と **境界（どの操作で再認証が必要か）** を確定する。
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：認証の入口強度、例外パスの潰し込み
+  - 参照：https://owasp.org/www-project-web-security-testing-guide/
 - PTES：
-  - 該当フェーズ：Information Gathering / Vulnerability Analysis / Exploitation（最小差分）/ Reporting
-  - 前後フェーズとの繋がり（1行）：入口強度の確定 → 回復/失効/免除の例外パス評価へ繋げる
+  - 該当フェーズ：Information Gathering（ポリシー観測）→ Vulnerability Analysis（強度・漏えい照合・例外パス）→ Exploitation（最小差分で成立/不成立を確定）→ Reporting（改善案：例外パス含む）へ接続。
+  - 前後フェーズとの繋がり（1行）：ポリシー観測→強度・漏えい照合・例外パス→最小差分で成立/不成立を確定→改善案の品質を上げる。
+  - 参照：https://pentest-standard.readthedocs.io/
 - MITRE ATT&CK：
-  - 該当戦術（必要なら技術）：Credential Access（Brute Force / Password Spraying / Credential Stuffing）
-  - 攻撃者の目的（この技術が支える意図）：再利用・推測が成立しやすい条件を減らせているかの評価
+  - 該当戦術（必要なら技術）：Credential Access
+  - 攻撃者の目的（この技術が支える意図）：Credential Access（Brute Force / Password Spraying / Credential Stuffing）を「成立しやすい条件の確定」として位置づける。ここでの目的は"手順"ではなく、**防御設計として何が足りないか** を説明できる状態にすること。
+  - 参照：https://attack.mitre.org/tactics/TA0006/（Credential Access）
 
 ## 参考（必要最小限）
-- OWASP ASVS（Authentication / Session）
-- OWASP Authentication Cheat Sheet
-- NIST SP 800-63B（Digital Identity Guidelines：Authenticator & Secrets）
-- OWASP Password Storage Cheat Sheet（内部実装の一次情報として）
+- OWASP Application Security Verification Standard: https://github.com/OWASP/ASVS
+- OWASP Authentication Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+- OWASP Password Storage Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+- NIST SP 800-63B: https://pages.nist.gov/800-63-3/
+- OWASP Web Security Testing Guide: https://owasp.org/www-project-web-security-testing-guide/
+- PTES (Penetration Testing Execution Standard): https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK: https://attack.mitre.org/
 
 ## リポジトリ内リンク（最大3つまで）
 - 関連 topics：`01_topics/02_web/02_authn_06_mfa_成立点と例外パス（step-up_device_trust）.md`
-- 関連 playbooks：`02_playbooks/03_authn_観測ポイント（SSO_MFA前提）.md`
+- 関連 topics：`01_topics/02_web/02_authn_10_password_reset_回復経路（token_失効_多要素）.md`
 - 関連 labs：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`
+- `01_topics/02_web/02_authn_06_mfa_成立点と例外パス（step-up_device_trust）.md`
+- `01_topics/02_web/02_authn_10_password_reset_回復経路（token_失効_多要素）.md`
+- `01_topics/02_web/02_authn_11_account_recovery_本人確認（サポート代行_回復コード）.md`
+- `01_topics/02_web/02_authn_12_bruteforce_rate-limit_lockout（例外パス）.md`
+- `01_topics/02_web/02_authn_16_step-up_再認証境界（重要操作_再確認）.md`
+- `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+
+---

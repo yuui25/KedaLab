@@ -1,19 +1,7 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS：
-  - この技術で満たす/破れる点：認証試行に対するレート制御、アカウントロック/解放、例外パス（別エンドポイント/別フロー）で制御が抜ける設計、ユーザ列挙と結びつく“試行可能性”の管理
-  - 支える前提：認証境界の防御（MFA/SSO以前に「試行できる回数」が安全性を決める）
-- WSTG：
-  - 該当テスト観点：Authentication Testing（Brute Force、Rate Limiting、Account Lockout、User Enumeration、Multi-Factorの試行制御）
-  - どの観測に対応するか：ログイン/OTP/回復コード/再認証（step-up）等の“試行系エンドポイント”を面として列挙し、制御の一貫性（例外パス）を検証する
-- PTES：
-  - 該当フェーズ：Vulnerability Analysis（防御制御の欠落/迂回の成立条件を切る）、Exploitation（許可された範囲での最小検証）
-  - 前後フェーズとの繋がり（1行）：11の列挙/回復導線、13の認証CSRF/フロー設計、15/16のセッション/再認証と結合して「どこが現実的な侵入口か」を決める
-- MITRE ATT&CK：
-  - 戦術：Credential Access / Initial Access
-  - 目的：パスワード/OTP/回復コードなどの試行を成立させる、あるいはロックアウトを悪用してDoS/妨害（可用性）を誘発する（※ここでは手順ではなく成立条件の判断）
+# 02_authn_12_bruteforce_rate-limit_lockout（例外パス）
+「試行できる入口（例外パス含む）」を列挙し、どのキー（IP/アカウント/端末/セッション等）で、どの強度（回数/窓/遅延/ブロック/ロック）で抑止されているかを説明する
 
-## タイトル
-bruteforce_rate-limit_lockout（例外パス）
+---
 
 ## 目的（この技術で到達する状態）
 - 「試行できる入口（例外パス含む）」を列挙し、どのキー（IP/アカウント/端末/セッション等）で、どの強度（回数/窓/遅延/ブロック/ロック）で抑止されているかを説明できる
@@ -28,14 +16,26 @@ bruteforce_rate-limit_lockout（例外パス）
   - 回復（回復コード、メールリンク、サポート代行）
   - step-up（重要操作前の再認証）
   - OAuth/OIDC（/authorize → /token）やSAML（IdP側ログイン）における認証試行
-- 想定する境界：
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
   - CDN/WAFが前段にある（rate-limitがエッジで行われる可能性）
   - IdP連携がある（RPとIdPで制御の責任分界が分かれる）
   - 多端末/モバイル/プロキシ/VPNがあり、IPベース制御が破綻しやすい
-- 安全な範囲（最小検証の基本方針）：
-  - 実ユーザに影響する回数試行はしない（テストアカウント/検証環境を前提）
-  - “成立条件の切り分け” を目的に、少数回（例：3〜10回程度）で挙動を観測する
-  - ロックアウトが疑われる場合は、解除手段（時間/サポート/自己解除）と監査ログ取得が先（深追いしない）
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：実ユーザに影響する回数試行はしない（テストアカウント/検証環境を前提）、"成立条件の切り分け" を目的に、少数回（例：3〜10回程度）で挙動を観測する
+  - やらないこと：大量試行（DoS/総当たり）、実ユーザへの影響が出るロックアウト誘発、ロックアウトが疑われる場合は、解除手段（時間/サポート/自己解除）と監査ログ取得が先（深追いしない）
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/02_authn_11_account_recovery_本人確認（サポート代行_回復コード）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - 試行できる入口（例外パス含む）の列挙
+    - レート制御のキー（IP/アカウント/端末/セッション等）と挙動の確定
+    - アカウントロック（lockout）の対象・解除・副作用の観測
+    - 防御の一貫性（同じ認証でも入口が違うと制御が抜ける）の確定
+  - 扱わない（別ユニットへ接続）：
+    - 実際の侵害成立（大量試行をしない前提のため） → 別ユニット
+    - WAF/IdP内部のルール詳細（ただし挙動から責任分界は示せる） → 別ユニット
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 ### 1) 「入口（例外パス）」の列挙：同じ認証でも経路が違う
@@ -110,17 +110,21 @@ bruteforce_rate-limit_lockout（例外パス）
   - action_priority（P0/P1/P2）
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言える（確定できる）：
+- 何が"確定"できるか：
   - 試行点（入口）の一覧と、各入口の抑止モデル（rate-limit/lockout/遅延/captcha等）
   - 例外パス（入口差分）で制御が抜ける/弱い/別モデルになっている事実
   - 抑止を実装している層（アプリ/WAF/IdP）の推定と、その責任分界（どこを直すべきか）
-- 推定（根拠付きで言える）：
+- 何が"推定"できるか（推定の根拠/前提）：
   - IPベース偏重で、NAT/VPN/モバイル環境では実効性が下がる可能性
-  - 成功時リセットや、入口差分により “試行を継続しやすい” 設計の可能性
+  - 成功時リセットや、入口差分により "試行を継続しやすい" 設計の可能性
   - lockoutが運用負荷・DoSを生み得る可能性（解除条件と監査の有無から）
-- 言えない（この段階では断定しない）：
+- 何は"言えない"か（不足情報・観測限界）：
   - 実際の侵害成立（大量試行をしない前提のため）
   - WAF/IdP内部のルール詳細（ただし挙動から責任分界は示せる）
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：入口ごとに抑止が分裂している（例外パスがある） → UI/API/モバイル/SSO/OTP を "同一アカウント・同一IP" で少数回ずつ試行し、閾値/応答/ヘッダ/遅延の差分を比較する
+  - パターンB：抑止はあるがキーが弱い（IP偏重/端末紐付け無し/成功時リセット等） → 同一アカウントで、クライアント条件（cookie有無、別ブラウザ等）を変えても同じ抑止が掛かるかを見る（端末キーの有無の推定）
+  - パターンC：lockout が強すぎて運用/可用性リスクが高い（DoS/巻き込み） → ロック解除条件（時間/本人操作/サポート）を証跡化し、解除が人手前提なら運用リスクとして整理
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
 - 優先度（P0/P1/P2）
@@ -193,12 +197,48 @@ POST /account/recovery/verify { code }
 - この例が使えないケース（前提が崩れるケース）：
   - IdP側のログイン画面が別ドメインで、RP側からは抑止が観測できない（→IdP側ログ/設定の証跡が主）
 
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：認証試行に対するレート制御、アカウントロック/解放、例外パス（別エンドポイント/別フロー）で制御が抜ける設計、ユーザ列挙と結びつく"試行可能性"の管理
+  - 該当要件（可能ならID）：V2（Authentication）
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 満たす：認証境界の防御（MFA/SSO以前に「試行できる回数」が安全性を決める）を観測で確定し、以後の検証観点を外さないための基盤。
+  - 参照：https://github.com/OWASP/ASVS
+- WSTG：
+  - 該当カテゴリ/テスト観点：Authentication Testing（Brute Force、Rate Limiting、Account Lockout、User Enumeration、Multi-Factorの試行制御）
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：ログイン/OTP/回復コード/再認証（step-up）等の"試行系エンドポイント"を面として列挙し、制御の一貫性（例外パス）を検証する
+  - 参照：https://owasp.org/www-project-web-security-testing-guide/
+- PTES：
+  - 該当フェーズ：Vulnerability Analysis（防御制御の欠落/迂回の成立条件を切る）、Exploitation（許可された範囲での最小検証）
+  - 前後フェーズとの繋がり（1行）：11の列挙/回復導線、13の認証CSRF/フロー設計、15/16のセッション/再認証と結合して「どこが現実的な侵入口か」を決める。
+  - 参照：https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：Credential Access / Initial Access
+  - 攻撃者の目的（この技術が支える意図）：パスワード/OTP/回復コードなどの試行を成立させる、あるいはロックアウトを悪用してDoS/妨害（可用性）を誘発する（※ここでは手順ではなく成立条件の判断）。
+  - 参照：https://attack.mitre.org/tactics/TA0006/（Credential Access）、https://attack.mitre.org/tactics/TA0001/（Initial Access）
+
 ## 参考（必要最小限）
-- OWASP ASVS（認証試行の制御、例外パス、ロックアウト設計）
-- OWASP WSTG（Brute Force / Rate Limiting / Account Lockout / MFA試行）
+- OWASP Application Security Verification Standard: https://github.com/OWASP/ASVS
+- OWASP Web Security Testing Guide: https://owasp.org/www-project-web-security-testing-guide/
+- PTES (Penetration Testing Execution Standard): https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK: https://attack.mitre.org/
 - 責任分界の設計資料（RP vs IdP、WAF/CDN vs アプリ、サポート運用）
 
 ## リポジトリ内リンク（最大3つまで）
+- 関連 topics：`01_topics/02_web/02_authn_11_account_recovery_本人確認（サポート代行_回復コード）.md`
+- 関連 topics：`01_topics/02_web/02_authn_13_login_csrf_認証CSRFとstate設計.md`
+- 関連 topics：`01_topics/02_web/02_authn_16_step-up_再認証境界（重要操作_再確認）.md`
+
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
 - `01_topics/02_web/02_authn_11_account_recovery_本人確認（サポート代行_回復コード）.md`
+- `01_topics/02_web/02_authn_13_login_csrf_認証CSRFとstate設計.md`
+- `01_topics/02_web/02_authn_15_session_concurrency（多端末_同時ログイン制御）.md`
 - `01_topics/02_web/02_authn_16_step-up_再認証境界（重要操作_再確認）.md`
+- `01_topics/02_web/02_authn_17_refresh_token_rotation_盗用検知（reuse）.md`
 - `01_topics/02_web/02_authn_20_magic-link_メールリンク認証の成立条件.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+
+---

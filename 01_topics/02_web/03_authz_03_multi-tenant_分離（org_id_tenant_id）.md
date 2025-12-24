@@ -1,19 +1,7 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS：
-  - この技術で満たす/破れる点：マルチテナント分離（論理/物理）、テナント境界の一貫性（全エンドポイント・全データストア）、テナント選択の信頼境界（URL/ヘッダ/クレーム/セッション）、検索/キャッシュ/非同期処理での越境防止、監査（tenantを含む相関）
-  - 支える前提：IDOR（02）が“同一テナント内”で止まっても、テナント越境が成立するとImpactが最大化（法務・信用・契約上の重大事故）
-- WSTG：
-  - 該当テスト観点：Authorization Testing（Multi-tenant isolation、IDOR/BOLAの越境版）、Business Logic（テナント切替/招待/共有）、API Testing（tenantスコープ）
-  - どの観測に対応するか：tenantの決定点（resolver）と、各入口（list/search/get/download/admin/webhook/job）でのスコープ強制をHTTP差分で体系化する
-- PTES：
-  - 該当フェーズ：Information Gathering（テナントモデル把握：切替・識別子・境界）、Vulnerability Analysis（越境成立条件の特定）、Exploitation（許可範囲での最小差分検証）
-  - 前後フェーズとの繋がり（1行）：02で抽出した参照キーと入口を、tenant軸（org_id/tenant_id）で再マッピングし、「テナント決定→スコープ強制→例外パス」を確定して04〜10へ分岐する
-- MITRE ATT&CK：
-  - 戦術：Discovery / Collection / Privilege Escalation / Impact
-  - 目的：tenant境界の決定点や例外パスを突いて越境アクセス（他社データ閲覧・操作）を成立させる（※手順ではなく成立条件の判断）
+# 03_authz_03_multi-tenant_分離（org_id_tenant_id）
+マルチテナント分離を「DBが同じ/違う」ではなく、(1)テナント決定点（どのtenantとして処理するか）、(2)スコープ強制点（どこでtenant条件を必ず付けるか）、(3)例外パス（検索/キャッシュ/非同期/ファイル/管理UI等）で分解し、短時間で越境リスクを特定する
 
-## タイトル
-multi-tenant_分離（org_id_tenant_id）
+---
 
 ## 目的（この技術で到達する状態）
 - マルチテナント分離を「DBが同じ/違う」ではなく、(1)テナント決定点（どのtenantとして処理するか）、(2)スコープ強制点（どこでtenant条件を必ず付けるか）、(3)例外パス（検索/キャッシュ/非同期/ファイル/管理UI等）で分解し、短時間で越境リスクを特定できる
@@ -23,20 +11,23 @@ multi-tenant_分離（org_id_tenant_id）
 
 ## 前提（対象・範囲・想定）
 - 対象：B2B SaaS / 組織（org）単位 / tenant単位の分離があるWeb/API
-- 用語整理（このファイル内で固定）
-  - tenant：分離単位（顧客会社、組織、プロジェクト空間など）
-  - tenant_id / org_id：tenantを識別するキー（名称は実装により異なる。ここでは混在前提）
-  - actor：操作主体（user/service account）
-  - scope：actorがアクセス可能なtenant集合 + tenant内のオブジェクト集合
-- 想定するテナント方式（混在もある）
-  - 論理分離：同一DB/同一テーブルで tenant_id を列に持つ
-  - スキーマ分離：tenantごとにschema
-  - DB分離：tenantごとにDB
-  - 物理分離：専用クラスタ/専用環境
-- 検証の安全な範囲（実務的）
-  - 2ユーザ×2テナント（可能なら3）で、差分観測を最小回数で行う
-  - “越境の成立条件”を確定するために、入口別に代表エンドポイントを固定して観測する
-  - 重要操作（削除/権限/送金等）は、可能なら確認画面・dry-run相当までで証跡化する（06へ接続）
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - 想定するテナント方式（混在もある）：論理分離（同一DB/同一テーブルで tenant_id を列に持つ）、スキーマ分離（tenantごとにschema）、DB分離（tenantごとにDB）、物理分離（専用クラスタ/専用環境）
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：2ユーザ×2テナント（可能なら3）で、差分観測を最小回数で行う、"越境の成立条件"を確定するために、入口別に代表エンドポイントを固定して観測する
+  - やらないこと：重要操作（削除/権限/送金等）は、可能なら確認画面・dry-run相当までで証跡化する（06へ接続）
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+  - `01_topics/02_web/03_authz_02_idor_典型パターン（一覧_検索_参照キー）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - マルチテナント分離を「DBが同じ/違う」ではなく、(1)テナント決定点（どのtenantとして処理するか）、(2)スコープ強制点（どこでtenant条件を必ず付けるか）、(3)例外パス（検索/キャッシュ/非同期/ファイル/管理UI等）で分解し、短時間で越境リスクを特定する
+    - 02（IDOR）を"越境版"として拡張し、同じ入口（一覧/検索/参照/派生）をtenant軸で再評価する
+    - 修正指示を「tenant_idをWHEREに付けろ」で終わらせず、設計として「信頼できるtenantの決め方」「強制の実装位置」「例外パスの封じ方」まで落とし込む
+  - 扱わない（別ユニットへ接続）：
+    - 最大漏洩量（実行による大量取得は許可・影響評価が必要） → 別ユニット
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 ### 1) マルチテナント分離の中核は「tenantの決定点（Tenant Resolver）」である
@@ -147,16 +138,22 @@ multi-tenant_分離（org_id_tenant_id）
   - action_priority（P0/P1/P2）
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言える（確定できる）：
+- 何が"確定"できるか：
   - tenantの決定点（subdomain/path/header/session/token等）と、その信頼境界がどこにあるか
   - 入口ごとにtenantスコープが一貫して強制されているか（検索/ファイル/管理/非同期含む）
   - テナント越境の兆候が「複合キー片落ち」「検索基盤」「キャッシュ」「非同期」など、どの原因モデルに近いか
-- 推定（根拠付きで言える）：
+- 何が"推定"できるか（推定の根拠/前提）：
   - enforcement_layer が混在している場合、例外入口で越境が起きやすい（修正は統一・必須化へ）
   - 検索/キャッシュ/非同期のいずれかが弱い場合、UI上の見え方と無関係に越境事故が起き得る
-- 言えない（この段階では断定しない）：
+- 何は"言えない"か（不足情報・観測限界）：
   - 最大漏洩量（実行による大量取得は許可・影響評価が必要）
-  - 契約上の“分離要件”の厳密度（SLA/法務要件は別途確認が必要）
+  - 契約上の"分離要件"の厳密度（SLA/法務要件は別途確認が必要）
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：複合キー片落ち（org_id/tenant_idが無視される） → 複合形式の代表APIで、tenant情報が"参照に効いている"兆候（レスポンス差分/拒否）があるかを見る
+  - パターンB：検索/集計が越境する（全体インデックス） → search/export/report の代表APIを固定し、tenant A/Bで混入が無いかを差分で見る
+  - パターンC：キャッシュ/切替状態が混在する → tenant切替前後で同一APIを観測し、結果がtenantに追随するか（混在しないか）を見る
+  - パターンD：ファイル/署名URLが越境する → 添付DL/署名URLを入口として、tenant境界が適用されている兆候を確認（08へ直行）
+  - パターンE：非同期（Webhook/ジョブ/メール）が越境する → 通知/配送/ジョブ実行のログや宛先の設計（tenantの相関）を確認（HTTPだけで難しい場合は設計/設定断片を証跡に）
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
 - 優先度（P0/P1/P2）
@@ -237,24 +234,47 @@ GET  /admin/search?q=...                  # 管理系（露出すると横展開
 - この例が使えないケース（前提が崩れるケース）：
   - テナントが“見た目だけ”で実体が別環境（専用環境）になっており、HTTP上で比較できない（→設計/構成証跡で分離方式を確定し、例外入口の有無を重点確認する）
 
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：マルチテナント分離（論理/物理）、テナント境界の一貫性（全エンドポイント・全データストア）、テナント選択の信頼境界（URL/ヘッダ/クレーム/セッション）、検索/キャッシュ/非同期処理での越境防止、監査（tenantを含む相関）
+  - 該当要件（可能ならID）：V4（Access Control）
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 満たす：IDOR（02）が"同一テナント内"で止まっても、テナント越境が成立するとImpactが最大化（法務・信用・契約上の重大事故）ことを観測で確定し、以後の検証観点を外さないための基盤。
+  - 参照：https://github.com/OWASP/ASVS
+- WSTG：
+  - 該当カテゴリ/テスト観点：Authorization Testing（Multi-tenant isolation、IDOR/BOLAの越境版）、Business Logic（テナント切替/招待/共有）、API Testing（tenantスコープ）
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：tenantの決定点（resolver）と、各入口（list/search/get/download/admin/webhook/job）でのスコープ強制をHTTP差分で体系化する
+  - 参照：https://owasp.org/www-project-web-security-testing-guide/
+- PTES：
+  - 該当フェーズ：Information Gathering（テナントモデル把握：切替・識別子・境界）、Vulnerability Analysis（越境成立条件の特定）、Exploitation（許可範囲での最小差分検証）
+  - 前後フェーズとの繋がり（1行）：02で抽出した参照キーと入口を、tenant軸（org_id/tenant_id）で再マッピングし、「テナント決定→スコープ強制→例外パス」を確定して04〜10へ分岐する。
+  - 参照：https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：Discovery / Collection / Privilege Escalation / Impact
+  - 攻撃者の目的（この技術が支える意図）：tenant境界の決定点や例外パスを突いて越境アクセス（他社データ閲覧・操作）を成立させる（※手順ではなく成立条件の判断）。
+  - 参照：https://attack.mitre.org/tactics/TA0007/（Discovery）、https://attack.mitre.org/tactics/TA0009/（Collection）、https://attack.mitre.org/tactics/TA0004/（Privilege Escalation）、https://attack.mitre.org/tactics/TA0040/（Impact）
+
 ## 参考（必要最小限）
-- OWASP ASVS（Authorization / Multi-tenant分離 / 監査）
-- OWASP WSTG（Authorization Testing：越境、IDOR/BOLA）
-- PTES（情報収集→境界モデル化→差分観測で確定）
-- MITRE ATT&CK（Discovery/Collection：越境の成立条件を見つける）
+- OWASP Application Security Verification Standard: https://github.com/OWASP/ASVS
+- OWASP Web Security Testing Guide: https://owasp.org/www-project-web-security-testing-guide/
+- PTES (Penetration Testing Execution Standard): https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK: https://attack.mitre.org/
 
 ## リポジトリ内リンク（最大3つまで）
+- 関連 topics：`01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+- 関連 topics：`01_topics/02_web/03_authz_02_idor_典型パターン（一覧_検索_参照キー）.md`
+- 関連 topics：`01_topics/02_web/03_authz_08_file_access_ダウンロード認可（署名URL）.md`
+
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+- `01_topics/02_web/03_authz_01_境界モデル（オブジェクト_ロール_テナント）.md`
 - `01_topics/02_web/03_authz_02_idor_典型パターン（一覧_検索_参照キー）.md`
+- `01_topics/02_web/03_authz_04_rbac_abac_判定点（policy_engine）.md`
+- `01_topics/02_web/03_authz_06_privileged_action_重要操作（承認_送金_権限）.md`
 - `01_topics/02_web/03_authz_08_file_access_ダウンロード認可（署名URL）.md`
 - `01_topics/02_web/03_authz_09_admin_console_運用UIの境界.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
 
-## 次（04以降）に進む前に確認したいこと（必要なら回答）
-- 04 rbac_abac：
-  - ロールは「tenant内ロール（org admin等）」中心か、「システム全体ロール（super admin等）」もあるか
-  - ルール評価がアプリ内実装か、policy engine（OPA等）に外出ししているか（無くても“判定点”として書ける）
-- 08 file access：
-  - アプリ経由DL中心か、S3/GCS等の署名URL中心か（両方でも可）
-- 09 admin console：
-  - 管理UIが同一IdP/同一ドメインか、別サブドメイン/別IdPか（境界の切り方が変わる）
-- 10 object state：
-  - 公開/非公開（draft/published）や承認フローが強いプロダクトか（強いならstate×tenant×roleを主軸にする）
+---

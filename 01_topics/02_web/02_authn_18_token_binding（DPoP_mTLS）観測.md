@@ -1,19 +1,7 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS：
-  - この技術で満たす/破れる点：アクセストークンの盗用耐性（Token Binding / sender-constrained tokens）、クライアント認証（mTLS / private_key_jwt 等）、トークン利用時の検証（RS側の強制）、例外パス（特定APIのみ未強制）、鍵管理/ローテーション
-  - 支える前提：17で rotation / reuse検知 を入れても、「盗まれたアクセストークンがそのまま使える」設計だと被害は残る。token binding は“盗用しても使えない”方向の制御。
-- WSTG：
-  - 該当テスト観点：Authentication Testing / Session Management（Token-based auth、OAuth/OIDC設計、Client authentication）
-  - どの観測に対応するか：token endpoint の応答、Authorizationヘッダ、DPoPヘッダ、mTLSハンドシェイク/証明書、Resource Server（API）側の検証強制を観測して成立条件を切る
-- PTES：
-  - 該当フェーズ：Vulnerability Analysis（トークン盗用の現実性評価、制御の一貫性）、Post-Exploitation（盗用後の持続性抑止）
-  - 前後フェーズとの繋がり（1行）：17（refresh rotation/reuse）で長期盗用を抑え、18（token binding）で“アクセストークン盗用”の即時悪用を抑える。16（step-up）と併用して重要操作の耐性を底上げする。
-- MITRE ATT&CK：
-  - 戦術：Credential Access / Defense Evasion / Persistence
-  - 目的：Bearer token の奪取・再利用（Token theft）を成立させる／逆に防御側は sender-constrained にして再利用を封じる（※ここでは手順ではなく成立条件の判断）
+# 02_authn_18_token_binding（DPoP_mTLS）観測
+"Bearerトークン（盗まれたら使える）" と "sender-constrainedトークン（持ち主以外では使えない）" の違いを、DPoP/mTLS という実装形態で具体的に評価する
 
-## タイトル
-token_binding（DPoP_mTLS）観測
+---
 
 ## 目的（この技術で到達する状態）
 - “Bearerトークン（盗まれたら使える）” と “sender-constrainedトークン（持ち主以外では使えない）” の違いを、DPoP/mTLS という実装形態で具体的に評価できる
@@ -26,13 +14,28 @@ token_binding（DPoP_mTLS）観測
   - Authorization Server（AS）：token endpoint（/oauth/token 等）、発行する access token の種別（DPoP-bound / mTLS-bound / bearer）
   - Resource Server（RS）：API群（/api/*）での token 利用検証（DPoPヘッダ検証、mTLS必須化、cnf確認 等）
   - Client：SPA / モバイル / サーバ（confidential client）で鍵を保持できるか
-- 想定する境界：
-  - “トークン発行（AS）” と “トークン利用（RS）” が分離（最も破綻しやすい：ASは拘束してるつもり、RSが強制していない）
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - "トークン発行（AS）" と "トークン利用（RS）" が分離（最も破綻しやすい：ASは拘束してるつもり、RSが強制していない）
   - 複数API（microservices）で一部だけ強制＝例外パスになりやすい
-- 安全な範囲（最小検証の基本方針）：
-  - 実際に盗用（他者・第三者）するのではなく、テストアカウントと観測で「拘束が効いている設計か」を切り分ける
-  - mTLSは環境依存が強いので、証跡（クライアント証明書要求/ハンドシェイク、設定断片、エラー挙動）を重視する
-  - DPoPはヘッダ/クレームの“整合性”と、RS側の検証強制有無を重視する
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：実際に盗用（他者・第三者）するのではなく、テストアカウントと観測で「拘束が効いている設計か」を切り分ける、mTLSは環境依存が強いので、証跡（クライアント証明書要求/ハンドシェイク、設定断片、エラー挙動）を重視する
+  - やらないこと：DPoPはヘッダ/クレームの"整合性"と、RS側の検証強制有無を重視する
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/02_authn_17_refresh_token_rotation_盗用検知（reuse）.md`
+  - `01_topics/02_web/02_authn_03_token設計（Bearer_JWT_Refresh_Rotation）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - token binding の目的を固定する（何を防ぎたいか）
+    - まず分類する：Bearer / DPoP / mTLS のどれか（混在もある）
+    - AS側（token endpoint）での観測：拘束"しているつもり"を確定する
+    - RS側（API側）での観測：強制されているか（ここが本丸）
+    - DPoP の "成立条件" を構造で押さえる（何を照合するべきか）
+    - mTLS の "成立条件" を構造で押さえる（何を拘束しているか）
+    - DPoP/mTLS と 17（rotation/reuse）との接続：守る場所が違う
+  - 扱わない（別ユニットへ接続）：
+    - 実際の盗用経路（XSS/ログ漏洩/端末侵害）。ここでは"盗用されても使えるか"の設計耐性に絞る → 別ユニット
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 ### 1) token binding の目的を固定する（何を防ぎたいか）
@@ -123,16 +126,21 @@ token_binding（DPoP_mTLS）観測
   - action_priority（P0/P1/P2）
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言える（確定できる）：
+- 何が"確定"できるか：
   - bearer / DPoP / mTLS のどれで、ASとRSの両方が強制しているか（片側だけか）
   - 強制範囲（全APIか一部か）と例外パス（抜け道）の有無
   - DPoPの最低限の検証（DPoP必須、形式不正で失敗する等）の兆候
   - mTLSの実施有無（証明書要求があるか）の証跡
-- 推定（根拠付きで言える）：
-  - RS側強制が無い/部分的な場合、盗用耐性は“局所的”で、Bearer相当の入口が残る可能性が高い
+- 何が"推定"できるか（推定の根拠/前提）：
+  - RS側強制が無い/部分的な場合、盗用耐性は"局所的"で、Bearer相当の入口が残る可能性が高い
   - クライアント種別（SPA/モバイル/サーバ）と鍵保護の現実性が合っていないと、運用回避（例外パス）を生みやすい
-- 言えない（この段階では断定しない）：
-  - 実際の盗用経路（XSS/ログ漏洩/端末侵害）。ここでは“盗用されても使えるか”の設計耐性に絞る
+- 何は"言えない"か（不足情報・観測限界）：
+  - 実際の盗用経路（XSS/ログ漏洩/端末侵害）。ここでは"盗用されても使えるか"の設計耐性に絞る
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：Bearerのまま（拘束なし） → token発行とAPI利用の代表フローをHARで取り、DPoP/mTLSに相当する要素（DPoPヘッダ、mTLS要求）が一切無いことを確定
+  - パターンB：DPoPを使っているが、AS/RSのどちらかが強制していない（名ばかり） → token endpoint：DPoPヘッダが必須か（欠落時のエラー挙動）、API：DPoPヘッダが必須か（欠落/不整合で失敗する兆候）
+  - パターンC：mTLSを使っているが、token endpoint/APIで整合が取れていない → TLSハンドシェイクでの証明書要求がどこにあるか（token endpointのみ/APIのみ/両方）
+  - パターンD：DPoP/mTLSは強制だが、例外パス（特定API/特定クライアント）が存在する → web/mobile/api client_id 別に代表APIの必須条件を比較（差が出るなら例外パス）
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
 - 優先度（P0/P1/P2）
@@ -216,12 +224,49 @@ DPoP: <signed_jwt_with_jwk_htm_htu_iat_jti>
 - この例が使えないケース（前提が崩れるケース）：
   - opaqueトークンでcnf等が観測できない（→RS側強制と監査ログ/設定断片を証跡にする）
 
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：アクセストークンの盗用耐性（Token Binding / sender-constrained tokens）、クライアント認証（mTLS / private_key_jwt 等）、トークン利用時の検証（RS側の強制）、例外パス（特定APIのみ未強制）、鍵管理/ローテーション
+  - 該当要件（可能ならID）：V3（Session Management）、V13（API）
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 満たす：17で rotation / reuse検知 を入れても、「盗まれたアクセストークンがそのまま使える」設計だと被害は残る。token binding は"盗用しても使えない"方向の制御を観測で確定し、以後の検証観点を外さないための基盤。
+  - 参照：https://github.com/OWASP/ASVS
+- WSTG：
+  - 該当カテゴリ/テスト観点：Authentication Testing / Session Management（Token-based auth、OAuth/OIDC設計、Client authentication）
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：token endpoint の応答、Authorizationヘッダ、DPoPヘッダ、mTLSハンドシェイク/証明書、Resource Server（API）側の検証強制を観測して成立条件を切る
+  - 参照：https://owasp.org/www-project-web-security-testing-guide/
+- PTES：
+  - 該当フェーズ：Vulnerability Analysis（トークン盗用の現実性評価、制御の一貫性）、Post-Exploitation（盗用後の持続性抑止）
+  - 前後フェーズとの繋がり（1行）：17（refresh rotation/reuse）で長期盗用を抑え、18（token binding）で"アクセストークン盗用"の即時悪用を抑える。16（step-up）と併用して重要操作の耐性を底上げする。
+  - 参照：https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：Credential Access / Defense Evasion / Persistence
+  - 攻撃者の目的（この技術が支える意図）：Bearer token の奪取・再利用（Token theft）を成立させる／逆に防御側は sender-constrained にして再利用を封じる（※ここでは手順ではなく成立条件の判断）。
+  - 参照：https://attack.mitre.org/tactics/TA0006/（Credential Access）、https://attack.mitre.org/tactics/TA0005/（Defense Evasion）、https://attack.mitre.org/tactics/TA0003/（Persistence）
+
 ## 参考（必要最小限）
-- OWASP ASVS（トークン管理、クライアント認証、盗用耐性）
-- OWASP WSTG（OAuth/OIDC、Token-based auth、Client authentication）
-- OAuth 2.0 / OIDC における sender-constrained tokens（DPoP / mTLS）の設計意図（“ASとRSの整合”が本質）
+- OWASP Application Security Verification Standard: https://github.com/OWASP/ASVS
+- OWASP Web Security Testing Guide: https://owasp.org/www-project-web-security-testing-guide/
+- OAuth 2.0 Demonstrating Proof-of-Possession at the Application Layer (DPoP): https://datatracker.ietf.org/doc/html/rfc9449
+- OAuth 2.0 Mutual-TLS Client Authentication and Certificate-Bound Access Tokens: https://datatracker.ietf.org/doc/html/rfc8705
+- PTES (Penetration Testing Execution Standard): https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK: https://attack.mitre.org/
 
 ## リポジトリ内リンク（最大3つまで）
-- `01_topics/02_web/02_authn_17_refresh_token_rotation_盗用検知（reuse）.md`
+- 関連 topics：`01_topics/02_web/02_authn_03_token設計（Bearer_JWT_Refresh_Rotation）.md`
+- 関連 topics：`01_topics/02_web/02_authn_17_refresh_token_rotation_盗用検知（reuse）.md`
+- 関連 topics：`01_topics/02_web/02_authn_16_step-up_再認証境界（重要操作_再確認）.md`
+
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
+- `01_topics/02_web/02_authn_03_token設計（Bearer_JWT_Refresh_Rotation）.md`
 - `01_topics/02_web/02_authn_15_session_concurrency（多端末_同時ログイン制御）.md`
 - `01_topics/02_web/02_authn_16_step-up_再認証境界（重要操作_再確認）.md`
+- `01_topics/02_web/02_authn_17_refresh_token_rotation_盗用検知（reuse）.md`
+- `01_topics/02_web/02_authn_19_webauthn_passkeys_登録・回復境界.md`
+- `01_topics/02_web/02_authn_20_magic-link_メールリンク認証の成立条件.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+
+---

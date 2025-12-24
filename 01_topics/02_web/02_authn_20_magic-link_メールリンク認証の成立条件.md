@@ -1,19 +1,7 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS：
-  - この技術で満たす/破れる点：ワンタイム認証（OTP相当）の安全な実装（単回性/短寿命/失効/漏洩対策）、ログイン状態遷移の安全性（Login CSRF/セッション更新）、トークン取り扱い（URL露出・ログ・Referer）、アカウント列挙防止（存在判定）、レート制御（12）、回復導線の強度（11/19との整合）
-  - 支える前提：magic-link は「メール到達＝本人性」とみなす設計になりやすく、リンク漏洩/自動踏み/転送/誤送信が即“認証突破”に直結する
-- WSTG：
-  - 該当テスト観点：Authentication Testing（Passwordless/Magic Link、Account Enumeration、Login CSRF）、Session Management（Session Fixation、Token Handling）
-  - どの観測に対応するか：リンク発行（request）、リンク消費（consume）、セッション発行、トークン失効、列挙・レート制御・リダイレクト設計を観測して成立条件を切る
-- PTES：
-  - 該当フェーズ：Vulnerability Analysis（成立条件の分解、漏洩面の特定）、Exploitation（許可範囲での最小検証：テストアカウント）
-  - 前後フェーズとの繋がり（1行）：13（state/ログインCSRF）と同型の状態遷移として評価し、11（回復）・19（パスキー回復）と整合させ、12（レート制御）で悪用可能性を下げる
-- MITRE ATT&CK：
-  - 戦術：Initial Access / Credential Access / Persistence
-  - 目的：メールリンク（認証トークン）の奪取・再利用・転送を通じた不正ログイン、または弱い回復導線としての悪用（※手順ではなく成立条件の判断）
+# 02_authn_20_magic-link_メールリンク認証の成立条件
+magic-link（メールリンク認証）を「リンク発行」「リンク消費」「セッション発行」「失効/再利用防止」「周辺漏洩面（URL/ログ/Referer/自動踏み）」に分解し、どこが危険かを証跡付きで評価する
 
-## タイトル
-magic-link_メールリンク認証の成立条件
+---
 
 ## 目的（この技術で到達する状態）
 - magic-link（メールリンク認証）を「リンク発行」「リンク消費」「セッション発行」「失効/再利用防止」「周辺漏洩面（URL/ログ/Referer/自動踏み）」に分解し、どこが危険かを証跡付きで評価できる
@@ -27,14 +15,31 @@ magic-link_メールリンク認証の成立条件
   - リンク消費：GET /auth/magic-link/consume?token=...（または /verify 等）
   - 状態遷移：consume後のセッション発行（Set-Cookie）、またはトークン交換（短命コード→セッション）
   - 例外導線：登録/ログイン/回復で共通トークンを使い回す実装
-- 想定する境界：
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
   - メールは転送・誤送信・共有・自動スキャン（セキュリティ製品/メールクライアントのリンク先読み）が起きる
   - URLはログ（アクセスログ、プロキシ、解析ツール）に残り得る
   - クロスドメイン遷移でRefererに漏れる（設計次第）
-- 安全な範囲（最小検証の基本方針）：
-  - テストアカウントで、リンクの単回性・TTL・失効・セッション更新・列挙/レート制御を少数回の観測で切り分ける
-  - 実運用ユーザへメール送信しない（誤送信を誘発しない）
-  - “盗み” の実演ではなく、漏洩し得る面と、漏洩しても成立しない設計かを評価する
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：テストアカウントで、リンクの単回性・TTL・失効・セッション更新・列挙/レート制御を少数回の観測で切り分ける
+  - やらないこと：実運用ユーザへメール送信しない（誤送信を誘発しない）、"盗み" の実演ではなく、漏洩し得る面と、漏洩しても成立しない設計かを評価する
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/02_authn_11_account_recovery_本人確認（サポート代行_回復コード）.md`
+  - `01_topics/02_web/02_authn_12_bruteforce_rate-limit_lockout（例外パス）.md`
+  - `01_topics/02_web/02_authn_13_login_csrf_認証CSRFとstate設計.md`
+  - `01_topics/02_web/02_authn_19_webauthn_passkeys_登録・回復境界.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - magic-link を「2段階（発行→消費）」で固定し、境界を列挙する
+    - トークン設計：単回性・短寿命・目的束縛（scope）が主役
+    - バインディング（紐付け）設計：漏洩しても成立しない方向を作る
+    - URL漏洩面：tokenが「どこに残るか」を観測で潰す
+    - 自動踏み（メールセキュリティ製品/プレビュー）の吸収ができているか
+    - Login CSRF/取り違え耐性：13と同型（state設計が必要）
+    - アカウント列挙（enumeration）と送信乱用（abuse）：request側の必須防御
+  - 扱わない（別ユニットへ接続）：
+    - メール経路の実際の安全性（転送/誤送信/ゲートウェイ挙動）※ただし設計が吸収できるかは評価できる → 別ユニット
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 ### 1) magic-link を「2段階（発行→消費）」で固定し、境界を列挙する
@@ -126,17 +131,22 @@ magic-linkの実務上の弱点は「URLとして外に出る」こと。漏洩�
   - action_priority（P0/P1/P2）
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言える（確定できる）：
+- 何が"確定"できるか：
   - トークンが単回・短寿命で、再利用/期限切れが安全に失敗するか
   - consumeがGET一発で完了するか（自動踏み耐性）、確認段階があるか
   - トークンがURL/Referer/リダイレクトで漏れ得る設計か（Referrer-Policy/return_to）
   - request側が列挙・乱用に耐えているか（文言統一、レート制御、監査）
   - ログイン確定時のセッション更新（session rotation）があるか（固定化耐性）
-- 推定（根拠付きで言える）：
+- 何が"推定"できるか（推定の根拠/前提）：
   - バインディング無し＋GET確定＋URLクエリ露出は、リンク漏洩/自動踏みで不正ログインが成立し得る可能性が高い
   - recovery用途とlogin用途が混在（purpose混同）すると、回復導線が弱い入口になりやすい（11/19へ波及）
-- 言えない（この段階では断定しない）：
+- 何は"言えない"か（不足情報・観測限界）：
   - メール経路の実際の安全性（転送/誤送信/ゲートウェイ挙動）※ただし設計が吸収できるかは評価できる
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：トークンが単回・短寿命ではない（再利用/長寿命） → 同一リンクを再度踏んだ時にログインが成立しないことを確認（再利用の扱い）、一定時間後（TTL相当）に期限切れになるかの兆候を確認（短寿命）
+  - パターンB：consumeがGET一発で完了し、自動踏み・漏洩に弱い → consume直後に302でtoken無しURLへ遷移するか（履歴/ログ対策）、確認画面やPOST確定があるか（2段階か）、別ブラウザ/別端末でも成立してしまうか（バインディング有無の兆候）
+  - パターンC：return_to/Refererでtokenが外部へ漏れる設計 → return_to が allowlist/署名で制御されているか（開放なら危険）、Referrer-Policy が適切か（外部遷移でtokenが送られない）
+  - パターンD：request側が列挙/乱用に弱い（12未整備） → 存在する/しないメールで応答差がないか（文言・時間・挙動）、連続送信が抑止されるか（レート/追加検証）
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
 - 優先度（P0/P1/P2）
@@ -228,12 +238,48 @@ POST /auth/magic-link/confirm
 - この例が使えないケース（前提が崩れるケース）：
   - メール送信が外部SaaSでブラックボックス（→アプリ側のtoken設計、consume挙動、ログ/監査で評価する）
 
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：ワンタイム認証（OTP相当）の安全な実装（単回性/短寿命/失効/漏洩対策）、ログイン状態遷移の安全性（Login CSRF/セッション更新）、トークン取り扱い（URL露出・ログ・Referer）、アカウント列挙防止（存在判定）、レート制御（12）、回復導線の強度（11/19との整合）
+  - 該当要件（可能ならID）：V2（Authentication）、V3（Session Management）
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 満たす：magic-link は「メール到達＝本人性」とみなす設計になりやすく、リンク漏洩/自動踏み/転送/誤送信が即"認証突破"に直結することを観測で確定し、以後の検証観点を外さないための基盤。
+  - 参照：https://github.com/OWASP/ASVS
+- WSTG：
+  - 該当カテゴリ/テスト観点：Authentication Testing（Passwordless/Magic Link、Account Enumeration、Login CSRF）、Session Management（Session Fixation、Token Handling）
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：リンク発行（request）、リンク消費（consume）、セッション発行、トークン失効、列挙・レート制御・リダイレクト設計を観測して成立条件を切る
+  - 参照：https://owasp.org/www-project-web-security-testing-guide/
+- PTES：
+  - 該当フェーズ：Vulnerability Analysis（成立条件の分解、漏洩面の特定）、Exploitation（許可範囲での最小検証：テストアカウント）
+  - 前後フェーズとの繋がり（1行）：13（state/ログインCSRF）と同型の状態遷移として評価し、11（回復）・19（パスキー回復）と整合させ、12（レート制御）で悪用可能性を下げる。
+  - 参照：https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：Initial Access / Credential Access / Persistence
+  - 攻撃者の目的（この技術が支える意図）：メールリンク（認証トークン）の奪取・再利用・転送を通じた不正ログイン、または弱い回復導線としての悪用（※手順ではなく成立条件の判断）。
+  - 参照：https://attack.mitre.org/tactics/TA0001/（Initial Access）、https://attack.mitre.org/tactics/TA0006/（Credential Access）、https://attack.mitre.org/tactics/TA0003/（Persistence）
+
 ## 参考（必要最小限）
-- OWASP ASVS（パスワードレス、トークン管理、ログイン状態遷移、列挙防止）
-- OWASP WSTG（Passwordless/Magic Link、Login CSRF、Session Fixation、Account Enumeration）
+- OWASP Application Security Verification Standard: https://github.com/OWASP/ASVS
+- OWASP Web Security Testing Guide: https://owasp.org/www-project-web-security-testing-guide/
+- PTES (Penetration Testing Execution Standard): https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK: https://attack.mitre.org/
 - 実運用上の注意点（自動踏み、URL漏洩面、return_to設計、Referrer制御）
 
 ## リポジトリ内リンク（最大3つまで）
-- `01_topics/02_web/02_authn_13_login_csrf_認証CSRFとstate設計.md`
+- 関連 topics：`01_topics/02_web/02_authn_11_account_recovery_本人確認（サポート代行_回復コード）.md`
+- 関連 topics：`01_topics/02_web/02_authn_12_bruteforce_rate-limit_lockout（例外パス）.md`
+- 関連 topics：`01_topics/02_web/02_authn_13_login_csrf_認証CSRFとstate設計.md`
+
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
 - `01_topics/02_web/02_authn_11_account_recovery_本人確認（サポート代行_回復コード）.md`
+- `01_topics/02_web/02_authn_12_bruteforce_rate-limit_lockout（例外パス）.md`
+- `01_topics/02_web/02_authn_13_login_csrf_認証CSRFとstate設計.md`
 - `01_topics/02_web/02_authn_19_webauthn_passkeys_登録・回復境界.md`
+- `01_topics/02_web/02_authn_10_password_reset_回復経路（token_失効_多要素）.md`
+- `01_topics/02_web/02_authn_16_step-up_再認証境界（重要操作_再確認）.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+
+---

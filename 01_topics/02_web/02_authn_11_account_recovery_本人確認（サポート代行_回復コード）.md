@@ -1,20 +1,7 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS：
-  - 該当領域/章：Authentication / Session Management / Access Control（回復フローは「認証の例外経路」になりやすい）
-  - 該当要件（可能ならID）：（後でASVS版を固定してID付与）
-  - このファイルの内容が「満たす/破れる」ポイント：回復トークンの設計、本人確認の強度、例外パス（サポート代行）での権限境界崩壊、ユーザ列挙・レート制御
-- WSTG：
-  - 該当カテゴリ/テスト観点：Authentication Testing（Password Reset / Account Recovery / User Enumeration / Rate Limit）
-  - 該当が薄い場合：この技術が支える前提：認証境界の特定、例外パスの攻撃面抽出、到達性推定
-- PTES：
-  - 該当フェーズ：Intelligence Gathering / Vulnerability Analysis（回復導線の面抽出→成立条件の切り分け→最小検証）
-  - 前後フェーズとの繋がり（1行）：回復導線で得た境界情報は、後続の brute force / CSRF / session / step-up の優先度決定に直結する
-- MITRE ATT&CK：
-  - 該当戦術（必要なら技術）：Credential Access / Initial Access / Persistence（Account Manipulation を含む文脈）
-  - 攻撃者の目的（この技術が支える意図）：正規の回復導線を悪用してアカウント奪取（ATO）を成立させる、検知されにくい経路で権限を再取得する
+# 02_authn_11_account_recovery_本人確認（サポート代行_回復コード）
+アカウント回復（パスワード再設定、回復コード、サポート代行）を「認証の例外パス」として扱い、境界（資産/信頼/権限）を崩す最短経路になっていないかを判断する
 
-## タイトル
-account_recovery_本人確認（サポート代行_回復コード）
+---
 
 ## 目的（この技術で到達する状態）
 - アカウント回復（パスワード再設定、回復コード、サポート代行）を「認証の例外パス」として扱い、境界（資産/信頼/権限）を崩す最短経路になっていないかを判断できる
@@ -34,6 +21,19 @@ account_recovery_本人確認（サポート代行_回復コード）
   - やらない：大量試行（DoS/総当たり）、実在第三者へのソーシャル、回復を完遂して第三者アカウントへ侵入（許可があるテストアカウントでのみ）
 - 依存する前提知識（必要最小限）：
   - トークン（Bearer/One-time/TTL/Single-use）、CSRF/リダイレクト、セッション境界（ログイン前後）、メール/SMSの信頼境界
+  - `01_topics/02_web/02_authn_10_password_reset_回復経路（token_失効_多要素）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - アカウント回復導線（パスワード再設定、回復コード、サポート代行）の観測
+    - 回復フローの成立条件（何が揃うと回復が完了するか）の観測
+    - ユーザ列挙・トークン設計不備・本人確認強度不足・運用例外（サポート代行）の優先度付き切り分け
+  - 扱わない（別ユニットへ接続）：
+    - パスワードリセットの詳細 → `01_topics/02_web/02_authn_10_password_reset_回復経路（token_失効_多要素）.md`
+    - レート制限/ロックアウトの詳細 → `01_topics/02_web/02_authn_12_bruteforce_rate-limit_lockout（例外パス）.md`
+    - メール/SMS基盤の内部（配送遅延・中継ログ等） → 必要ならASM/OSINT・SaaS側で扱う
+    - ヘルプデスク運用の実態（手順・教育・監査） → 必要なら別ユニット
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 - 観測対象（プロトコル/データ構造/やり取りの単位）：
@@ -155,14 +155,48 @@ POST /account/recovery/complete     { new_password: "...", confirm: "..." }
 - この例が使えないケース（前提が崩れるケース）：
   - IdP主導でRP側に回復が無い（回復はIdP側の境界）／サポート代行のみで技術導線が見えない（運用証跡が主戦場）
 
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：Authentication / Session Management / Access Control（回復フローは「認証の例外経路」になりやすい）
+  - 該当要件（可能ならID）：V2（Authentication）、V3（Session Management）、V4（Access Control）
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 満たす：回復トークンの設計、本人確認の強度、例外パス（サポート代行）での権限境界崩壊、ユーザ列挙・レート制御を観測で確定し、以後の検証観点を外さないための基盤。
+  - 参照：https://github.com/OWASP/ASVS
+- WSTG：
+  - 該当カテゴリ/テスト観点：Authentication Testing（Password Reset / Account Recovery / User Enumeration / Rate Limit）
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：認証境界の特定、例外パスの攻撃面抽出、到達性推定
+  - 参照：https://owasp.org/www-project-web-security-testing-guide/
+- PTES：
+  - 該当フェーズ：Intelligence Gathering / Vulnerability Analysis（回復導線の面抽出→成立条件の切り分け→最小検証）
+  - 前後フェーズとの繋がり（1行）：回復導線で得た境界情報は、後続の brute force / CSRF / session / step-up の優先度決定に直結する。
+  - 参照：https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：Credential Access / Initial Access / Persistence（Account Manipulation を含む文脈）
+  - 攻撃者の目的（この技術が支える意図）：正規の回復導線を悪用してアカウント奪取（ATO）を成立させる、検知されにくい経路で権限を再取得する。
+  - 参照：https://attack.mitre.org/tactics/TA0006/（Credential Access）、https://attack.mitre.org/tactics/TA0001/（Initial Access）、https://attack.mitre.org/tactics/TA0003/（Persistence）
+
 ## 参考（必要最小限）
-- OWASP ASVS（Authentication / Session / Access Control）
-- OWASP WSTG（Authentication Testing：Password Reset / Account Recovery）
+- OWASP Application Security Verification Standard: https://github.com/OWASP/ASVS
+- OWASP Web Security Testing Guide: https://owasp.org/www-project-web-security-testing-guide/
+- PTES (Penetration Testing Execution Standard): https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK: https://attack.mitre.org/
 - プロダクトの設計資料（回復の責任分界：RP vs IdP、サポート権限モデル、監査要件）
 
 ## リポジトリ内リンク（最大3つまで）
-- 関連 topics：
-  - `01_topics/02_web/02_authn_12_bruteforce_rate-limit_lockout（例外パス）.md`
-  - `01_topics/02_web/02_authn_20_magic-link_メールリンク認証の成立条件.md`
-- 関連 labs / cases：
-  - `04_labs/02_web/02_authn/11_account_recovery/`（作成予定）
+- 関連 topics：`01_topics/02_web/02_authn_10_password_reset_回復経路（token_失効_多要素）.md`
+- 関連 topics：`01_topics/02_web/02_authn_12_bruteforce_rate-limit_lockout（例外パス）.md`
+- 関連 topics：`01_topics/02_web/02_authn_20_magic-link_メールリンク認証の成立条件.md`
+
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
+- `01_topics/02_web/02_authn_10_password_reset_回復経路（token_失効_多要素）.md`
+- `01_topics/02_web/02_authn_12_bruteforce_rate-limit_lockout（例外パス）.md`
+- `01_topics/02_web/02_authn_13_login_csrf_認証CSRFとstate設計.md`
+- `01_topics/02_web/02_authn_15_session_concurrency（多端末_同時ログイン制御）.md`
+- `01_topics/02_web/02_authn_16_step-up_再認証境界（重要操作_再確認）.md`
+- `01_topics/02_web/02_authn_20_magic-link_メールリンク認証の成立条件.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+
+---

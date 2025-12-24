@@ -1,19 +1,7 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS：
-  - この技術で満たす/破れる点：重要操作の再認証（step-up）要件、認証強度（AAL相当）の引き上げ、セッションの“認証強度”属性付与と失効、再認証のCSRF耐性（13と同型）、再認証トークン/チャレンジのスコープ管理
-  - 支える前提：ログインが堅牢でも、重要操作が“古いセッションのまま”通ると実害が最大化する（侵害後の被害抑止の中心）
-- WSTG：
-  - 該当テスト観点：Authentication Testing / Session Management（Re-authentication for Sensitive Actions、CSRF、Session Timeout）
-  - どの観測に対応するか：重要操作の境界列挙→step-up要求→チャレンジ→完了→強度付与→期限切れ/失効を観測する
-- PTES：
-  - 該当フェーズ：Vulnerability Analysis（境界欠落/例外パスの抽出）、Exploitation（許可範囲での最小検証：テストアカウント）
-  - 前後フェーズとの繋がり（1行）：13（state/CSRF）と同じ“状態遷移”の安全性を使い、15（同時セッション）と結合して「侵害セッションが重要操作まで到達できるか」を評価する
-- MITRE ATT&CK：
-  - 戦術：Privilege Escalation / Defense Evasion / Impact
-  - 目的：既存セッション（盗用/放置端末）で重要操作（MFA解除、メール変更、送金等）を通す、または再認証境界を迂回して被害を最大化（※手順ではなく成立条件の判断）
+# 02_authn_16_step-up_再認証境界（重要操作_再確認）
+"重要操作" を体系的に列挙し、どの操作が step-up（再認証）で守られるべきか、現状の境界がどこにあるかを証跡つきで説明する
 
-## タイトル
-step-up_再認証境界（重要操作_再確認）
+---
 
 ## 目的（この技術で到達する状態）
 - “重要操作” を体系的に列挙し、どの操作が step-up（再認証）で守られるべきか、現状の境界がどこにあるかを証跡つきで説明できる
@@ -26,13 +14,27 @@ step-up_再認証境界（重要操作_再確認）
   - アカウント防御系：パスワード変更、メール/電話変更、MFA登録/解除、回復コード再発行、セキュリティ設定変更
   - 資産・権限系：支払い手段追加/削除、送金/購入/退会、権限付与、APIトークン発行、組織設定変更
   - セッション系：全端末ログアウト、端末信頼解除、セッション失効（15と接続）
-- 想定する境界：
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
   - RP単体、またはSSO（IdP）連携。step-upがRP側/IdP側のどちらで実施されるかが分かれる
-  - フロント（UI）とバック（API）が分離しており、“API直叩き” が例外パスになりやすい
-- 安全な範囲（最小検証の基本方針）：
-  - テストアカウントで、重要操作を実際に変更しない範囲の観測（可能なら “確認画面まで” で切り分け）
-  - 例外パス検出は、UIとAPIの差分観測で行う（過度な試行はしない）
-  - 本番相当での変更を伴う検証は、許可と巻き戻し手順（監査含む）が前提
+  - フロント（UI）とバック（API）が分離しており、"API直叩き" が例外パスになりやすい
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：テストアカウントで、重要操作を実際に変更しない範囲の観測（可能なら "確認画面まで" で切り分け）、例外パス検出は、UIとAPIの差分観測で行う（過度な試行はしない）
+  - やらないこと：本番相当での変更を伴う検証は、許可と巻き戻し手順（監査含む）が前提
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/02_authn_13_login_csrf_認証CSRFとstate設計.md`
+  - `01_topics/02_web/02_authn_15_session_concurrency（多端末_同時ログイン制御）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - step-up を「境界モデル」として定義する（トリガ、チャレンジ、付与、期限、失効）
+    - "重要操作リスト" を作る（アカウント保護、権限/組織、金銭/契約、データ取り出し、セキュリティ設定）
+    - UIだけで判断しない：API/モバイル/バッチが例外パスになりやすい
+    - step-up の状態管理：セッション属性か、別トークンか
+    - 再認証のCSRF/取り違え耐性：13のstate設計がそのまま必要
+    - 通知/監査：step-upは"防御の起点"なのでログが必須
+  - 扱わない（別ユニットへ接続）：
+    - 実侵害での横展開（盗用/中間者等）※ただし18/17へ接続して次の検証計画を立てられる → 別ユニット
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 ### 1) step-up を「境界モデル」として定義する（何を満たすと通るのか）
@@ -115,16 +117,21 @@ step-upは一般に以下の要素で成立する。観測は要素ごとに分�
   - action_priority（P0/P1/P2）
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言える（確定できる）：
+- 何が"確定"できるか：
   - 重要操作に step-up が掛かる/掛からないの境界（操作一覧×入口一覧）
   - step-up の方式（challenge）と、強度付与（grant_store）およびTTL/失効ルールの有無
   - UIとAPIで一貫しているか（例外パスの有無）
   - 監査ログに step-up と重要操作が紐付くか（運用として検知/追跡可能か）
-- 推定（根拠付きで言える）：
+- 何が"推定"できるか（推定の根拠/前提）：
   - grant_storeがUIのみ、またはTTL/失効が弱い場合、侵害セッションで重要操作が通る可能性が高い
   - SSOで強度がIdP側にあっても、RPが検証しないと意味がない（責任分界の穴）
-- 言えない（この段階では断定しない）：
+- 何は"言えない"か（不足情報・観測限界）：
   - 実侵害での横展開（盗用/中間者等）※ただし18/17へ接続して次の検証計画を立てられる
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：重要操作に step-up が欠落している（または一部だけ） → 重要操作候補を3〜5件選び、UIで操作すると step-up が要求されるかを観測
+  - パターンB：step-up はあるが、状態管理（grant_store/TTL/失効）が弱い → step-up完了後に付与されるcookie/トークン/属性の変化を観測（Set-Cookie、レスポンス差、一覧/監査ログ）
+  - パターンC：再認証フローが13同型のCSRF/取り違え耐性を欠く → step-up開始/完了にCSRFトークンやtransaction stateがあるかを観測
+  - パターンD：SSOで強度を表現しているが、RPが検証していない → IdP側でMFA要求が発生する条件と、RP側の重要操作要求が連動しているかを観測
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
 - 優先度（P0/P1/P2）
@@ -208,12 +215,48 @@ POST /account/email/change           { new_email: ... }          # 再試行で�
 - この例が使えないケース（前提が崩れるケース）：
   - 重要操作がサーバ側で一括ゲートされず、各APIで実装がバラバラ（→操作一覧を増やし、例外パス検出を主眼にする）
 
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：重要操作の再認証（step-up）要件、認証強度（AAL相当）の引き上げ、セッションの"認証強度"属性付与と失効、再認証のCSRF耐性（13と同型）、再認証トークン/チャレンジのスコープ管理
+  - 該当要件（可能ならID）：V2（Authentication）、V3（Session Management）
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 満たす：ログインが堅牢でも、重要操作が"古いセッションのまま"通ると実害が最大化する（侵害後の被害抑止の中心）ことを観測で確定し、以後の検証観点を外さないための基盤。
+  - 参照：https://github.com/OWASP/ASVS
+- WSTG：
+  - 該当カテゴリ/テスト観点：Authentication Testing / Session Management（Re-authentication for Sensitive Actions、CSRF、Session Timeout）
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：重要操作の境界列挙→step-up要求→チャレンジ→完了→強度付与→期限切れ/失効を観測する
+  - 参照：https://owasp.org/www-project-web-security-testing-guide/
+- PTES：
+  - 該当フェーズ：Vulnerability Analysis（境界欠落/例外パスの抽出）、Exploitation（許可範囲での最小検証：テストアカウント）
+  - 前後フェーズとの繋がり（1行）：13（state/CSRF）と同じ"状態遷移"の安全性を使い、15（同時セッション）と結合して「侵害セッションが重要操作まで到達できるか」を評価する。
+  - 参照：https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：Privilege Escalation / Defense Evasion / Impact
+  - 攻撃者の目的（この技術が支える意図）：既存セッション（盗用/放置端末）で重要操作（MFA解除、メール変更、送金等）を通す、または再認証境界を迂回して被害を最大化（※手順ではなく成立条件の判断）。
+  - 参照：https://attack.mitre.org/tactics/TA0004/（Privilege Escalation）、https://attack.mitre.org/tactics/TA0005/（Defense Evasion）、https://attack.mitre.org/tactics/TA0040/（Impact）
+
 ## 参考（必要最小限）
-- OWASP ASVS（再認証、重要操作境界、セッション属性/失効）
-- OWASP WSTG（Re-authentication / CSRF / Session management）
-- OIDCのacr/amr、step-up認証（RP/IdP責任分界の設計原則）
+- OWASP Application Security Verification Standard: https://github.com/OWASP/ASVS
+- OWASP Web Security Testing Guide: https://owasp.org/www-project-web-security-testing-guide/
+- OIDC Core: https://openid.net/specs/openid-connect-core-1_0.html
+- PTES (Penetration Testing Execution Standard): https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK: https://attack.mitre.org/
 
 ## リポジトリ内リンク（最大3つまで）
+- 関連 topics：`01_topics/02_web/02_authn_13_login_csrf_認証CSRFとstate設計.md`
+- 関連 topics：`01_topics/02_web/02_authn_15_session_concurrency（多端末_同時ログイン制御）.md`
+- 関連 topics：`01_topics/02_web/02_authn_17_refresh_token_rotation_盗用検知（reuse）.md`
+
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
+- `01_topics/02_web/02_authn_06_mfa_成立点と例外パス（step-up_device_trust）.md`
 - `01_topics/02_web/02_authn_13_login_csrf_認証CSRFとstate設計.md`
 - `01_topics/02_web/02_authn_15_session_concurrency（多端末_同時ログイン制御）.md`
 - `01_topics/02_web/02_authn_17_refresh_token_rotation_盗用検知（reuse）.md`
+- `01_topics/02_web/02_authn_18_token_binding（DPoP_mTLS）観測.md`
+- `01_topics/02_web/02_authn_19_webauthn_passkeys_登録・回復境界.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+
+---

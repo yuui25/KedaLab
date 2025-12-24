@@ -1,19 +1,7 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS：
-  - この技術で満たす/破れる点：ログイン/SSO/OAuthコールバックのCSRF耐性（state/nonce/PKCE/CSRFトークン）、セッション生成・切替の安全性（session fixation/アカウント混同）、リダイレクト設計（return_to等のオープンリダイレクト混入）
-  - 支える前提：認証は「未認証→認証済み」へ状態遷移するため、CSRFが成立すると“本人の意思と異なる認証状態”を作られる
-- WSTG：
-  - 該当テスト観点：Authentication Testing（Login CSRF / Session Fixation / OAuth CSRF(state) / Account Linking）
-  - どの観測に対応するか：ログインPOST、SSO開始、/authorize、/callback、アカウント連携（connect/link）を“状態遷移点”として列挙し、CSRF防御（token/state/Origin）とセッション更新を検証する
-- PTES：
-  - 該当フェーズ：Vulnerability Analysis（成立条件の切り分け）、Exploitation（許可されたテストアカウントで最小検証）
-  - 前後フェーズとの繋がり（1行）：12の試行抑止と並び、13は「本人意思と無関係に認証状態を作れる」入口を確定し、14/15/16/20の検証優先度に繋げる
-- MITRE ATT&CK：
-  - 戦術：Initial Access / Credential Access
-  - 目的：被害者を攻撃者が用意した認証状態へ誘導（アカウント混同・連携乗っ取り・セッション切替の強制）し、後続の不正操作を成立させる（※ここでは手順ではなく成立条件の判断）
+# 02_authn_13_login_csrf_認証CSRFとstate設計
+認証CSRF（Login CSRF / OAuth CSRF / Account Linking CSRF）を「状態遷移の安全性」の問題として整理し、どの入口が危険かを優先度付きで判断する
 
-## タイトル
-login_csrf_認証CSRFとstate設計
+---
 
 ## 目的（この技術で到達する状態）
 - 認証CSRF（Login CSRF / OAuth CSRF / Account Linking CSRF）を「状態遷移の安全性」の問題として整理し、どの入口が危険かを優先度付きで判断できる
@@ -27,13 +15,26 @@ login_csrf_認証CSRFとstate設計
   - SSO開始：/sso/start、/oauth/authorize（RP→IdP遷移）
   - コールバック：/oauth/callback、/sso/callback（code/id_token受領→セッション発行）
   - アカウント連携：/connect、/link、/settings/sso/connect（「既存ログイン中」＋「外部IdPと紐付け」）
-- 想定する境界：
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
   - RP（アプリ）と IdP（外部/社内）が分離している（責任分界が必要）
   - フロントチャネル（ブラウザリダイレクト）とバックチャネル（トークン交換）が混在する
-- 安全な範囲（最小検証の基本方針）：
-  - 実ユーザへ影響しない（テストアカウント/検証環境が前提）
-  - “本人意思と異なる認証状態が作れるか” を、少数回で成立条件として切り分ける
-  - state/nonce等の推測・強制突破ではなく、「検証/照合が無い・弱い」設計欠陥を観測で確定する
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：実ユーザへ影響しない（テストアカウント/検証環境が前提）、"本人意思と異なる認証状態が作れるか" を、少数回で成立条件として切り分ける
+  - やらないこと：state/nonce等の推測・強制突破ではなく、「検証/照合が無い・弱い」設計欠陥を観測で確定する
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/02_authn_04_sso_oidc_flow観測（state_nonce_code_PKCE）.md`
+  - `01_topics/02_web/02_authn_12_bruteforce_rate-limit_lockout（例外パス）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - 認証CSRF（Login CSRF / OAuth CSRF / Account Linking CSRF）の観測
+    - state/nonce/PKCE/CSRFトークンの"役割分担"の確認
+    - セッション更新（session fixation/アカウント混同）の観測
+    - リダイレクト設計（return_to等のオープンリダイレクト混入）の観測
+  - 扱わない（別ユニットへ接続）：
+    - IdP内部の実装詳細（ただしRP側で必要な検証が欠けている事実は示せる） → 別ユニット
+    - 実ユーザへの影響範囲（検証環境/テストアカウントでの再現が前提） → 別ユニット
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 ### 1) 認証CSRFを「3つの型」に分ける（どれを守れていないかが直結する）
@@ -103,17 +104,21 @@ state（および類似のトランザクションID）に求める要件を、�
   - action_priority（P0/P1/P2）
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言える（確定できる）：
+- 何が"確定"できるか：
   - 認証状態遷移点（login/callback/link）の一覧と、CSRF防御（CSRF token/state/Origin等）の有無・一貫性
   - stateが「あるだけ」か「照合され、単回/短寿命で、適切に束縛されている」かの差
   - 認証完了時のセッション更新（ローテーション）の有無
   - return_to 等の遷移先パラメータが、stateに安全に束縛されているか（or 危険な開放があるか）
-- 推定（根拠付きで言える）：
+- 何が"推定"できるか（推定の根拠/前提）：
   - state検証が弱い場合、ログイン混同/連携混入が成立し得る（ただし影響の確定はテストアカウントで最小検証が必要）
   - セッション更新が無い場合、CSRF以外のセッション系リスク（固定化）と連鎖しやすい
-- 言えない（この段階では断定しない）：
+- 何は"言えない"か（不足情報・観測限界）：
   - IdP内部の実装詳細（ただしRP側で必要な検証が欠けている事実は示せる）
   - 実ユーザへの影響範囲（検証環境/テストアカウントでの再現が前提）
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：直接ログイン（型A）のCSRF耐性が弱い → ログインPOSTにCSRFトークンが必須か、無効/欠落でどう失敗するか（失敗の仕方が一定か）を観測
+  - パターンB：OAuth/OIDC（型B）のstate設計が弱い（"あるだけ"） → /authorizeでstateが生成されるか（RP起点か、固定値か）、/callbackでstate不一致/欠落時に確実に失敗するか（成功しないか）を観測
+  - パターンC：アカウント連携（型C）がCSRF/再認証で守られていない → link/connect完了が「既存セッション＋外部IdP認可」だけで成立していないか（再認証/確認画面の有無）を観測
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
 - 優先度（P0/P1/P2）
@@ -196,12 +201,49 @@ POST /account/link/complete   (または /connect/callback 等)
 - この例が使えないケース（前提が崩れるケース）：
   - 完全にIdP主導で、RPがstateを作らずログイン開始がIdPから来る（その場合は“RPが検証すべきトランザクション束縛”がどこにあるかを先に整理）
 
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：ログイン/SSO/OAuthコールバックのCSRF耐性（state/nonce/PKCE/CSRFトークン）、セッション生成・切替の安全性（session fixation/アカウント混同）、リダイレクト設計（return_to等のオープンリダイレクト混入）
+  - 該当要件（可能ならID）：V2（Authentication）、V3（Session Management）
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 満たす：認証は「未認証→認証済み」へ状態遷移するため、CSRFが成立すると"本人の意思と異なる認証状態"を作られることを観測で確定し、以後の検証観点を外さないための基盤。
+  - 参照：https://github.com/OWASP/ASVS
+- WSTG：
+  - 該当カテゴリ/テスト観点：Authentication Testing（Login CSRF / Session Fixation / OAuth CSRF(state) / Account Linking）
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：ログインPOST、SSO開始、/authorize、/callback、アカウント連携（connect/link）を"状態遷移点"として列挙し、CSRF防御（token/state/Origin）とセッション更新を検証する
+  - 参照：https://owasp.org/www-project-web-security-testing-guide/
+- PTES：
+  - 該当フェーズ：Vulnerability Analysis（成立条件の切り分け）、Exploitation（許可されたテストアカウントで最小検証）
+  - 前後フェーズとの繋がり（1行）：12の試行抑止と並び、13は「本人意思と無関係に認証状態を作れる」入口を確定し、14/15/16/20の検証優先度に繋げる。
+  - 参照：https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：Initial Access / Credential Access
+  - 攻撃者の目的（この技術が支える意図）：被害者を攻撃者が用意した認証状態へ誘導（アカウント混同・連携乗っ取り・セッション切替の強制）し、後続の不正操作を成立させる（※ここでは手順ではなく成立条件の判断）。
+  - 参照：https://attack.mitre.org/tactics/TA0001/（Initial Access）、https://attack.mitre.org/tactics/TA0006/（Credential Access）
+
 ## 参考（必要最小限）
-- OWASP ASVS（認証状態遷移、CSRF、セッション更新）
-- OWASP WSTG（Login CSRF / OAuth state / Session Fixation）
-- OAuth 2.0 / OpenID Connect の state / nonce / PKCE の意図（役割分担を崩さないための設計原則）
+- OWASP Application Security Verification Standard: https://github.com/OWASP/ASVS
+- OWASP Web Security Testing Guide: https://owasp.org/www-project-web-security-testing-guide/
+- OAuth 2.0 Security Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/OAuth2_Security_Cheat_Sheet.html
+- OpenID Connect Core: https://openid.net/specs/openid-connect-core-1_0.html
+- PTES (Penetration Testing Execution Standard): https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK: https://attack.mitre.org/
 
 ## リポジトリ内リンク（最大3つまで）
+- 関連 topics：`01_topics/02_web/02_authn_04_sso_oidc_flow観測（state_nonce_code_PKCE）.md`
+- 関連 topics：`01_topics/02_web/02_authn_12_bruteforce_rate-limit_lockout（例外パス）.md`
+- 関連 topics：`01_topics/02_web/02_authn_14_logout_設計（RP_IdP_フロントチャネル）.md`
+
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
+- `01_topics/02_web/02_authn_04_sso_oidc_flow観測（state_nonce_code_PKCE）.md`
 - `01_topics/02_web/02_authn_12_bruteforce_rate-limit_lockout（例外パス）.md`
+- `01_topics/02_web/02_authn_14_logout_設計（RP_IdP_フロントチャネル）.md`
+- `01_topics/02_web/02_authn_15_session_concurrency（多端末_同時ログイン制御）.md`
 - `01_topics/02_web/02_authn_16_step-up_再認証境界（重要操作_再確認）.md`
 - `01_topics/02_web/02_authn_20_magic-link_メールリンク認証の成立条件.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+
+---

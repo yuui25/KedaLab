@@ -1,19 +1,7 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS：
-  - この技術で満たす/破れる点：オブジェクト参照の認可（BOLA/IDOR）、リソース単位のアクセス制御、一覧/検索/参照の一貫したスコープ制御、マルチテナント分離（03へ接続）、監査ログ（誰が何にアクセスしたか）と不正検知
-  - 支える前提：認証（AuthN）が強くても、参照キー（id/uuid/slug）を差し替えるだけで他人の資産に到達できると被害が直結する
-- WSTG：
-  - 該当テスト観点：Authorization Testing（IDOR/BOLA、Insecure Direct Object References）、Business Logic（一覧/検索の漏洩）、API Testing（BOLA）
-  - どの観測に対応するか：一覧→詳細、検索→詳細、参照キー差分、ページネーション/フィルタ、GraphQL/ファイルDL等の派生入口を、HTTP差分で体系的に観測する
-- PTES：
-  - 該当フェーズ：Information Gathering（参照キー/境界の抽出）、Vulnerability Analysis（スコープ破綻の特定）、Exploitation（許可範囲での最小差分検証）
-  - 前後フェーズとの繋がり（1行）：AuthNで得た“セッション/ユーザ差分”を入力に、AuthZの「スコープ（誰の何に届くか）」を一覧/検索/参照の3経路で確定し、03〜10の各論点へ分岐する
-- MITRE ATT&CK：
-  - 戦術：Discovery / Collection / Privilege Escalation / Impact
-  - 目的：参照キーを手掛かりに他ユーザ/他テナントのデータへ到達し、情報収集・権限拡大・操作（削除/承認/送金等）につなげる（※手順ではなく成立条件の判断）
+# 03_authz_02_idor_典型パターン（一覧_検索_参照キー）
+IDOR/BOLA を「参照キーの差し替え」ではなく、(1)キーの露出面、(2)スコープ（認可）の表現、(3)入口（一覧/検索/参照）の不一致、の3点で分解し、短時間で"当たり筋"を特定する
 
-## タイトル
-idor_典型パターン（一覧_検索_参照キー）
+---
 
 ## 目的（この技術で到達する状態）
 - IDOR/BOLA を「参照キーの差し替え」ではなく、(1)キーの露出面、(2)スコープ（認可）の表現、(3)入口（一覧/検索/参照）の不一致、の3点で分解し、短時間で“当たり筋”を特定できる
@@ -23,14 +11,24 @@ idor_典型パターン（一覧_検索_参照キー）
 
 ## 前提（対象・範囲・想定）
 - 対象：Webアプリ/API（REST中心を基準に、SPA/MVC/モバイルも同型で扱う）
-- 想定するID種別（混在前提）
-  - 連番ID / UUID / スラッグ / 複合キー（org_id + id 等）
-- 想定する入口
-  - 一覧（list）、検索（search）、詳細参照（get）、更新/削除（update/delete）、派生（エクスポート、関連一覧、添付DL、管理画面）
-- 検証の安全な範囲（ペネトレ/TLPT/バグバウンティで実務的）
-  - テストアカウント（少なくとも2ユーザ、可能なら2テナント）で、差分観測を最小回数で行う
-  - “大量列挙”より、一覧→参照→派生の経路で「スコープ破綻の有無」を確定する
-  - 影響のある更新系は、可能なら“確認画面まで”や“dry-run相当”で止め、証跡（HTTP/ログ）を優先する
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - 想定するID種別（混在前提）：連番ID / UUID / スラッグ / 複合キー（org_id + id 等）
+  - 想定する入口：一覧（list）、検索（search）、詳細参照（get）、更新/削除（update/delete）、派生（エクスポート、関連一覧、添付DL、管理画面）
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：テストアカウント（少なくとも2ユーザ、可能なら2テナント）で、差分観測を最小回数で行う、"大量列挙"より、一覧→参照→派生の経路で「スコープ破綻の有無」を確定する
+  - やらないこと：影響のある更新系は、可能なら"確認画面まで"や"dry-run相当"で止め、証跡（HTTP/ログ）を優先する
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+  - `01_topics/02_web/03_authz_01_境界モデル（オブジェクト_ロール_テナント）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 扱う範囲（本ファイルの守備範囲）
+  - 扱う：
+    - IDOR/BOLA を「参照キーの差し替え」ではなく、(1)キーの露出面、(2)スコープ（認可）の表現、(3)入口（一覧/検索/参照）の不一致、の3点で分解し、短時間で"当たり筋"を特定する
+    - API/UI/モバイル/GraphQL/ファイルDLなど入口が増えても、同じ観測モデルで再現性を保って評価する
+    - 修正指示を「どこにチェックが無いか」だけで終わらせず、設計として「スコープをどこで強制するか（handler/service/query/policy）」まで落とし込む
+  - 扱わない（別ユニットへ接続）：
+    - 大量列挙の可否や最大漏洩量（実行は許可・影響評価が必要） → 別ユニット
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 ### 1) IDORを「参照キー露出 → スコープ強制 → 入口の不一致」で分解する
@@ -130,16 +128,21 @@ idor_典型パターン（一覧_検索_参照キー）
   - action_priority（P0/P1/P2）
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言える（確定できる）：
+- 何が"確定"できるか：
   - どの入口（一覧/検索/参照/派生）で、参照キーが露出し、スコープが強制されている/いないか
   - 同一テナント内の越権か、テナント越境の兆候か（org_id/tenant_idの扱いから03へ分岐）
-  - IDの種類が何であっても、“スコープ強制が一貫しているか” を評価できる
-- 推定（根拠付きで言える）：
+  - IDの種類が何であっても、"スコープ強制が一貫しているか" を評価できる
+- 何が"推定"できるか（推定の根拠/前提）：
   - 一覧/検索のどちらかが漏れている場合、詳細/更新/ダウンロードにも同系統の漏れが存在する可能性が高い（入口増殖の性質）
   - enforcement_layer が混在しているほど、派生APIで抜けやすい（修正はpolicy統一 or queryスコープの強制へ寄せるべき）
-- 言えない（この段階では断定しない）：
+- 何は"言えない"か（不足情報・観測限界）：
   - 大量列挙の可否や最大漏洩量（実行は許可・影響評価が必要）
-  - “本当に他人データか” の断定（テストデータ/ダミーの可能性があるため、証跡と運用確認が必要）
+  - "本当に他人データか" の断定（テストデータ/ダミーの可能性があるため、証跡と運用確認が必要）
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：一覧/検索が漏れている（参照キー集合が得られる） → 一覧/検索の代表エンドポイントを固定し、2ユーザ/2テナントで結果差分が出るかを見る
+  - パターンB：一覧/検索は守るが、参照（get/download/派生）で抜ける → "自分が見えるID" と "他ユーザが見えるID" の2点で、参照の挙動差（403/404/成功）を確認する
+  - パターンC：同一テナント内は守るが、テナント越境が怪しい（org_id/tenant_idが鍵） → 複合キーの片方が無視されていないか（org_idを変えても同じ結果等）を観測
+  - パターンD：権限（role）や状態（state）で見える範囲が変わるのに、APIが追随していない → role差分（一般/管理）と state差分（draft/approved 等）で、一覧/検索/参照の整合を観測
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
 - 優先度（P0/P1/P2）
@@ -219,28 +222,47 @@ GET  /items/123/attachments/999/download # 派生（本文は守るが添付が�
 - この例が使えないケース（前提が崩れるケース）：
   - 共有リンク/公開ページが混在し、意図的に他者閲覧が成立する（この場合は境界条件とポリシー設計を明示し、10/09へ接続する）
 
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：オブジェクト参照の認可（BOLA/IDOR）、リソース単位のアクセス制御、一覧/検索/参照の一貫したスコープ制御、マルチテナント分離（03へ接続）、監査ログ（誰が何にアクセスしたか）と不正検知
+  - 該当要件（可能ならID）：V4（Access Control）
+  - このファイルの内容が「満たす/破れる」ポイント：
+    - 満たす：認証（AuthN）が強くても、参照キー（id/uuid/slug）を差し替えるだけで他人の資産に到達できると被害が直結することを観測で確定し、以後の検証観点を外さないための基盤。
+  - 参照：https://github.com/OWASP/ASVS
+- WSTG：
+  - 該当カテゴリ/テスト観点：Authorization Testing（IDOR/BOLA、Insecure Direct Object References）、Business Logic（一覧/検索の漏洩）、API Testing（BOLA）
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：一覧→詳細、検索→詳細、参照キー差分、ページネーション/フィルタ、GraphQL/ファイルDL等の派生入口を、HTTP差分で体系的に観測する
+  - 参照：https://owasp.org/www-project-web-security-testing-guide/
+- PTES：
+  - 該当フェーズ：Information Gathering（参照キー/境界の抽出）、Vulnerability Analysis（スコープ破綻の特定）、Exploitation（許可範囲での最小差分検証）
+  - 前後フェーズとの繋がり（1行）：AuthNで得た"セッション/ユーザ差分"を入力に、AuthZの「スコープ（誰の何に届くか）」を一覧/検索/参照の3経路で確定し、03〜10の各論点へ分岐する。
+  - 参照：https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：Discovery / Collection / Privilege Escalation / Impact
+  - 攻撃者の目的（この技術が支える意図）：参照キーを手掛かりに他ユーザ/他テナントのデータへ到達し、情報収集・権限拡大・操作（削除/承認/送金等）につなげる（※手順ではなく成立条件の判断）。
+  - 参照：https://attack.mitre.org/tactics/TA0007/（Discovery）、https://attack.mitre.org/tactics/TA0009/（Collection）、https://attack.mitre.org/tactics/TA0004/（Privilege Escalation）、https://attack.mitre.org/tactics/TA0040/（Impact）
+
 ## 参考（必要最小限）
-- OWASP ASVS（Authorization：リソース単位のアクセス制御、マルチテナント分離、監査）
-- OWASP WSTG（Authorization Testing / IDOR/BOLA）
-- PTES（Vulnerability Analysis：認可欠陥は“入口不一致”として現れる）
-- MITRE ATT&CK（Discovery/Collection：参照キー集合の獲得→横展開）
+- OWASP Application Security Verification Standard: https://github.com/OWASP/ASVS
+- OWASP Web Security Testing Guide: https://owasp.org/www-project-web-security-testing-guide/
+- PTES (Penetration Testing Execution Standard): https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK: https://attack.mitre.org/
 
 ## リポジトリ内リンク（最大3つまで）
-- `01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
-- `01_topics/02_web/03_authz_06_privileged_action_重要操作（承認_送金_権限）.md`
-- `01_topics/02_web/03_authz_08_file_access_ダウンロード認可（署名URL）.md`
+- 関連 topics：`01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+- 関連 topics：`01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
+- 関連 topics：`01_topics/02_web/03_authz_06_privileged_action_重要操作（承認_送金_権限）.md`
 
-## 次（03以降）に進む前に確認したいこと（必要なら回答）
-- 03 multi-tenant：
-  - テナント分離は「同一DB・tenant_idで論理分離」か「DB/スキーマ分離」か、どちらを主戦場にするか（両方でも可）
-  - テナント切替の入口（サブドメイン/ヘッダ/URL/ログイン後スイッチ）があるか
-- 04 rbac/abac：
-  - policy engine（OPA等）やフレームワーク内Policy（Pundit/Cancan等）の採用有無（無くても“概念として”書く）
-- 07 GraphQL：
-  - GraphQLが実在するか（あるなら field-level / resolverでのスコープ強制を濃くする）
-- 08 file access：
-  - 署名URL（S3/GCS等）を使う運用があるか、またはアプリ経由DLが中心か
-- 09 admin console：
-  - 管理UIが同一ドメイン内か、別サブドメイン/別IdPか（境界の切り方が変わる）
-- 10 object state：
-  - draft/approved/published 等の状態モデルが強いプロダクトか（あるならstate×authzを主軸にする）
+---
+
+## 深掘りリンク（最大8）
+- `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
+- `01_topics/02_web/03_authz_01_境界モデル（オブジェクト_ロール_テナント）.md`
+- `01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
+- `01_topics/02_web/03_authz_04_rbac_abac_判定点（policy_engine）.md`
+- `01_topics/02_web/03_authz_06_privileged_action_重要操作（承認_送金_権限）.md`
+- `01_topics/02_web/03_authz_07_graphql_authz（field_level）.md`
+- `01_topics/02_web/03_authz_08_file_access_ダウンロード認可（署名URL）.md`
+- `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+
+---

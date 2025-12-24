@@ -1,19 +1,4 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
-- ASVS：
-  - この技術で満たす/破れる点：認証（トークン/セッション相当）、認可（メソッド単位・テナント分離）、入力検証（protobufの型/制約・巨大メッセージ）、エラーモデル（10/09と同様に情報漏えい抑制）、通信保護（mTLS/証明書検証/ALPN）、監査（trace_id・呼出し主体・メソッド・結果）
-  - 支える前提：gRPCはHTTP/2上で動く“RPC”であり、RESTの前提（URL/verb/ステータスコード、WAF/ログ/認可ミドルウェア）がそのまま通用しない。認可境界は「メソッド」「メタデータ」「Gateway/Proxy」「Interceptor」に散り、ズレるとBOLA/BFLAが復活する。
-- WSTG：
-  - 該当テスト観点：Authorization Testing（メソッド単位の認可、tenant/roleの強制）、API Testing（gRPC/Transcoding/Grpc-web）、Input Validation（protobufの境界値、ストリーミング）、Error Handling（gRPC status/detailsの漏えい）、Transport（mTLS/証明書/HTTP/2）
-  - どの観測に対応するか：gRPCの入口（port/ALPN/Reflection）→呼出し（grpcurl等）→メタデータ（Authorization等）→認可判定（Interceptor/サービス内）→Gateway（REST変換）→ログ/監査、を分解し差分観測で確定する
-- PTES：
-  - 該当フェーズ：Information Gathering（gRPCサービス/メソッド列挙、proto入手、Reflection有無、Gatewayの有無、内部向けポート発見）、Vulnerability Analysis（認可欠落・ヘッダ/メタデータ信頼・Gatewayズレ・ストリーミング境界）、Exploitation（最小差分：同一メソッドを主体/テナント/権限/入力だけ変えて比較し証跡化）
-  - 前後フェーズとの繋がり（1行）：versioning（10）で“旧経路”が残るのと同様、gRPCはGateway/Grpc-web/内部LBなど複数経路が生まれやすい。REST側で直した認可がgRPC直叩きで復活する、または逆、が典型なので04_apiの総仕上げとして扱う
-- MITRE ATT&CK：
-  - 戦術：Discovery / Privilege Escalation / Collection / Lateral Movement
-  - 目的：Reflection/サービス列挙で面を増やす（Discovery）、メソッド認可欠落で高権限操作（Privilege Escalation）、バッチ系RPCで大量取得（Collection）、内部向けgRPCを足掛かりに横展開（Lateral Movement：環境次第）。
-
-## タイトル
-grpc_メタデータと認可境界
+# 04_api_11_grpc_メタデータと認可境界
 
 ## 目的（この技術で到達する状態）
 - gRPCにおける「認証情報（メタデータ）」「認可判定点（Interceptor / Service / Gateway）」「テナント分離」「内部/外部経路のズレ」を、実務ペネトレで短時間に“確定”できる観測設計を持つ
@@ -21,21 +6,21 @@ grpc_メタデータと認可境界
 - エンジニアが「どこで何を強制するか（Gateway/Interceptor/Service/Envoy）」を具体的に実装へ落とせる（“何を見れば良いか”ではなく“何を直すか”まで）
 
 ## 前提（対象・範囲・想定）
-- gRPCの現実構成（よくある）
-  - 外部：Grpc-web（ブラウザ）→ Envoy/Ingress → gRPC Service
-  - 外部：REST（JSON）→ gRPC Transcoding（Gateway）→ gRPC Service
-  - 内部：Service-to-Service（mTLS + SPIFFE等）で直叩き
-- 入口が増える理由
-  - 同一機能が「REST」「Gateway→gRPC」「gRPC直」「Grpc-web」で提供される
-  - 認可実装が経路ごとに分散し、差分が生まれる（versioningの“残存面”と同型）
-- gRPCの重要要素
-  - HTTP/2（ALPN、擬似ヘッダ、ストリーム、HPACK）
-  - metadata（HTTPヘッダに近いが、仕様/慣習が異なる）
-  - status code（HTTPではなくgRPC status：OK/UNAUTHENTICATED/PERMISSION_DENIED 等）
-  - proto（メソッド/型が“攻撃面”の一覧になる）
-- ペネトレ上の安全配慮
-  - ストリーミングRPCは高負荷になりやすい（少数メッセージ・短時間で確認）
-  - message size/デッドライン/リトライが絡むため、過剰リクエストは避ける
+- 対象：gRPC API（HTTP/2上で動くRPC）
+- 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
+  - gRPCの現実構成（よくある）：外部（Grpc-web（ブラウザ）→ Envoy/Ingress → gRPC Service、REST（JSON）→ gRPC Transcoding（Gateway）→ gRPC Service）、内部（Service-to-Service（mTLS + SPIFFE等）で直叩き）
+  - 入口が増える理由：同一機能が「REST」「Gateway→gRPC」「gRPC直」「Grpc-web」で提供される、認可実装が経路ごとに分散し、差分が生まれる（versioningの"残存面"と同型）
+  - gRPCの重要要素：HTTP/2（ALPN、擬似ヘッダ、ストリーム、HPACK）、metadata（HTTPヘッダに近いが、仕様/慣習が異なる）、status code（HTTPではなくgRPC status：OK/UNAUTHENTICATED/PERMISSION_DENIED 等）、proto（メソッド/型が"攻撃面"の一覧になる）
+  - gRPCはHTTP/2上で動く"RPC"であり、RESTの前提（URL/verb/ステータスコード、WAF/ログ/認可ミドルウェア）がそのまま通用しない。認可境界は「メソッド」「メタデータ」「Gateway/Proxy」「Interceptor」に散り、ズレるとBOLA/BFLAが復活する。
+- できること/やらないこと（安全に検証する範囲）：
+  - できること：ストリーミングRPCは高負荷になりやすい（少数メッセージ・短時間で確認）、message size/デッドライン/リトライが絡むため、過剰リクエストは避ける
+  - やらないこと：内部サービス間のmTLS/ID連携の完全性（外部から見えない場合）。ただし外部到達経路がある時点で境界設計の妥当性は評価できる。
+- 依存する前提知識（必要最小限）：
+  - `01_topics/02_web/04_api_00_権限伝播・入力・バックエンド連携.md`
+  - `01_topics/02_web/04_api_10_versioning_互換性と境界（v1_v2）.md`
+  - `01_topics/02_web/04_api_09_error_model_情報漏えい（例外_スタック）.md`
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ## 観測ポイント（何を見ているか：gRPCの境界分解）
 ### 1) 経路の分解：同じ機能の“入口”が複数あるか（最初に確定）
@@ -132,17 +117,23 @@ grpc_メタデータと認可境界
   - tenant/role差分の観測結果
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言える（確定できる）：
+- 何が"確定"できるか：
   - gRPCの入口がどこまで外部到達可能で、Gatewayの制御を迂回できるか
   - 認証がmetadata/mTLSで運ばれ、どの層で認可されているか（判定点）
   - メソッド単位で認可が揃っているか、抜けがあるか
   - status/詳細の揺れでオラクルが成立していないか（09）
   - Reflection/プロト露出により攻撃面が増えていないか
-- 推定（根拠付きで言える）：
+- 何が"推定"できるか（推定の根拠/前提）：
   - Gatewayだけで認可している兆候がある場合、gRPC直でBFLA/BOLAが復活しやすい
   - NOT_FOUNDとPERMISSION_DENIEDが揺れる場合、存在列挙が可能になりやすい
-- 言えない（この段階では断定しない）：
+- 何は"言えない"か（不足情報・観測限界）：
   - 内部サービス間のmTLS/ID連携の完全性（外部から見えない場合）。ただし外部到達経路がある時点で境界設計の妥当性は評価できる。
+- よくある状態パターン（正常/異常/境界がズレている等）：
+  - パターンA：Gatewayでは制限される操作が、gRPC直で成立（認可判定点ズレ＝BFLA/BOLA） → 認可判定点ズレ（P0）
+  - パターンB：admin/内部メソッドが外部から呼べる（Reflection/proto経由で発見） → 外部から呼べる（P0）
+  - パターンC：grpc-status-details-bin 等で内部情報（スタック/SQL/内部URL/秘密）が露出 → 内部情報露出（P0）
+  - パターンD：テナント分離がmetadata/リクエスト値を信頼して崩れる → テナント分離崩壊（P0）
+  - パターンE：statusの揺れで存在/テナント/状態オラクルが成立 → オラクル成立（P1）
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
 - 優先度（P0/P1/P2）
@@ -348,6 +339,21 @@ grpcurl -H "authorization: Bearer <TOKEN>" -d '{"id":"123"}' <host>:<port> <pack
 - この例が使えないケース（前提が崩れるケース）：
   - Reflectionが無効でも、protoがクライアントに存在することが多い。proto/SDK由来でメソッドを固定し同様に差分観測する
 
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：
+  - 該当領域/章：V4（アクセス制御）、V5（入力検証）、V7（ログとモニタリング）、V13（API）
+  - 該当要件（可能ならID）：V4.1（一般的なアクセス制御設計）、V5.1（入力検証）、V7.1（ログ要件）、V13.1（APIの認証・認可）
+  - このファイルの内容が「満たす/破れる」ポイント：認証（トークン/セッション相当）、認可（メソッド単位・テナント分離）、入力検証（protobufの型/制約・巨大メッセージ）、エラーモデル（10/09と同様に情報漏えい抑制）、通信保護（mTLS/証明書検証/ALPN）、監査（trace_id・呼出し主体・メソッド・結果）
+- WSTG：
+  - 該当カテゴリ/テスト観点：Authorization Testing（メソッド単位の認可、tenant/roleの強制）、API Testing（gRPC/Transcoding/Grpc-web）、Input Validation（protobufの境界値、ストリーミング）、Error Handling（gRPC status/detailsの漏えい）、Transport（mTLS/証明書/HTTP/2）
+  - 該当が薄い場合：この技術が支える前提（情報収集/境界特定/到達性推定 等）：gRPCの入口（port/ALPN/Reflection）→呼出し（grpcurl等）→メタデータ（Authorization等）→認可判定（Interceptor/サービス内）→Gateway（REST変換）→ログ/監査、を分解し差分観測で確定する
+- PTES：
+  - 該当フェーズ：Information Gathering、Vulnerability Analysis、Exploitation
+  - 前後フェーズとの繋がり（1行）：versioning（10）で"旧経路"が残るのと同様、gRPCはGateway/Grpc-web/内部LBなど複数経路が生まれやすい。REST側で直した認可がgRPC直叩きで復活する、または逆、が典型なので04_apiの総仕上げとして扱う
+- MITRE ATT&CK：
+  - 該当戦術（必要なら技術）：TA0007（Discovery）、TA0004（Privilege Escalation）、TA0009（Collection）、TA0008（Lateral Movement）
+  - 攻撃者の目的（この技術が支える意図）：Reflection/サービス列挙で面を増やす（Discovery）、メソッド認可欠落で高権限操作（Privilege Escalation）、バッチ系RPCで大量取得（Collection）、内部向けgRPCを足掛かりに横展開（Lateral Movement：環境次第）。
+
 ## 参考（必要最小限）
 - OWASP ASVS（認証・認可・ログ/監査・情報漏えい）
 - OWASP WSTG（API/Authorization/Error Handling）
@@ -359,5 +365,15 @@ grpcurl -H "authorization: Bearer <TOKEN>" -d '{"id":"123"}' <host>:<port> <pack
 - `01_topics/02_web/04_api_09_error_model_情報漏えい（例外_スタック）.md`
 - `01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
 
-## 次（04_api_12 以降）に進む前に確認したいこと（必要なら回答）
-- 04_api_12（websocket_sse）では、長時間接続・再接続・トークン更新・サブスク範囲・メッセージ単位認可・購読IDORなど、現実運用で破綻しやすい境界を、同じ粒度で最大限深掘りする
+---
+
+## 深掘りリンク（最大8）
+- 関連 topics：
+  - `01_topics/02_web/04_api_00_権限伝播・入力・バックエンド連携.md`
+  - `01_topics/02_web/04_api_10_versioning_互換性と境界（v1_v2）.md`
+  - `01_topics/02_web/04_api_09_error_model_情報漏えい（例外_スタック）.md`
+  - `01_topics/02_web/03_authz_03_multi-tenant_分離（org_id_tenant_id）.md`
+  - `01_topics/02_web/04_api_12_websocket_sse_認証・認可境界.md`
+- 関連 labs / cases：
+  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
