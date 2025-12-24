@@ -1,0 +1,63 @@
+# OS固有ファイル
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# エディタ・IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# 一時ファイル
+*.tmp
+*.log
+*.bak
+*.cache
+
+# 機密情報（誤ってコミットしないように）
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+*.env
+.env.local
+secrets/
+credentials/
+*.secret
+
+# 検証環境関連（大きなファイルや個人設定）
+*.ova
+*.ovf
+*.vmdk
+*.vdi
+snapshots/
+.vagrant/
+
+# 証跡ファイル（個人の検証結果）
+*.pcap
+*.har
+*.har.gz
+captures/
+evidence/
+
+# ビルド成果物（もしあれば）
+dist/
+build/
+*.pyc
+__pycache__/
+*.class
+
+# ノート・メモ（個人用）
+notes/
+scratch/
+todo-personal.md
+
+# OneDrive同期ファイル（Windows）
+~$*
+

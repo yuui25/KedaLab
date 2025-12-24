@@ -86,8 +86,28 @@
 - 01: `01_dns_委譲・境界・解釈.md`
 - 02: `02_tls_証明書・CT・外部依存推定.md`
 - 03: `03_http_観測（ヘッダ/挙動）と意味.md`
-- 04: `04_js_フロント由来の攻撃面抽出.md`（未作成）
-- 05: `05_cloud_露出面（CDN/WAF/Storage等）推定.md`（未作成）
+- 04: `04_js_フロント由来の攻撃面抽出.md`
+- 05: `05_cloud_露出面（CDN/WAF/Storage等）推定.md`
+- 06: `06_subdomain_列挙（passive_active_辞書_優先度）.md`
+- 07: `07_whois_rdap_所有者・関連企業推定（組織境界）.md`
+- 08: `08_asn_bgp_ネットワーク境界（AS_プレフィックス_関連性）.md`
+- 09: `09_passive-dns_履歴と再利用（過去資産の掘り起こし）.md`
+- 10: `10_ctlog_証明書拡張観測（SAN_ワイルドカード_中間CA）.md`
+- 11: `11_cohosting_同居推定（共有IP_VHost_CDN収束）.md`
+- 12: `12_waf-cdn_挙動観測（ブロック_チャレンジ_例外）.md`
+- 13: `13_http2_h3_観測（ALPN_Alt-Svc_到達性）.md`
+- 14: `14_js_sourcemap_公開物から攻撃面抽出（endpoint_key）.md`
+- 15: `15_api_spec_公開（OpenAPI_GraphQLスキーマ）から面抽出.md`
+- 16: `16_github_code-search_漏えい（key_token_endpoint）.md`
+- 17: `17_ci-cd_artifact_公開物（ログ_ビルド成果物）.md`
+- 18: `18_storage_discovery（S3_GCS_AzureBlob）境界推定.md`
+- 19: `19_email_infra（SPF_DKIM_DMARC）と攻撃面.md`
+- 20: `20_brand_assets_関連ドメイン推定（typo_lookalike）.md`
+- 21: `21_third-party_外部依存（タグ_分析SDK）洗い出し.md`
+- 22: `22_mobile_assets_アプリ由来攻撃面（deep-link_API）.md`
+- 23: `23_vdp_scope_制約下での低アクティブ観測設計.md`
+- 24: `24_subdomain_takeover_成立条件推定（DNS_CNAME_プロバイダ）.md`
+- 25: `25_dnssec_観測と意味（委譲_検証_誤設定）.md`
 
 ## 深掘り（必要時に追加するファイル：最大8件）
 - （例）`01_dns_01_traceと権威直の使い分け.md`
