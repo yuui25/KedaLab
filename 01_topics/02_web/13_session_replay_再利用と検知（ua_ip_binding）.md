@@ -334,3 +334,4 @@ UA/IP binding を"境界"として成立させる
 - `01_topics/02_web/02_authn_18_token_binding（DPoP_mTLS）観測.md`
 - `01_topics/02_web/11_logging_tracing_相関IDと証跡設計.md`
 - `01_topics/02_web/12_rate-limit_設計（API_key_user_ip）.md`
+

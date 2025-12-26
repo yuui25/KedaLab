@@ -287,3 +287,4 @@ HTTPSページ内の"HTTP残存"が、実行・表示・外部接続の境界を
 - `01_topics/02_web/05_input_06_xss_01_反射_境界モデル.md`
 - `01_topics/02_web/04_api_00_権限伝播・入力・バックエンド連携.md`
 - `01_topics/02_web/06_config_00_設定・運用境界（CORS ヘッダ Secrets）.md`
+
