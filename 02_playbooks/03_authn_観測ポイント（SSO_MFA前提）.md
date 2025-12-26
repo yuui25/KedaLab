@@ -1,129 +1,180 @@
-<<<BEGIN>>>
-# 03_authn_観測ポイント（SSO/MFA前提）.md
-
-（先頭要約：このプレイブックの位置づけ）
-- 目的：AuthN（認証）を“フォーム入力”ではなく「どこで本人性が成立し、どんな材料がセッションとして残るか」を観測で確定する
-- 前提：SSO/MFAがある環境を標準とし、IdP連携（SAML/OIDC/OAuth）とアプリ側セッションの両方を見る
-- 主役：ツールの操作ではなく、観測→意味→分岐（次の一手）と最小証跡
+# 03_authn_観測ポイント（SSO_MFA前提）
+AuthN/SSO/MFA/セッションの成立点を観測で確定し、例外・寿命・次の深掘り（AuthZ/API/SaaS/creds）を分岐で決める。
 
 ## 目的（このプレイブックで到達する状態）
-- 認証の成立点を説明できる。
-  - 認証はどこで行われるか（アプリ内/IdP/両方）
-  - セッション材料は何か（Cookie/Token/チケット等）
-  - 認証後の権限はどこで決まるか（claim/role/group等）
-- “安全に検証できる範囲”で、次の分岐を作れる。
-  - 認証そのものが怪しい（境界が崩れる）
-  - 認証は強いが、権限（AuthZ）で崩れる
-  - トークン/Secretsの扱いで長期化する（credsへ）
-- Web/NWの接続：
-  - Webのセッション/トークン観測は、NW側のCredential（所在/伝播）に繋がる
+- 本人性がどこで成立するか（アプリ内/IdP/両方）を、根拠付きで説明できる。
+- セッション材料（Cookie/Token/Refresh/端末紐付け）と寿命（更新/失効）を Yes/No/Unknown で整理できる。
+- MFA/再認証（step-up）の適用条件と例外を、観測で列挙できる。
+- 次に進むべきトピック（AuthZ/API/SaaS/creds）を迷わず選べる。
 
-## 前提（対象・範囲・想定）
+## 前提（対象・範囲・制約）
 - 対象：許可範囲のログイン導線（UI/API/モバイル）、SSO導線（IdP）、MFA導線。
-- 想定：
-  - 入口は複数（通常ログイン/SSO/管理者/モバイル）
-  - MFAは“強い”が、設定・連携・セッションでズレが起きることがある
-- 観測基盤（推奨）：
-  - Proxy（リクエスト/レスポンス観測、HAR）
-  - 可能ならサーバ側ログ（許可範囲で）
-- 依存（接続先）：
-  - `01_topics/02_web/02_authn_認証・セッション・トークン.md`
-  - `01_topics/04_saas/01_idp_連携（SAML OIDC OAuth）と信頼境界.md`
-  - `01_topics/03_network/03_creds_認証情報の所在と扱い（攻撃 検知の両面）.md`
+- 制約：認証試行は最小回数（連打しない）。ロックアウトや監視を意識して“代表点のみ”。
+- 前提ツール（最小限）：ブラウザ+Proxy(HAR)、（任意）JWTデコード、スクショ。
+- 参照すべきtopics（最初に読む/途中で参照）：
+  - 総論：`01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
+  - Cookie：`01_topics/02_web/02_authn_01_cookie属性と境界（Secure_HttpOnly_SameSite_Path_Domain）.md`
+  - セッション寿命：`01_topics/02_web/02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`
+  - トークン設計：`01_topics/02_web/02_authn_03_token設計（Bearer_JWT_Refresh_Rotation）.md`
+  - OIDC：`01_topics/02_web/02_authn_04_sso_oidc_flow観測（state_nonce_code_PKCE）.md`
+  - SAML：`01_topics/02_web/02_authn_05_sso_saml_flow観測（assertion_audience_recipient）.md`
+  - MFA：`01_topics/02_web/02_authn_06_mfa_成立点と例外パス（step-up_device_trust）.md`
+  - ログインCSRF：`01_topics/02_web/02_authn_13_login_csrf_認証CSRFとstate設計.md`
+  - ログアウト：`01_topics/02_web/02_authn_14_logout_設計（RP_IdP_フロントチャネル）.md`
+  - SaaS/IdP：`01_topics/04_saas/01_idp_連携（SAML OIDC OAuth）と信頼境界.md`
+  - creds：`01_topics/03_network/03_creds_認証情報の所在と扱い（攻撃 検知の両面）.md`
 
-## 観測の進め方（順序固定：入口→連鎖→材料→境界→方針）
-### 1) 認証入口を確定する（どれが“正規ルート”か）
-- 観測するもの
-  - ログイン開始URL、リダイレクト先、ログアウトURL
-  - UIログイン/APIログイン/モバイルログインの差
-- 確定したい状態
-  - “どの入口が本体か” と “別入口があるか” を言える
+## 入口で確定すること（最小セット）
+- 認証方式：SSO（OIDC/SAML）か、ローカルログインか、魔法リンク等があるか。
+- セッション材料：Cookie/Token/Refresh がどこにあり、期限がどれか。
+- MFA：必須/条件付き/例外（信頼済み端末/ネットワーク/remember）を列挙。
+- 完了条件：上記が Yes/No/Unknown で埋まり、次に深掘りする方向が決まる。
 
-### 2) リダイレクト連鎖を確定する（SSO/IdPの境界）
-- 観測するもの
-  - アプリ→IdP→アプリの遷移
-  - state/nonce/RelayState など、連鎖を結ぶ材料
-  - どこでエラーになるか（拒否点）
-- 確定したい状態
-  - 信頼境界（どのIdP/どのクライアントを信頼しているか）が言える
+## 手順（分岐中心：迷うポイントだけ）
 
-### 3) セッション材料を確定する（Cookie/Tokenの“状態”）
-- 観測するもの（例）
-  - Cookieの属性（Secure/HttpOnly/SameSite/Domain/Path/有効期限）
-  - Bearerトークンの付与位置（ヘッダ/ストレージ/レスポンス）
-  - トークン更新（refresh）の有無とタイミング
-- 確定したい状態
-  - “何が本人性の継続材料か” と “どこに残るか” が言える
+### Step 0：最初の5分（必ずやる）
+- 目的：以降の観測を“比較可能”にする。
+- 観測ポイント：
+  - テスト主体を2つ準備：ユーザA（一般）/ユーザB（別ロール or 別テナント）。無理なら Unknown として進む。
+  - ブラウザプロファイルを固定（シークレットウィンドウ推奨）。ProxyでHAR取得を有効化。
+  - “代表フロー”を1つ決める：`ログイン → トップ表示` まで。
+- 証跡（最小）：
+~~~~
+mkdir -p ~/keda_evidence/authn_03 2>/dev/null
+cd ~/keda_evidence/authn_03
+printf "base_url: ...\nuserA: ...\nuserB: ...\nflow: login->home\n" > 00_context.txt
+~~~~
+- 次の分岐：
+  - 代表フローが決まった → Step 1へ
 
-### 4) 認証後に権限がどう決まるかを観測する（AuthZへの橋渡し）
-- 観測するもの
-  - ロール差/ユーザー差で、UI/API応答がどう変わるか（差分）
-  - claim/role/group/tenant の手掛かり（レスポンス、UI、JWT等）
-- 確定したい状態
-  - 権限境界が“どの要素で切り替わるか”を説明できる
+### Step 1：フロー観測（入口→リダイレクト→成立点）を1回だけ取る
+- 目的：認証が“どこで”成立するかを確定する（UI感覚ではなく観測）。
+- 観測ポイント（HARで見る）：
+  - ドメイン遷移：`app → idp → app` の有無（どのドメインを跨ぐか）
+  - 結合パラメータ：OIDCなら `state/nonce/code`、SAMLなら `RelayState` の存在
+  - 成功時に増えるもの：`Set-Cookie`/`Authorization`/`token`レスポンス
+- 証跡（最小）：
+  - HAR（login開始→ログイン完了→トップ表示）
+  - `Set-Cookie` と `Location` の抜粋メモ
+- 次の分岐：
+  - 外部IdPへ遷移する → Step 2B（SSO）
+  - アプリ内で完結する → Step 2A（ローカル）
 
-### 5) 例外系の挙動で“境界の強さ”を測る（安全に差分）
-- 観測するもの（例）
-  - 未ログイン時の扱い（リダイレクト/401/匿名）
-  - セッション失効時の扱い（期限、再認証要求）
-  - 並行セッション/多端末の扱い（許可範囲で）
-- 目的
-  - どこが拒否点かを知る（検証を外さない）
-  - “セッション固定/取り違え”などの可能性があるかを推定する（断定しない）
+### Step 2A：ローカル認証（Cookie/セッション境界が本体）
+- 目的：セッション材料と寿命を観測で確定し、固定化/更新/失効の次検証へ繋げる。
+- 観測ポイント：
+  - Cookie属性：Secure/HttpOnly/SameSite/Path/Domain、Expires/Max-Age
+  - セッション更新：同一セッションでの延命（sliding）/再発行/固定化の兆候
+  - ログインCSRF対策：ログインPOSTにCSRF token/state相当があるか
+- 次の分岐：
+  - Cookieが長寿命/更新が曖昧 → Step 4（寿命/失効観測を優先）
+  - ロール差で見える機能が変わる → `02_playbooks/04_authz_境界モデル→検証観点チェック.md` へ
 
-## 判断（A/B分岐：次の一手）
-### 分岐A：SSO/連携境界が本体（IdP側の設定・信頼が勝負）
-- 次の一手
-  - `01_topics/04_saas/01_idp_連携（SAML OIDC OAuth）と信頼境界.md` を参照し、信頼境界（iss/aud/署名/クライアント）を整理
-  - 次に「権限が属性で決まるか」を観測し、AuthZへ渡す
+### Step 2B：SSO（OIDC/SAML の成立点が本体）
+- 目的：SSOで何を信頼し、何を検証しているか（iss/aud/署名/PKCE等）を観測で確定する。
+- 観測ポイント（どちらかを見分ける）：
+  - OIDCっぽい：`/authorize` `code=` `state=` `nonce=` `pkce(code_challenge)` が見える
+  - SAMLっぽい：`SAMLResponse` `RelayState` `ACS` が見える
+- 次の分岐：
+  - OIDC → Step 3A
+  - SAML → Step 3B
+  - 判別できない（ゲートウェイ等で隠れる） → Step 3C（アプリ側セッション材料から逆算）
 
-### 分岐B：認証は成立するが、権限で崩れそう（越権の匂い）
-- 次の一手
-  - `02_playbooks/04_authz_境界モデル→検証観点チェック.md`
-  - `01_topics/02_web/03_authz_認可（IDOR BOLA BFLA）境界モデル化.md`
+### Step 3A：OIDC観測（state/nonce/code/PKCE）
+- 目的：OIDCの“結合材料”と“検証責務”を確定し、次の検証方針（AuthZ/Token/CA）を作る。
+- 観測ポイント：
+  - `state` が毎回変わるか（再利用されないか）
+  - `nonce` があるか（ID Tokenで検証される想定）
+  - PKCE：`code_challenge` が存在するか（SPA/モバイルは重要）
+  - トークン：ID Token/Access Token の `iss/aud/exp/sub`、scope/roles
+- 次の分岐：
+  - Token/Refresh/長期化が見える → `01_topics/02_web/02_authn_03_token設計（Bearer_JWT_Refresh_Rotation）.md` へ
+  - 権限がclaimで決まる気配 → `02_playbooks/04_authz_境界モデル→検証観点チェック.md` へ
+  - IdPポリシー/例外が鍵 → `01_topics/04_saas/04_azuread_条件付きアクセス（CA）と例外パス.md` などへ
 
-### 分岐C：トークン/Secretsの扱いが鍵（長期権限/漏洩/伝播）
-- 次の一手
-  - `01_topics/03_network/03_creds_認証情報の所在と扱い（攻撃 検知の両面）.md`
-  - SaaS側の外部アプリ/委任が絡むなら `01_topics/04_saas/02_saas_共有・外部連携・監査ログの勘所.md`
+### Step 3B：SAML観測（assertion/audience/recipient/署名）
+- 目的：SAMLの“誰が発行し誰が検証するか”を観測で確定し、属性→権限の接続へ渡す。
+- 観測ポイント（SAMLResponseを見られる範囲で）：
+  - Audience/Recipient/ACS の一致（対象サービス固定か）
+  - 署名の有無（Assertion/Response）と証明書（x509）
+  - Attribute（role/group/tenant）が権限に効いていそうか
+- 次の分岐：
+  - 属性が権限に直結しそう → `02_playbooks/04_authz_境界モデル→検証観点チェック.md`
+  - ローカルログイン/回復経路が残る疑い → `01_topics/04_saas/14_sso_bypass_パス（ローカルログイン残存）.md`
 
-### 分岐D：APIログインやモバイルが別挙動（入口が複数で境界がズレる）
-- 次の一手
-  - `02_playbooks/05_api_権限伝播→検証観点チェック.md`
-  - 入口の差分（UI/API/モバイル）を“境界差”として整理し直す
+### Step 3C：SSOが見えづらい（アプリ側セッション材料から確定）
+- 目的：IdPが見えない環境でも、アプリが何を“本人性材料”として扱っているかを確定する。
+- 観測ポイント：
+  - アプリ側Cookie/Tokenの種類と寿命（ログイン直後の差分）
+  - ログアウトで材料が無効化されるか（Cookie削除/トークン失効の兆候）
+- 次の分岐：
+  - 材料がCookie中心 → Step 4（寿命/失効）
+  - 材料がBearer中心 → `02_playbooks/05_api_権限伝播→検証観点チェック.md`（API側で検証）
 
-## 出力（このプレイブックの成果物：最小セット）
-- 認証フロー図（文章で十分：矢印で表現）
-  - 入口 →（リダイレクト）→ IdP →（戻り）→ アプリ
-- セッション材料の一覧（最小）
-  - Cookie/Tokenの種類、保存場所、期限、更新有無
-- 権限境界の手掛かり
-  - ロール差/テナント差/claim差の観測メモ（1〜2行）
-- 次工程
-  - AuthZへ行くか、credsへ行くか、IdPへ深掘りするか（分岐理由）
+### Step 4：MFA/再認証/寿命（“例外パス”を列挙する）
+- 目的：MFAが「いつ」「どこで」要求されるか、例外（remember/端末信頼/ネットワーク）を状態として確定する。
+- 観測ポイント（安全に差分）：
+  - 同一端末/同一ブラウザでの再ログイン：MFAは毎回か、rememberがあるか
+  - 重要操作（設定変更/決済/権限変更）で step-up があるか
+  - セッション期限：一定時間後に再認証が必要か、refreshがあるか
+- 次の分岐：
+  - step-upが鍵 → `01_topics/02_web/02_authn_16_step-up_再認証境界（重要操作_再確認）.md`
+  - refresh rotation/盗用検知が鍵 → `01_topics/02_web/02_authn_17_refresh_token_rotation_盗用検知（reuse）.md`
+  - “外部例外（CA/ポリシー）”が鍵 → SaaS側ポリシーへ
 
-## 証跡（最小セット：再現性のため）
-- HAR/主要リクエストの抜粋（必要最小限）
-- Cookie属性の観測結果（スクリーンショット/メモで可）
-- 例外時の挙動（失効/未ログイン時の応答の差）
+### Step 5：攻め筋の確定（次の深掘りを最大3つに絞る）
+- 優先度の付け方：
+  1) 認証が壊れると被害が最大化（SSO/管理者/回復経路）
+  2) セッションが長寿命/失効が弱い（継続的な不正利用が可能）
+  3) AuthN→AuthZへ権限伝播が強い（claim/role/tenant）
+- 次に深掘りするtopics（最大3つ）：
+  - OIDC：`01_topics/02_web/02_authn_04_sso_oidc_flow観測（state_nonce_code_PKCE）.md`
+  - SAML：`01_topics/02_web/02_authn_05_sso_saml_flow観測（assertion_audience_recipient）.md`
+  - セッション寿命：`01_topics/02_web/02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`
+  - MFA：`01_topics/02_web/02_authn_06_mfa_成立点と例外パス（step-up_device_trust）.md`
+- 次に回す検証（playbook）：
+  - AuthZ：`02_playbooks/04_authz_境界モデル→検証観点チェック.md`
+  - API：`02_playbooks/05_api_権限伝播→検証観点チェック.md`
 
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回）
+## 取得する証跡（目的ベースで最小限）
+- 何のため：認証成立点と例外を説明し、再現性を持たせるため。
+- 取得対象：HAR（1回のログイン）、Set-Cookie抜粋、トークンのデコード結果（必要なら）。
+- 見るポイント：外部遷移、state/nonce/RelayStateの存在、cookie属性、exp/iss/aud。
+
+## コマンド/リクエスト例（例示は最小限）
+~~~~
+# JWTのclaim観測（署名検証なし）
+python - <<'PY'
+import jwt,sys
+token=sys.stdin.read().strip()
+print(jwt.decode(token, options={"verify_signature": False}))
+PY
+~~~~
+- 何を観測する例か：exp/iss/aud/scope/roles など“権限と寿命”の材料。
+- 出力の注目点：exp（寿命）、roles/scope（権限伝播）、tenant/orgの手掛かり。
+- 前提が崩れるケース：暗号化トークンやトークンをクライアントが保持しない構成（HARで代替）。
+
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
 - ASVS：
-  - 認証・セッション管理の要求を、SSO境界（IdP/アプリ）とセッション材料（Cookie/Token）に落として観測する
+  - 該当領域/章：V2（AuthN）、V3（Session）、V4（AuthZ前提）、V10（Logging）
+  - このプレイブックが支える管理策：成立点/例外/寿命の確定（前提崩れ防止）
 - WSTG：
-  - 認証/セッションのテスト観点を、入口→連鎖→材料→例外挙動の順で確認し、差分観測で検証を外さない
+  - 該当カテゴリ/テスト観点：Authentication / Session Management
+  - このプレイブックが支える前提：SSO境界の観測（state/nonce/署名/失効）
 - PTES：
-  - Vulnerability Analysis：認証境界（連携/セッション）が崩れる可能性を特定し、次工程（AuthZ/API/creds）へ導く
+  - 該当フェーズ：Vulnerability Analysis
+  - 前後フェーズとの繋がり：AuthNが固まるとAuthZ/APIの検証が外れない
 - MITRE ATT&CK：
-  - 戦術：Credential Access（トークン/セッション材料）、Privilege Escalation（越権に繋がる認証崩壊）を、状態として整理する
+  - 該当戦術：Credential Access / Defense Evasion
+  - 攻撃者の意図：セッション材料・長寿命トークン・例外経路で継続利用する
 
-## 関連リンク（リポジトリ内：必要最小限）
-- 技術ユニット
-  - `01_topics/02_web/02_authn_認証・セッション・トークン.md`
-  - `01_topics/04_saas/01_idp_連携（SAML OIDC OAuth）と信頼境界.md`
-  - `01_topics/03_network/03_creds_認証情報の所在と扱い（攻撃 検知の両面）.md`
-- 次の導線
-  - `02_playbooks/04_authz_境界モデル→検証観点チェック.md`
-  - `02_playbooks/05_api_権限伝播→検証観点チェック.md`
+## 報告（ガイドライン程度：数行で）
+- 事実：認証方式（SSO/ローカル）、MFA適用/例外、セッション材料と寿命。
+- 成立条件：観測根拠（HAR/Set-Cookie/token claim）。
+- 影響：長寿命/例外/回復経路によるリスク。
+- 対策方向性：短寿命化/失効強化/例外削減/監査強化（詳細はtopicsへ）。
 
-<<<END>>>
+## リポジトリ内リンク（最大3つまで）
+- 関連 topics：`01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
+- 関連 labs：`04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
+- 関連 cases：`03_cases/00_index.md`
