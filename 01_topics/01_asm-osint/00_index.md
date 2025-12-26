@@ -1,117 +1,53 @@
-# 00_index.md
+# 00_index（ASM / OSINT の入口）
+このフォルダは、許可されたスコープ内で外形情報を集め「どこまでが自社資産で、どこからが外部依存か」を観測で確定し、Web/NW/SaaS 以降の検証へ渡すための前段ユニット群です。テンプレ依存の詳細は不要なように、ChatGPT が読めば各ファイルの狙いが一目で分かるようにまとめています。
 
-## ガイドライン対応（クイック参照）
-- ASVS：外部依存・設定・境界（資産/信頼/権限）を把握し、以降の検証（認証/認可/API/運用）を「前提崩れ」なく進める土台
-- WSTG：Information Gathering を中心に、以降の各カテゴリ（Auth/Access Control/API/Config等）へ“入口と仮説”を供給
-- PTES：Intelligence Gathering → Threat Modeling → Vulnerability Analysis へ繋げるための情報整形
-- MITRE ATT&CK：Reconnaissance / Discovery として、攻め筋の確率を上げるための境界特定・依存推定
+## 目的（ここで到達する状態）
+- 資産境界・信頼境界・権限境界を、DNS/TLS/HTTP/JS/外部依存などの外形から説明できる。
+- 「どこが自社運用で、どこが委託/外部依存か」を根拠付きで示し、深掘り優先度を付けられる。
+- 次の検証（Web認証/認可/API/ネットワーク/SaaS）に持ち込む仮説A/Bと観測点を用意する。
+- 低アクティブを前提（許可範囲・代表点のみ、総当たりや大量スキャンはしない）。
 
-## 目的（この技術で到達する状態）
-- ASM/OSINTを「見つけた/拾った」で終わらせず、次の状態に到達する。
-  - 資産境界：どこまでが“対象資産”で、どこからが“外部依存”かを説明できる
-  - 信頼境界：委託・SaaS・CDN/WAF等の越境点を特定し、深掘り優先度を付けられる
-  - 到達性：どこに何が露出しているか（入口）を、観測根拠つきで整理できる
-  - 次の一手：Web/NWの検証へ “仮説A/B” と “観測点” を持ち込める
+## ガイドライン位置づけ
+- ASVS：外部依存・設定・境界の把握で「前提崩れ」を防ぐ（後段AuthN/AuthZ/APIの前提を固める）。
+- WSTG：Information Gathering を中核に、以降のテストカテゴリ（Auth/AccessControl/API/Config）へ入口と仮説を供給。
+- PTES：Intelligence Gathering / Threat Modeling から Vulnerability Analysis へ繋げるための素材化。
+- MITRE ATT&CK：Reconnaissance / Discovery。入口と境界を最小コストで確定し、攻め筋を決める。
 
-## 前提（対象・範囲・想定）
-- 対象は許可されたスコープ（契約範囲/社内許可範囲/自前検証環境）に限定する
-- 能動的探索は最小限（大量列挙・無差別スキャンは前提にしない）
-- ここでの成果物は「検証の入口」：
-  - 断定よりも、観測根拠と仮説分岐（Aならこの検証、Bなら別）を重視する
-- “境界（資産/信頼/権限）”を共通言語として、Web/NW/SaaSへ接続する
+## 主なアウトプット
+- 観測メモ：資産/信頼/権限の境界メモ（根拠付き）。
+- 入口一覧：代表ドメイン/ホスト/HTTP入口とその根拠（到達性/挙動/証明書等）。
+- 外部依存一覧：委譲先・終端・外部連携（CDN/WAF/SaaS/Storage等）。
+- 次の検証方針：仮説A/Bと観測点（Web/NW/SaaS プレイブックへの接続）。
 
-## 観測ポイント（何を見ているか：プロトコル/データ/境界）
-- DNS：委譲・権威・CNAME等から、管理境界/外部依存/視点差（split-horizon等）を読む
-- TLS/証明書/CT：終端の外部依存、移行・残骸、命名規則、運用分割を読む
-- HTTP：ヘッダ/挙動/リダイレクト等から、入口・保護レイヤ・認証境界・依存を読む
-- JS（フロント資産）：ビルド成果物から、API面・機能面・環境差分・鍵/設定ミスの手掛かりを読む
-- Cloud露出面：CDN/WAF/Storage/API Gateway等の“外部に出る構成要素”を、境界として読む
+## 各ファイルの概要
+- 01_dns_委譲・境界・解釈：NS/SOA/委譲経路とCNAME/CAA/TXTから管轄・外部依存を読む。
+- 02_tls_証明書・CT・外部依存推定：証明書/CTから終端・SAN・Issuerを観測し依存や残骸を推定。
+- 03_http_観測（ヘッダ・挙動）と意味：未ログインHTTPのヘッダ/リダイレクト/CORSから入口と保護層を読む。
+- 04_js_フロント由来の攻撃面抽出：JSビルド成果物からAPI/境界変数/外部依存/環境差分を抽出。
+- 05_cloud_露出面（CDN_WAF_Storage等）推定：CDN/WAF/Storage 等の外部構成要素を境界として特定。
+- 06_subdomain_列挙（passive_active_辞書_優先度）：受動→解決→HTTP疎通で入口候補を優先付け。
+- 07_whois_rdap_所有者・関連企業推定（組織境界）：WHOIS/RDAPで所有者・関連組織・管轄を読む。
+- 08_asn_bgp_ネットワーク境界（AS_プレフィックス_関連性）：AS/プレフィックスからネットワーク外形と関連性を作る。
+- 09_passive-dns_履歴と再利用（過去資産の掘り起こし）：過去FQDN履歴を正規化し現状確認へ回す。
+- 10_ctlog_証明書拡張観測（SAN_ワイルドカード_中間CA）：CTログからSAN候補を生成し現状DNS/HTTPへ接続。
+- 11_cohosting_同居推定（共有IP_VHost_CDN収束）：同一IPのFQDN束をまとめ、HTTP/TLS差分で束を評価。
+- 12_waf-cdn_挙動観測（ブロック_チャレンジ_例外）：代表パスでブロック/チャレンジ/例外の型を観測しクラスタ化。
+- 13_http2_h3_観測（ALPN_Alt-Svc_到達性）：ALPN/Alt-Svc/HTTP3到達性を代表点で確認。
+- 14_js_sourcemap_公開物から攻撃面抽出（endpoint_key）：sourceMap公開有無と情報量を確認しAPI/Key断片を抽出。
+- 15_api_spec_公開（OpenAPI_GraphQLスキーマ）から面抽出：公開スキーマからエンドポイント面を最小限抽出。
+- 16_github_code-search_漏えい（key_token_endpoint）：GitHub Code Searchで鍵/トークン/エンドポイント断片を探す。
+- 17_ci-cd_artifact_公開物（ログ_ビルド成果物）：公開CI/CD成果物からログ/設定断片を拾う際の証跡化。
+- 18_storage_discovery（S3_GCS_AzureBlob）境界推定：S3/GCS/Blobの挙動で公開/制限/依存を推定。
+- 19_email_infra（SPF_DKIM_DMARC）と攻撃面：メール系DNS（MX/SPF/DKIM/DMARC/MTA-STS）から攻撃面を読む。
+- 20_brand_assets_関連ドメイン推定（typo_lookalike）：ブランド変形ドメインの生成と低アクティブ観測。
+- 21_third-party_外部依存（タグ_分析SDK）洗い出し：HTML/JS/CSPから第三者タグ/SDK/連携先を抽出。
+- 22_mobile_assets_アプリ由来攻撃面（deep-link_API）：モバイルアプリの deeplink / API パスを整理。
+- 23_vdp_scope_制約下での低アクティブ観測設計：VDP等での低アクティブ観測ルールの作り方。
+- 24_subdomain_takeover_成立条件推定（DNS_CNAME_プロバイダ）：CNAME/プロバイダ残骸からサブドメインテイクオーバー成立可否を読む。
+- 25_dnssec_観測と意味（委譲_検証_誤設定）：DS/DNSKEY/RRSIGでDNSSECの有無・誤設定を観測。
 
-## 結果の意味（その出力が示す状態：何が言える/言えない）
-- ここで確定/推定したい「状態」
-  - 自社運用っぽい領域：設定/実装の検証（Web/NW）へ寄せる価値が高い
-  - 外部依存が強い領域：責任分界・設定・連携（SaaS/IdP/クラウド）へ寄せる価値が高い
-  - 移行/残骸の兆候：優先度は上がるが、断定せず“代表点”で到達性と挙動を最小確認する
-- ここで言い切らないこと（誤結論の防止）
-  - DNS/TLS/HTTP単体で「オリジン特定」「スコープ確定」「脆弱性有無」を断定しない
-  - 代わりに「観測視点」「根拠」「不足情報」を明示して次へ渡す
-
-## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
-- このフォルダで作るべき“意思決定”
-  - 入口候補の棚卸し：どこから入るか（Web/API/管理系/委譲先/SaaS）
-  - 深掘り優先度：境界が多い/依存が多い/移行がある領域を上に置く
-  - 攻め筋の選択：
-    - 外部依存が強い → 設定/連携/権限伝播（SaaS/IdP/クラウド）へ寄せる
-    - 自社運用が濃い → 認証/認可/API/入力/設定（Web）や到達性/認証（NW）へ寄せる
-- “観測→解釈→利用”の最小成果物（推奨）
-  - 境界メモ（資産/信頼/権限）
-  - 入口一覧（代表点＋根拠）
-  - 外部依存一覧（委譲先・終端・連携）
-  - 次の検証方針（仮説A/B と観測点）
-
-## 次に試すこと（仮説A/Bの分岐と検証）
-- このフォルダ内（次に作るべき順）
-  1) `04_js_フロント由来の攻撃面抽出.md`（HTTPで見えない“機能/API面”を補完）
-  2) `05_cloud_露出面（CDN/WAF/Storage等）推定.md`（外部依存を“構成要素”として確定）
-- 次フォルダへの接続（ASM→Web/NWへ）
-  - Webへ：`01_topics/02_web/01_web_recon_入口・境界・攻め筋の確定.md`
-  - NWへ：`01_topics/03_network/01_enum_到達性→サービス→認証→権限推定.md`
-- Labs連動（観測を固める）
-  - プロキシ/HAR：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
-  - pcap/ログ：`04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
-  - 視点差（経路差）：`04_labs/02_virtualization/03_networking_nat_hostonly_bridge.md`
-
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回）
-- ASVS：
-  - 該当領域/章：外部依存・設定・通信・境界（ASM/OSINTは“前提の崩れ”を潰す役）
-  - このフォルダの内容が「満たす/破れる」ポイント：
-    - 境界と依存を誤ると、以降の検証で“対象外”や“前提違い”を起こし、検証精度が落ちる
-- WSTG：
-  - 該当カテゴリ/テスト観点：Information Gathering（入口・依存・外形・環境差の把握）
-  - 接続（該当が薄い場合）：各テスト（Auth/Access Control/API等）の前提として、観測根拠と仮説を供給する
-- PTES：
-  - 該当フェーズ：Intelligence Gathering / Threat Modeling への入力
-  - 前後フェーズとの繋がり（1行）：
-    - 境界と依存を固めることで、Vulnerability Analysis の優先度付けと検証設計が合理化できる
-- MITRE ATT&CK：
-  - 該当戦術：Reconnaissance / Discovery
-  - 攻撃者の目的（この技術が支える意図）：
-    - 最小コストで入口と境界を確定し、攻め筋の確率を上げる
-
-## 参考（必要最小限）
-- 本フォルダの各topic（DNS/TLS/HTTP/JS/Cloud）の“観測→解釈→利用”を順に積み上げる
-- 実世界教材：`03_cases/00_index.md`（事例は必ず topics/playbooks/labs に接続して読む）
-
-## このフォルダのファイル一覧（入口）
-- 01: `01_dns_委譲・境界・解釈.md`
-- 02: `02_tls_証明書・CT・外部依存推定.md`
-- 03: `03_http_観測（ヘッダ/挙動）と意味.md`
-- 04: `04_js_フロント由来の攻撃面抽出.md`
-- 05: `05_cloud_露出面（CDN/WAF/Storage等）推定.md`
-- 06: `06_subdomain_列挙（passive_active_辞書_優先度）.md`
-- 07: `07_whois_rdap_所有者・関連企業推定（組織境界）.md`
-- 08: `08_asn_bgp_ネットワーク境界（AS_プレフィックス_関連性）.md`
-- 09: `09_passive-dns_履歴と再利用（過去資産の掘り起こし）.md`
-- 10: `10_ctlog_証明書拡張観測（SAN_ワイルドカード_中間CA）.md`
-- 11: `11_cohosting_同居推定（共有IP_VHost_CDN収束）.md`
-- 12: `12_waf-cdn_挙動観測（ブロック_チャレンジ_例外）.md`
-- 13: `13_http2_h3_観測（ALPN_Alt-Svc_到達性）.md`
-- 14: `14_js_sourcemap_公開物から攻撃面抽出（endpoint_key）.md`
-- 15: `15_api_spec_公開（OpenAPI_GraphQLスキーマ）から面抽出.md`
-- 16: `16_github_code-search_漏えい（key_token_endpoint）.md`
-- 17: `17_ci-cd_artifact_公開物（ログ_ビルド成果物）.md`
-- 18: `18_storage_discovery（S3_GCS_AzureBlob）境界推定.md`
-- 19: `19_email_infra（SPF_DKIM_DMARC）と攻撃面.md`
-- 20: `20_brand_assets_関連ドメイン推定（typo_lookalike）.md`
-- 21: `21_third-party_外部依存（タグ_分析SDK）洗い出し.md`
-- 22: `22_mobile_assets_アプリ由来攻撃面（deep-link_API）.md`
-- 23: `23_vdp_scope_制約下での低アクティブ観測設計.md`
-- 24: `24_subdomain_takeover_成立条件推定（DNS_CNAME_プロバイダ）.md`
-- 25: `25_dnssec_観測と意味（委譲_検証_誤設定）.md`
-
-## 深掘り（必要時に追加するファイル：最大8件）
-- （例）`01_dns_01_traceと権威直の使い分け.md`
-- （例）`02_tls_01_ctの読み方（残骸/移行/命名規則）.md`
-- （例）`03_http_01_waf_cdn推定（ヘッダ/挙動/差分）.md`
-
----
+## 接続先（次の検証へ）
+- Web 側の詳細：`01_topics/02_web/01_web_recon_入口・境界・攻め筋確定.md`
+- ネットワーク側：`01_topics/03_network/01_enum_到達性→サービス→認証→権限推定.md`
+- SaaS/IdP 側：`01_topics/04_saas/01_idp_連携（SAML OIDC OAuth）と信頼境界.md`
+- ローカル証跡取得：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`, `04_labs/01_local/03_capture_証跡取得（pcap_har_log）.md`

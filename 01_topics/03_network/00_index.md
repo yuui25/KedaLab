@@ -1,104 +1,63 @@
-# 00_index.md
+# 00_index（Network）
+ネットワーク／AD／サービス境界を「到達性・信頼・権限・経路・運用」で捉え、横展開・持ち出し・永続化の前提を観測で固めるための案内です。ChatGPT が読むだけで各ファイルの狙いが分かるように要約しています。
 
-（先頭要約：ガイドライン対応の位置づけ）
-- ASVS：Web中心の規格だが、NW側で「到達性・認証・権限・経路」を確定しないとWeb検証もズレるため、“前提を支える技術”として接続する
-- WSTG：Webテストでも前提として必要なネットワーク観測（到達性、境界、経路）を支える
-- PTES：Intelligence Gathering → Vulnerability Analysis → Exploitation/Post-Exploitation の“導線”そのものがNWで決まる
-- ATT&CK：Discovery/Credential Access/Lateral Movement 等の目的に直結するため、分類ではなく「境界モデル」として扱う
+## 目的
+- どこまでが自社管理で、どこからが外部/委託かを到達性と設定で示す。
+- 認証情報の所在・横展開経路・特権化手段・持ち出し経路を境界で整理し、次の一手を決める。
+- 低アクティブ（許可スコープ内・代表点のみ）で観測し、Yes/No/Unknown を根拠付きで出す。
 
-## 目的（この技術で到達する状態）
-- Network領域（Web:NW=5:5）の学習・検証を、単なるポートスキャンやツール操作で終わらせず、**到達性→サービス→認証→権限→横展開の入口**として体系化する。
-- “社内NW/クラウドNW/検証ラボ”のどれでも、次を説明できる状態にする。
-  - どこに到達できるか（資産境界）
-  - どこから先が外部/第三者か（信頼境界）
-  - どこで権限が切り替わる/伝播するか（権限境界）
-- 以降の `01_enum / 02_post / 03_creds / 04_ad` を、実務で回せる順序と接続で使えるようにする。
+## ガイドライン位置づけ
+- ASVS：ネットワーク/インフラ前提（認証・権限・ログ）の崩れを防ぐ。
+- WSTG：Information Gathering/Config を経由して AuthN/AuthZ/API へ前提を供給。
+- PTES：Intelligence Gathering → Vulnerability Analysis → Post-Exploitation の設計材料。
+- MITRE ATT&CK：Discovery/Lateral Movement/Credential Access/Exfiltration の境界観測。
 
-## 前提（対象・範囲・想定）
-- 対象：許可された検証範囲のみ（ネットワーク系は影響が出やすいので特に厳守）。
-- 想定：
-  - Webだけでなく、NW側に踏み込むと “認証・権限・経路” が急に複雑になる
-  - AD/SMB/RDP、VPN/VDI、クラウドNW（VPC/VNet）、SaaS連携が絡む可能性がある
-- Labs連動：
-  - `04_labs/02_virtualization/03_networking_nat_hostonly_bridge.md`
-  - `04_labs/01_local/03_capture_証跡取得（pcap har log）.md`
-- Web側との接続：
-  - `01_topics/02_web/01_web_recon_入口・境界・攻め筋の確定.md`（入口・境界の考え方をNWにも適用する）
+## 主なアウトプット
+- 到達性・サービス・認証の一覧と根拠（スキャン/フロー/ログ）。
+- 資産/信頼/権限/運用の境界メモ（AD/プロトコル/例外）。
+- 次の検証方針（仮説A/Bと観測点）を Web/SaaS/Endpoint へ接続。
 
-## 観測ポイント（何を見ているか：プロトコル/データ/境界）
-### Network領域の“最小モデル”（この順で固定）
-1) 到達性（Reachability）
-- 何が見える/届く：ICMP/TCP/UDP、名前解決（DNS）、ルーティング、NAT、FW/SG
-- 結果の意味：到達できない＝存在しない、ではない（境界で落ちている可能性）
+## 読み進めのおすすめ
+1) `01_enum_到達性→サービス→認証→権限推定.md`
+2) `02_post_侵入後の前提（権限 経路 横展開の入口）.md`
+3) `03_creds_認証情報の所在と扱い（攻撃 検知の両面）.md`
+4) AD/ドメイン基礎 `04_ad_ドメイン環境の基礎（ペンテスト視点の地図）.md`
+5) スキャン/指紋/回避 `05_scanning_...` → `06_service_fingerprint` → `08_firewall_waf_...`
+6) 横展開・プロトコル別（SMB/NTLM/LDAP/Kerberos/ADCS/Delegation/ACL/GPO/LAPS/WinRM/RDP/MSSQL/NFS/SNMP/DNS内部）
+7) Priv-Esc/Persistence/Exfil（24–28）
 
-2) サービス（Service）
-- 何が動いている：ポート/バナー/プロトコル、暗号、バージョン
-- 結果の意味：サービス＝攻撃面。Webより“入口が少ない代わりに深い”ことが多い
+## ファイル概要（ダイジェスト）
+- 01_enum_到達性→サービス→認証→権限推定：到達性からサービス・認証・権限を段階推定。
+- 02_post_侵入後の前提：侵入後に何が既にあるか（権限/経路/ログ）を棚卸し。
+- 03_creds_認証情報の所在と扱い：資格情報の保存/流通/防御・検知。
+- 04_ad_ドメイン環境の基礎：ADの地図と役割・境界。
+- 05_scanning_到達性把握（nmap_masscan）：低アクティブでの到達性確認。
+- 06_service_fingerprint（banner_tls_alpn）：バナー/TLS/ALPNでサービス指紋を取る。
+- 07_pivot_tunneling（ssh_socks_chisel）：ピボット・トンネリングの成立条件。
+- 08_firewall_waf_検知と回避の境界（観測中心）：ブロック/チャレンジ/例外の観測と回避。
+- 09_smb_enum_共有・権限・匿名（null_session）：共有/権限/匿名接続の境界。
+- 10_ntlm_relay_成立条件（SMB署名_LLMNR）：NTLMリレーの可否と前提。
+- 11_ldap_enum_ディレクトリ境界（匿名_bind）：LDAP匿名/認証境界と取得範囲。
+- 12_kerberos_asrep_kerberoast_成立条件：AS-REP/kerberoast 成立条件。
+- 13_adcs_証明書サービス悪用の境界：AD CS の悪用条件と境界。
+- 14_delegation（unconstrained_constrained_RBCD）：委任設定の境界と悪用。
+- 15_acl_abuse（AD権限グラフ）：ACL からの特権化パス。
+- 16_gpo_永続化と権限境界：GPO による権限/永続化境界。
+- 17_laps_ローカル管理者パスワード境界：LAPS 管理の境界と漏えいリスク。
+- 18_winrm_psremoting_到達性と権限：WinRM/PSRemoting の到達性/認証/権限。
+- 19_rdp_設定と認証（NLA）：RDP/NLA の到達性と境界。
+- 20_mssql_横展開（xp_cmdshell_linkedserver）：MSSQL 経由の横展開条件。
+- 21_nfs_共有とroot_squash境界：NFS の共有/権限/到達性境界。
+- 22_snmp_情報収集（community_v3）：SNMP reachability/方式/権限/検知。
+- 23_dns_internal_委譲とゾーン転送（AXFR）：内部DNSの委譲/AXFR可否。
+- 24_linux_priv-esc_入口（sudo_capabilities）：Linux sudo/capabilities での昇格入口。
+- 25_windows_priv-esc_入口（サービス権限_UAC）：Windows サービス権限/UAC の昇格入口。
+- 26_credential_dumping_所在（LSA_DPAPI）：LSASS/LSA Secrets/DPAPI の所在と防御。
+- 27_persistence_永続化（schtasks_services_wmi）：タスク/サービス/WMI の永続化棚卸し。
+- 28_exfiltration_持ち出し経路（DNS_HTTP_SMB）：出口（DNS/HTTP(S)/SMB）の成立と封じ方。
 
-3) 認証（AuthN）
-- 何で本人性が成立する：ローカル/ドメイン、鍵/パスワード/チケット、MFA、端末制限
-- 結果の意味：認証方式が分かると、次の権限推定・横展開の入口が見える
-
-4) 権限（AuthZ/Privilege）
-- 何ができる：読み/書き/実行、管理系、共有資源、委任/委譲
-- 結果の意味：権限境界が崩れると、横展開やデータ取得に直結する
-
-5) 経路（Path）
-- どこ経由で届く：踏み台、プロキシ、VPN、ピボット、トンネル
-- 結果の意味：経路が確定すると、検証の再現性と安全性（影響制御）が上がる
-
-## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言える（確定できる）
-  - “どこまでが範囲で、どこに到達できるか”（資産境界/到達性）
-  - “どのサービスが入口で、認証がどこにあるか”（信頼境界/入口）
-  - “権限がどこで切り替わり、何が伝播するか”（権限境界）
-- 推定（追加観測で強くなる）
-  - 横展開の導線（どこからどこへ動けるか）
-  - 監視/制限の存在（FW/EDR/監査）と安全な検証手順
-- 言えない（この段階の限界）
-  - スキャン結果だけでの断定（フィルタ/欺瞞/分割NWの可能性）
-  - AD/認証基盤の内部構造（追加観測とラボ再現が必要）
-
-## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
-### 優先度（NWで最短に価値が出る順）
-1) “到達性”の確定（無駄撃ちを減らす）
-2) “認証がある入口”の特定（勝負所を絞る）
-3) “権限が変わる地点”の特定（影響の大きい突破点）
-4) “経路”の確定（再現性と安全性が上がる）
-
-### 次の仮説（どこへ進むか）
-- 入口がサービス列挙中心なら → `01_enum`
-- 侵入後（シェル/セッション獲得）が前提になったら → `02_post`
-- 認証情報が鍵になりそうなら → `03_creds`
-- ドメイン環境がある/可能性が高いなら → `04_ad`
-
-## 次に試すこと（仮説A/Bの分岐と検証）
-- 仮説A：まずは「到達性→サービス→認証」を固めるべき
-  - 次：`01_topics/03_network/01_enum_到達性→サービス→認証→権限推定.md`
-- 仮説B：すでに侵入後の前提があり、横展開や権限が課題
-  - 次：`01_topics/03_network/02_post_侵入後の前提（権限 経路 横展開の入口）.md`
-- 仮説C：認証情報が散らばっており、攻撃/検知の両面が必要
-  - 次：`01_topics/03_network/03_creds_認証情報の所在と扱い（攻撃 検知の両面）.md`
-- 仮説D：ADドメインが絡む可能性が高い
-  - 次：`01_topics/03_network/04_ad_ドメイン環境の基礎（ペンテスト視点の地図）.md`
-
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回）
-- ASVS：
-  - 直接のNW規格ではないが、Webの認証・認可・セッション・設定検証は「NWの到達性/経路/権限境界」が前提になるため、“前提を支える技術”として位置づける
-- WSTG：
-  - Webテストでも必要な前提（入口/境界/到達性/経路）を確定するための基盤として接続する
-- PTES：
-  - Intelligence Gathering：到達性/サービス/認証の観測で入口を絞る
-  - Vulnerability Analysis：勝負所（認証/権限境界）に優先度を付ける
-  - Exploitation/Post-Exploitation：経路と権限の変化を“状態”として再現可能にする
-- MITRE ATT&CK：
-  - 戦術：Discovery（環境把握）、Credential Access（認証情報の取得）、Lateral Movement（横展開）、Privilege Escalation（権限昇格）等
-  - 本indexでは分類よりも「境界モデル（資産/信頼/権限）」の整理として使う
-
-## 参考（必要最小限）
-- `01_topics/03_network/01_enum_到達性→サービス→認証→権限推定.md`
-- `01_topics/03_network/02_post_侵入後の前提（権限 経路 横展開の入口）.md`
-- `01_topics/03_network/03_creds_認証情報の所在と扱い（攻撃 検知の両面）.md`
-- `01_topics/03_network/04_ad_ドメイン環境の基礎（ペンテスト視点の地図）.md`
-- `04_labs/02_virtualization/03_networking_nat_hostonly_bridge.md`
-- `04_labs/01_local/03_capture_証跡取得（pcap har log）.md`
+## 接続先
+- ASM/OSINT：`01_topics/01_asm-osint/00_index.md`
+- Web：`01_topics/02_web/00_index.md`
+- SaaS/IdP：`01_topics/04_saas/01_idp_連携（SAML OIDC OAuth）と信頼境界.md`
+- ローカル証跡取得：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`, `04_labs/01_local/03_capture_証跡取得（pcap_har_log）.md`
