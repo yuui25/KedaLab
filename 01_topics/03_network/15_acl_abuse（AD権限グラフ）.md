@@ -1,221 +1,120 @@
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回）
-- ASVS：認証基盤/ディレクトリの「権限管理（最小権限・職務分離）」「特権操作の統制」「監査証跡（変更追跡）」に直結。ACLの過剰付与は“アプリ脆弱性なし”で権限境界を破るため、運用統制の中核として扱う。
-- WSTG：WebがADに依存（IWA/LDAP/SMB/SQL/管理UI）する場合、WebのAuthN/AuthZ評価はAD側の権限伝播（ACL）に上書きされ得る。WSTGの認証/認可・セッション評価の前提条件として、ADの権限グラフを入力に取り込む。
-- PTES：Intelligence Gathering（AD列挙）→ Vulnerability Analysis（ACLの成立条件）→ Post-Exploitation（横展開/永続化の導線評価）→ Reporting（是正設計＋検知）に配置。重要なのは“実際に成立する経路”をグラフで短絡化し、優先度を決めること。
-- MITRE ATT&CK：Privilege Escalation / Lateral Movement / Persistence を中心に、Directory/ACLの誤設定を「正規機能の濫用」として位置づける（具体技術名は環境により差があるため、戦術と目的で整理）。
-
----
-
 # 15_acl_abuse（AD権限グラフ）
+ADのACLを権限伝播の配線図として整理し、成立経路と是正/検知まで落とす
 
-## 目的（この技術で到達する状態）
-- ADのACL（DACL/ACE）を「設定の羅列」ではなく **権限伝播の配線図**として扱い、次を“状態”として説明できるようにする。
-  1) 誰が（どの主体が）どのオブジェクトに、どの権限を持つか（DACLの事実）
-  2) その権限が **何を可能にするか/しないか**（状態の解釈）
-  3) その状態が、到達性（NW）・認証素材（Kerberos/ADCS/資格情報）と結合したとき、どの横展開経路になるか（グラフ）
-  4) “優先度”を、影響（Tier/重要資産）×成立の容易さ×露出（広い主体）で決められる
-  5) 報告では「危険です」で終えず、是正案（設計代替）と検知（変更追跡/ベースライン）まで閉じられる
+## 目標（この技術で到達する状態）
+- ADのACL（DACL/ACE）を「設定の羅列」ではなく権限伝播のグラフとして扱う
+  1) 誰がどのオブジェクトにどの権限を持つかを事実として示せる
+  2) その権限が何を可能にするかを状態として説明できる
+  3) 到達性/認証素材と結合したときの横展開経路を優先度付けできる
+  4) 是正案（代替設計）と検知（変更追跡/ベースライン）まで閉じられる
 
----
-
-## 前提（対象・範囲・想定）
-- 対象：Active Directory（ユーザー/グループ/コンピュータ/OU/GPO/ドメイン/（関連として）証明書テンプレ等）
-- ACLの前提：
-  - ADオブジェクトは“セキュアオブジェクト”であり、Security Descriptor に DACL（許可/拒否）と SACL（監査）がある
-  - DACLはACEの集合で、ACEは「誰（SID）に、何（権限）を、許可/拒否するか」を表す
-- 範囲の切り方（実務で必須）：
-  - “全オブジェクト全ACE”は情報量が爆発するため、最初から **高価値ノード（Tier0/基幹）** と **広い主体（Domain Users等）** を軸に絞る
-- 想定する入力（このファイルが依存する前段）：
-  - `11_ldap_enum`：オブジェクト/属性の棚卸し（DN/SID/グループ構造）
-  - `05_scanning` / `18_winrm` / `19_rdp` / `20_mssql`：到達性（グラフで“実行可能性”を評価するため）
-  - `12_kerberos...` / `13_adcs...` / `14_delegation...`：認証素材・委任・証明書などの“別の権限伝播”と結合して最短経路を作るため
-
----
+## 前提・対象・範囲・想定
+- 対象：AD（ユーザー/グループ/コンピュータ/OU/GPO/ドメイン/証明書テンプレ等）
+- ACL前提：Security Descriptor に DACL（許可/拒否）と SACL（監査）
+- 範囲の切り方
+  - 高価値ノード（Tier0/基幹）と広い主体（Domain Users等）を軸に絞る
+- 想定する入力
+  - `11_ldap_enum`（DN/SID/グループ構造）
+  - `05_scanning` / `18_winrm` / `19_rdp` / `20_mssql`（到達性）
+  - `12_kerberos` / `13_adcs` / `14_delegation`（別の権限伝播）
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
-> ここで“何を観測し、何を根拠に判断するか”を固定しないと、ACLは永遠に薄くなる。
-
 ### 1) 観測対象（一次データ）
-- nTSecurityDescriptor（Security Descriptor：Owner / DACL / SACL）
-- DACL（ACEのリスト）
-- ACEの主要フィールド（最低限これだけ）
-  - Trustee（SID/主体：ユーザー/グループ/コンピュータ）
-  - Access Type（Allow / Deny）
-  - Rights（GenericAll/WriteDACL/WriteOwner/GenericWrite/特定属性Write 等）
-  - Inheritance（継承：どこから来たACEか、継承範囲はどこまでか）
-  - Object Type / Inherited Object Type（拡張権限や属性単位の制御に関わる）
+- nTSecurityDescriptor / DACL / ACE
+- ACEの最小フィールド
+  - Trustee（SID/主体）
+  - Allow/Deny
+  - Rights（GenericAll/WriteDACL/WriteOwner/GenericWrite/属性Write 等）
+  - Inheritance（継承元と範囲）
 
-### 2) 境界（Boundary）を3種類で固定する
-- 資産境界：どのオブジェクトが“高価値”か（DC / Domain / Tier0 OU / 管理グループ / 基幹サーバ）
-- 信頼境界：どの主体が“広すぎる”か（Domain Users / Authenticated Users / Everyone / 共有運用グループ）
-- 権限境界：どの権限が“状態遷移を起こす”か（読めるだけ vs 変更できる、所有者/ACL自体を変えられる、メンバー追加できる）
+### 2) 境界の固定
+- 資産境界：高価値オブジェクト（Domain/DC/Tier0/GPO/基幹サーバ）
+- 信頼境界：広すぎる主体（Domain Users/Authenticated Users/Everyone 等）
+- 権限境界：状態遷移を起こす権限（変更/メンバー追加/所有者変更）
 
-### 3) “権限＝状態遷移”として見る（具体：どれが危険か）
-ACLは「何ができるか」の辞書が膨大になりがちなので、実務ではまず “状態遷移を起こす権限” に絞る。
+### 3) “権限＝状態遷移”として見る
+- GenericAll / WriteDACL / WriteOwner / GenericWrite
+- AddMember（グループ）
+- ForceChangePassword（ユーザー）
+- AllExtendedRights（ドメイン等）
 
-- 代表例（グラフで最短経路になりやすい）
-  - GenericAll：対象オブジェクトを“何でも”操作できる状態
-  - WriteDACL：対象オブジェクトのDACLを書き換えられる状態（=後から権限を作れる）
-  - WriteOwner：所有者を変更できる状態（=所有者になればDACL操作の足場になる）
-  - GenericWrite：広範な属性を書き換えられる状態（対象により影響が変わる）
-  - AddMember（グループ）：グループメンバーを追加できる状態（=権限集合を追加できる）
-  - ForceChangePassword（ユーザー）：本人以外がパスワード変更できる状態（=アカウント取得に近い）
-  - AllExtendedRights（ドメイン等）：拡張権限の集合（ドメインに対する複製系権限等を含み得る）
-
-※重要：上の“名前”は抽象ラベル。実データではACEのビット/拡張権限GUID/属性GUIDで表現されるため、
-「BloodHound等の解釈レイヤ」か「ADUC/PowerShellでの権限表示」を根拠に“同値判定”する。
-
-### 4) 観測の取り方（A/B：環境制約で分岐）
-#### A：権限グラフを最短で作る（BloodHound系）
-- 目的：ACLを“グラフ”に変換し、最短経路（短い攻撃鎖）を可視化して優先度を決める
-- 収集対象（最小）
-  - オブジェクト（User/Group/Computer/OU/GPO/Domain）
-  - ACL（Object ACL / DACL）
-  - セッション/ローカル管理者/ログオン痕跡（可能なら：到達性と結び付ける）
-- 実務の割り切り（密度を落とさず安全に）
-  - まず DCOnly 相当の収集で“グラフの骨格（ACLとグループ構造）”を作り、必要に応じて範囲拡張
-  - 収集が検知対象になり得る点を理解し、回数・時間帯・スコープを抑える（契約と運用に従う）
-
-#### B：ツール制約がある（BloodHound不可/EDR制約）
-- 目的：グラフ化は手作業になるが、最低限「成立条件」と「是正優先度」を落とさない
-- 取り方（現実的な順）
-  1) 高価値オブジェクト（Domain / Adminグループ / DC / Tier0 OU / 重要サーバ）だけを選ぶ
-  2) そのオブジェクトのDACLをADUC（拡張機能）/PowerShellで抽出して“危険権限だけ”抜き出す
-  3) Trustee（主体）が広いか、ネストで広がるかを `11_ldap_enum` の結果と結合して評価する
-- 重要：この方式では“全経路探索”はしない。代わりに「1〜2手で到達し得る強い権限」を優先で見る。
-
-### 5) 実施で必ず残す証跡（レポート品質を決める最小セット）
-- 対象オブジェクト：
-  - DN / オブジェクト種別 / 重要度（Tier/用途）
-- 問題ACE：
-  - Trustee（SID→名前解決） / 権限名 / Allow/Deny / 継承元（どこで付いたか）
-- “広さ”の根拠：
-  - Trusteeがどの範囲に展開されるか（ネスト、デフォルト包含、Auth Users等）
-- “成立の根拠”：
-  - 実際にその権限が “何を変更できる” かを、ADの仕様（権限の意味）として示す
-  - 可能なら、変更は行わず「変更が可能であること」をADUCの権限UI/権限マッピングで示す（安全側）
-
----
+### 4) 取り方の分岐
+- A：BloodHound等で最短経路を可視化
+- B：ツール制約時は高価値ノードに絞ってDACLを手作業抽出
 
 ## 結果の意味（その出力が示す状態：何が言える/言えない）
-### 1) 「危険権限がある」と言える最小条件
-- 言える：
-  - 特定の主体（Trustee）が、特定のオブジェクトに対して、状態遷移を起こす権限（例：WriteDACL等）を持つ
-  - その権限は“後から権限を作る/変更する/メンバーを増やす”など、権限境界を破る入口になり得る
-- 言えない（この時点で断言しない）：
-  - 直ちにドメイン侵害が成立する（到達性、他の前提、監視、運用が未評価）
-  - その主体が実際に侵害されている/されやすい（資格情報強度や露出は別評価）
-
-### 2) 「グラフで短い経路が出た」の意味
-- 言える：
-  - “権限伝播の鎖”が短い＝運用上の例外や誤設定が攻撃者意思決定に直結しやすい
-  - 優先度は「短さ」だけでなく「高価値ノード」「主体の広さ」「到達性」で決めるべき
-- 言えない：
-  - そのまま再現できる（環境差：防御設定、監査、到達性、プロトコル制限で変わる）
-  - ツールの出力（Edge）だけで十分（根拠となるACEを必ず提示する）
-
-### 3) Owner / WriteOwner の意味（ACLの“自己増殖点”）
-- 言える：
-  - 所有者やWriteOwnerの権限は、DACL自体の制御に繋がりやすく、誤設定があると“後から権限を作る”入口になり得る
-- 言えない：
-  - それ単体で常に全権を得る（適用範囲・監査・運用で変わる）。ただし危険度評価の優先対象ではある。
-
----
+- 言える
+  - 特定主体が特定オブジェクトに状態遷移権限を持つ
+  - その権限は境界を破る入口になり得る
+- 言えない
+  - 直ちに侵害が成立する（到達性/他条件が必要）
+  - その主体が侵害されやすいかは別評価
 
 ## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
-> ここは「どう悪用するか」ではなく、「攻撃者が“どれを先に見るか”」の意思決定を、こちらの優先度付けに転用する。
-
-### 1) 優先度付けの軸（実務で外さない）
-- 影響（Impact）
-  - Targetが高価値（Domain / Adminグループ / DC / Tier0 OU / GPO / 基幹サーバ）か
-- 成立の容易さ（Feasibility）
-  - 1手で状態遷移できる権限（GenericAll / WriteDACL / AddMember 等）か
-- 露出（Exposure）
-  - Trusteeが広い（Domain Users相当）/ ネストで膨らむ / 共有運用グループか
-- 横展開の接続（Chainability）
-  - `05_scanning` の到達性（RDP/WinRM/SMB/MSSQL）や `12_kerberos` / `13_adcs` / `14_delegation` と結合して“実行可能な鎖”になるか
-
-### 2) “短い鎖”になりやすいパターン（状態として）
-- 低権限（または広い運用グループ）が、管理グループ/OU/GPO/重要コンピュータに対して WriteDACL/GenericAll を持つ
-- 重要グループに AddMember 相当が付与されている（運用委譲のやり過ぎ）
-- ドメイン（ドメインルート）に AllExtendedRights 相当が広く付与されている（設計上の例外が放置）
-- RBCDの“設定先”になり得るコンピュータに対し、低権限が書き込み権限を持つ（委任を後から作れる）
-
----
+- 優先度の軸
+  - 影響：高価値ノードか
+  - 成立容易性：1手で状態遷移できる権限か
+  - 露出：主体が広い/ネストで広がるか
+  - 鎖：到達性や他境界と結合して実行可能か
+- “短い鎖”の典型
+  - 低権限が管理グループ/OU/GPO/重要コンピュータにWriteDACL/GenericAll
+  - 重要グループにAddMemberが付与
+  - ドメインにAllExtendedRightsが広く付与
+  - RBCD作成に繋がる書き込み権限
 
 ## 次に試すこと（仮説A/Bの分岐と検証）
-> “列挙できた”で止めず、次の手が条件で変わるように組む。
-
-### 仮説A：BloodHound等でグラフが作れる
-- 次の一手（最短で価値が出る順）
-  1) 高価値ノード（Tier0）をマークし、そこへの最短パスを抽出
-  2) パス上の“ACL Edge”について、必ず原本ACE（DACL）で裏取りして証跡化
-  3) Trusteeが広い場合は、ネスト/包含を `11_ldap_enum` で裏取り（「誰が実質含まれるか」）
-  4) パスが“実行可能”かを、`05_scanning` の到達性と結合（例：対象コンピュータへ管理経路があるか）
-- 検証（安全側）
-  - 本番で権限変更をせず、ADUCの権限画面/PowerShellのDACL出力で「変更可能な状態」を根拠にする
-  - どうしてもPoCが必要な場合は、スコープ内の検証OU/検証アカウントで、影響を閉じた最小再現に留める（巻き戻し前提）
-
-### 仮説B：BloodHoundが使えない（手作業で進める）
-- 次の一手（薄くならないための固定手順）
-  1) 対象を絞る：Domain / 管理グループ / DC / Tier0 OU / 重要GPO / 重要サーバ（Computer）をリスト化
-  2) 各対象のDACLを抽出し、「危険権限だけ」を抽出（GenericAll/WriteDACL/WriteOwner/GenericWrite/AddMember/ForceChangePassword/AllExtendedRights）
-  3) Trusteeが広いものから潰す（Domain Users相当、共有運用グループ、委任グループ）
-  4) 継承元を辿り「どこで付与されたか」を確定（OUの継承、GPO/テンプレ運用）
-  5) 是正案は“削除”だけでなく“代替設計”（専用グループ化・OU分割・Tier分離・委任の再設計）まで書く
-
-### 仮説C：危険権限が見つからない（少なくとも目立つものは無い）
+### 仮説A：グラフが作れる
 - 次の一手
-  - 代わりに「変更検知」が整っているかを見る（権限は無くても、将来“静かに付与される”リスクが残る）
-  - 他の成立条件（`14_delegation` / `13_adcs` / `10_ntlm_relay` / `12_kerberos`）に軸足を移し、グラフは“補助入力”として維持する
+  1) 高価値ノードへの最短パス抽出
+  2) Edgeを原本ACEで裏取り
+  3) Trusteeの広さを `11_ldap_enum` で確認
+  4) 到達性（`05_scanning`）と結合し実行可能性を評価
 
-### 手を動かす検証（04_labs連動：差分が出る設計）
-- Labの狙い：ACLの概念理解ではなく、「権限が1つ増えると、グラフの最短経路がどう変わるか」を体感する
-- 最小構成
-  - DC + Member Server（ファイル or SQL or 管理サーバ）+ クライアント
-  - OUを2つ（Tier0相当 / Tier1相当）作り、継承の差分を作る
-  - 検証用グループ（Ops-Delegated）を作り、権限を“1つずつ”付与してグラフがどう変化するか観測
-- 観測点
-  - 付与前後のDACL差分（スクリーンショット＋テキスト出力）
-  - グラフ上のEdge差分（最短パスの変化）
-  - 可能ならDirectory変更ログ（変更追跡が効くこと）
+### 仮説B：グラフが作れない
+- 次の一手
+  1) Domain/Admin/DC/Tier0/GPO/重要サーバに絞る
+  2) 危険権限だけ抽出して優先度付け
+  3) 継承元を辿り付与箇所を確定
+  4) 代替設計（専用グループ/OU分割/Tier分離）を提案
 
----
+### 仮説C：危険権限が見つからない
+- 次の一手
+  - 変更検知（属性変更監査）の整備
+  - 別経路（`14_delegation` / `13_adcs` / `10_ntlm_relay` / `12_kerberos`）へ移る
 
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回）
-- ASVS
-  - 最小権限・特権アカウント管理・監査証跡の中核として、ACL（DACL）を“権限伝播の設計不備”として扱う
-  - 認証/認可がアプリで正しくても、AD側の権限設計が破綻すると境界が破れる点を明示する
-- WSTG
-  - WebアプリがADをバックエンドに持つ場合、WSTGのAuthN/AuthZ評価の前提入力として「委任/ACL/証明書」等の基盤設定を取り込む
-- PTES
-  - 列挙（LDAP/ACL収集）→ 分析（危険権限の状態遷移）→ 経路評価（到達性と結合）→ 報告（是正設計＋検知）で閉じる
-- MITRE ATT&CK
-  - Directory/ACLの誤設定を、Privilege Escalation / Lateral Movement / Persistence の“成立条件”として位置づけ、最短経路（グラフ）で意思決定に落とす
+## 手を動かす検証（Labs連動：観測点を明確に）
+### 実施方法（差分が出る設計）
+- DC + Member Server + Client
+- OUを2つ作り継承差分を作る
+- 検証用グループに権限を1つずつ付与してグラフの変化を観測
+- 観測点：DACL差分 / グラフ差分 / 変更ログ
 
----
+## コマンド/リクエスト例（例示は最小限・意味の説明が主）
+~~~~
+# DACL表示例（PowerShell）
+# Get-Acl "AD:\CN=SomeGroup,OU=Groups,DC=example,DC=local" | Format-List
+~~~~
+- ここで観測すること：ACEの存在と権限種別
+- 出力の注目点：Trustee / Rights / Inheritance
+- 使えないケース：権限不足、ツール制約
+
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
+- ASVS：最小権限/特権管理/監査の中核としてACLを扱う
+- WSTG：WebのAuthN/AuthZ評価の前提としてAD権限伝播を入力化する
+- PTES：列挙→分析→経路評価→報告（是正/検知）で閉じる
+- MITRE ATT&CK：Privilege Escalation/Lateral Movement/Persistenceの成立条件として固定
 
 ## 参考（必要最小限）
-- 用語と基礎（ACL/ACE、DACL/SACL）：Windowsのアクセス制御モデル
-- BloodHound（AD権限グラフ）：Edgeの意味を“権限＝状態遷移”として読む
-- オブジェクト所有者とDACL制御：Owner/WriteDACL/WriteOwnerの関係
-- リポジトリ内リンク（関連）
-  - `01_topics/03_network/11_ldap_enum_ディレクトリ境界（匿名_bind）.md`
-  - `01_topics/03_network/12_kerberos_asrep_kerberoast_成立条件.md`
-  - `01_topics/03_network/13_adcs_証明書サービス悪用の境界.md`
-  - `01_topics/03_network/14_delegation（unconstrained_constrained_RBCD）.md`
-  - `01_topics/03_network/05_scanning_到達性把握（nmap_masscan）.md`
+- Windows ACL/ACEの基礎
+- BloodHound（AD権限グラフ）
 
-~~~~
-# 参考：DACL抽出（読み取り専用）をする場合の“型”だけ示す（環境・権限に依存）
-# ※本番での変更操作（DACL書換やメンバー追加等）は、契約/許可/影響制御が前提。
+## リポジトリ内リンク（最大3つまで）
+- `01_topics/03_network/11_ldap_enum_ディレクトリ境界（匿名_bind）.md`
+- `01_topics/03_network/12_kerberos_asrep_kerberoast_成立条件.md`
+- `01_topics/03_network/14_delegation（unconstrained_constrained_RBCD）.md`
 
-# Windows（PowerShell）：ADドライブでDACLを確認する（表示のみ）
-# Get-Acl "AD:\CN=SomeGroup,OU=Groups,DC=example,DC=local" | Format-List
-
-# Windows（dsacls）：対象DNのACLを表示する（表示のみ）
-# dsacls "CN=SomeGroup,OU=Groups,DC=example,DC=local"
-
-# Linux（LDAP）：nTSecurityDescriptor は制御OID/権限が絡むため、まず“取れるか”の可否確認から入る
-# （取れない場合は、BloodHound/PowerShell/ADUCでの取得に切り替える）
-~~~~
+## 深掘りリンク（最大8）
+- `01_topics/03_network/05_scanning_到達性把握（nmap_masscan）.md`
+- `01_topics/03_network/12_kerberos_asrep_kerberoast_成立条件.md`
+- `01_topics/03_network/13_adcs_証明書サービス悪用の境界.md`
+- `01_topics/03_network/14_delegation（unconstrained_constrained_RBCD）.md`
