@@ -1,142 +1,109 @@
-# 01_idp_連携（SAML OIDC OAuth）と信頼境界.md
-
-（先頭要約：ガイドライン対応の位置づけ）
-- ASVS：認証は“画面”ではなく“連携”で成立する。IdP連携により本人性と権限が決まるため、ASVSのAuthN/AuthZ/セッション運用の前提を支える
-- WSTG：SSO/トークン/リダイレクト/セッション管理はWebテストの主戦場。SAML/OIDC/OAuthを“規格暗記”ではなく観測→意味→検証に落とす
-- PTES：Intelligence Gathering で連携の境界（責任分界）を確定し、Vulnerability Analysis で攻め筋（どの誤設定が成立し得るか）に落とす
-- ATT&CK：Credential Access/Privilege Escalation を、IdP連携における“信頼の崩壊”として整理する
+# 01_idp_連携（SAML OIDC OAuth）と信頼境界
+SAML/OIDC/OAuth 連携で本人性・権限・信頼境界がどこで成立するかを観測し、誤設定リスクを特定する。
 
 ## 目的（この技術で到達する状態）
-- SAML/OIDC/OAuthを「違いの説明」ではなく、次を自分で判断できる状態にする。
-  - どこが本人性の成立点か（認証境界）
-  - どこで権限が決まるか（権限境界：role/group/claim/scope）
-  - どこが第三者か（信頼境界：IdP/外部アプリ/連携先）
-- 連携フローを観測し、**“この連携で破れると何が起きるか”** を状態で説明できる。
-- Web/NW双方の視点で「認証情報（Cookie/Token/Claim）」を扱い、検証の次の一手（A/B分岐）を作れる。
+- 本人性がどこで確定するか（IdP/トークン/クッキー）、権限がどこで決まるか（claim/scope/属性）の境界を説明できる
+- 連携フローを観測し、戻り先/パラメータ/署名/期限が適切かを Yes/No/Unknown で示せる
+- 連携失敗や属性差分を A/B で比較し、攻撃成立条件（不正リダイレクト・属性偽装・委任の過剰化）を判断できる
+- ログ（IdP/SP/プロキシ）で追える相関キーを提示し、是正策（設定・監査）を提案できる
 
 ## 前提（対象・範囲・想定）
-- 対象：許可範囲のSSO/IdP連携（社内SSO、SaaS、業務Web、API）。
-- 想定：
-  - SP（Service Provider）とIdP（Identity Provider）に責任分界がある
-  - 連携は「ログイン成功」だけでなく、属性（claim）で権限が決まりやすい
-  - OAuthは“委任”が中心で、長期権限（refresh/consent）が絡むことがある
-- 依存（前段の接続）：
-  - `01_topics/02_web/02_authn_認証・セッション・トークン.md`
-  - `01_topics/03_network/03_creds_認証情報の所在と扱い（攻撃 検知の両面）.md`
-- 観測基盤（推奨）：
-  - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
-  - `04_labs/01_local/03_capture_証跡取得（pcap har log）.md`
-- やらないこと：
-  - 規格の網羅説明（RFC要約）で終わらせない
-  - “落とし穴”章は作らない
+- 対象：SAML/OIDC/OAuth を使う社内SSO/SaaS/業務Web/API 連携
+- 想定環境：IdP/SP 役割が分離、ブラウザ/ネイティブ/SPA の混在を想定
+- できること/やらないこと：許可された連携での観測とパラメータ差分のみ。任意のIdPなりすましや第三者宛は行わない
+- 依存知識：HTTPリダイレクト、JWT/SAML 署名・検証、クッキー/セッションの基礎
+- 扱う範囲：信頼・権限・委任境界の確認、代表的な誤設定の検証
+- 扱わない：認証UIの脆弱性、OSINT系のIdP列挙
 
-## 観測ポイント（何を見ているか：プロトコル/データ/境界）
-### 1) まず“境界モデル”でフローを切る（規格名より先）
-- 資産境界：守るべき対象は何か（アカウント、権限、データ、テナント）
-- 信頼境界：誰を信頼しているか（IdP、外部アプリ、外部テナント）
-- 権限境界：どこで権限が決まるか（group/role/claim/scope）
+## 観測ポイント（プロトコル/データ/境界）
+- 役割：IdP/SP/クライアント（OAuth）と信頼関係
+- フロー：リダイレクト連鎖、state/nonce、Issuer/Audience、署名鍵と検証側
+- 権限：SAML Attribute / OIDC ID Token claim / OAuth scope・consent、ロールマッピング
+- 戻り先：redirect_uri/AssertionConsumerService の固定度、許可リスト
+- 境界：どこでトークン発行/検証されるか、どのログが残るか
 
-### 2) SAML / OIDC / OAuth を“役割”で捉える（暗記しない）
-- SAML：主に“企業SSO”で使われることが多い（主語は組織）
-  - 重要観測：Assertion（誰で、どの属性か）、Audience/Recipient、署名、RelayState
-- OIDC：OAuthの上に“本人性（IDトークン）”を載せる（主語はユーザー）
-  - 重要観測：ID Token / Access Token、iss/aud/sub、nonce/state
-- OAuth：主に“委任”の枠組み（主語は権限の委任）
-  - 重要観測：client_id、redirect_uri、scope、consent、refreshの扱い
+## 結果の意味（何が言える/言えない）
+- 確定できる：本人性成立点、権限決定点、信頼先（IdP/外部アプリ）、戻り先の制約
+- 推定できる：属性マッピングやscopeが過剰で越権余地があるか、検証責務の抜け
+- 言えない：実際のビジネス権限正当性（担当確認が必要）
+- 状態パターン
+  - A：固定された戻り先＋署名検証＋最小属性（良好）
+  - B：ワイルドカード戻り先＋過剰scope/属性（リスク高）
+  - C：検証責務の曖昧さ（SP/ゲートウェイどちらも不明）
 
-### 3) 入口で必ず取る観測（最小セット）
-- 認証開始点（どのURL/どのアプリがトリガ）
-- リダイレクト連鎖（どこへ飛ぶか：SP→IdP→SP）
-- 付与される材料（Cookie/Token/Assertion）
-- 権限に効く属性（group/role/tenant/scope 等）
-- 例外時の挙動（state/nonce不一致、署名失敗、期限切れ）
-
-### 4) “何を固定し、何を変えるか”で検証設計する
-- 固定するもの（まず変えない）
-  - 認証主体（同一ユーザー）、同一ブラウザ/セッション、同一入口
-- 変えるもの（A/B差分）
-  - パラメータ（state/nonce/redirect_uri 等）
-  - 属性（role/group/tenant/scopeに関係しそうな要素）
-  - 連携先（別クライアント/別アプリ）
-- 目的
-  - “どの境界が効いているか”を観測で確定し、攻め筋を絞る
-
-### 5) 典型論点を“状態”として持つ（断定しない）
-- リダイレクトの境界：戻り先がどこまで許されるか
-- トークン/アサーションの境界：誰が発行し、誰が検証するか
-- 属性連携の境界：どの属性が権限に効き、どこで決まるか
-- 委任（OAuth）の境界：どのscopeが、どの期間、どの対象に効くか
-
-## 結果の意味（その出力が示す状態：何が言える/言えない）
-- 言える（確定できる）
-  - 認証の成立点（SP/IdPどちらで何が起きるか）
-  - 信頼境界（どのIdP/クライアント/連携先を信頼しているか）
-  - 権限境界（どの属性/claim/scopeが権限に効いているか）
-- 推定（追加観測で強くなる）
-  - 誤設定の可能性が高い点（例：戻り先、属性マッピング、検証の責務）
-  - 監査点（どこにログが残るか：IdP/SP/プロキシ）
-- 言えない（この段階の限界）
-  - “脆弱”の断定（観測と最小検証が必要）
-  - 属性の真のソース（HR/AD/IdP設定）までの断定
-
-## 攻撃者視点での利用（意思決定：優先度・攻め筋・次の仮説）
-### 優先度（境界崩壊が大きい順）
-1) 信頼境界（外部IdP/外部アプリ）を跨げる可能性
-2) 権限境界（属性/claim/scope）で越権が起きる可能性
-3) リダイレクト境界（戻り先/セッション結合）で本人性が崩れる可能性
-4) トークンの扱い（期限/更新/保管）で長期化する可能性
-
-### 攻め筋（SSOを“WebのAuthN/AuthZ”へ接続する）
-- 認証後にアプリ側で何が権限を決めているか（claim→roleマッピング等）を、Webの `03_authz` と同じ境界モデルで扱う
-- OAuthが絡む場合は “委任＝長期権限” を前提に、`03_creds` と接続して価値判断する
-
-### 次の仮説（どこへ進むか）
-- 権限が属性で決まりそう → Web側の認可へ：`01_topics/02_web/03_authz_認可（IDOR BOLA BFLA）境界モデル化.md`
-- トークンが鍵になりそう → credsへ：`01_topics/03_network/03_creds_認証情報の所在と扱い（攻撃 検知の両面）.md`
-- 共有・外部連携・監査が問題になりそう → `02_saas` へ：`01_topics/04_saas/02_saas_共有・外部連携・監査ログの勘所.md`
+## 攻撃者視点での利用（意思決定）
+- 狙い目：ワイルドカード redirect_uri、RelayState/State 混在、署名未検証、過剰claim/scope、外部IdP信頼
+- 優先度：1) 戻り先制御 2) 署名/検証鍵 3) claim/scope とロールマッピング 4) トークン有効期限/再利用
+- 攻め筋
+  - 不正リダイレクト/オープンリダイレクトを経由してトークン回収
+  - 属性/claim を悪用した越権（別テナント/別ロール）
+  - OAuth consent の過剰scope取得
+- 戦略変更：検証が強い場合は IdP 側設定の例外（外部IdP/動的登録）を調査
 
 ## 次に試すこと（仮説A/Bの分岐と検証）
-### 仮説A：SSO後の権限が“属性（claim）”で決まっている
-- 検証（A/B）
-  - A：通常ログインで、どの属性がアプリ権限に影響していそうかを観測（UI/応答差）
-  - B：別ロール/別ユーザーで差分を取り、どの境界で権限が切り替わるかを確定
-- 期待する観測
-  - 権限境界（claim→role）が説明でき、AuthZ検証に直結する
+- 仮説A：戻り先が緩い  
+  - 次の検証：正規/異常 redirect_uri で state/nonce を変えずに試行  
+  - 期待：拒否されない場合は不正リダイレクト余地
+- 仮説B：claim/scope が権限に直結  
+  - 次の検証：ロール違いユーザで SAML Attribute / ID Token claim / scope を比較  
+  - 期待：差分が権限に直結し、操作結果が変わるかを確認
+- 仮説C：署名・検証責務が曖昧  
+  - 次の検証：Issuer/Audience/署名鍵と検証ログを確認（IdP or SP or Gateway）  
+  - 期待：検証が一箇所なら責務明確、無いなら重大
 
-### 仮説B：OAuthの委任（scope/consent）が長期権限になっている
-- 検証（A/B）
-  - A：要求されるscopeと、付与されるトークンの範囲を観測
-  - B：更新/失効の挙動（期限、refresh、再認可）を観測し、境界（いつまで/どこまで）を確定
-- 期待する観測
-  - “どのscopeが、どの対象に、どの期間効くか”が状態で説明できる
-
-### 仮説C：リダイレクト境界が弱そう（戻り先の扱い）
-- 検証（A/B）
-  - A：正規フローのredirect_uri/RelayState/stateの関係を観測
-  - B：差分（許可範囲で）で、どの境界がサーバ側で強制されているかを観測
-- 期待する観測
-  - “どこで拒否されるか”が分かり、検証対象を最短で絞れる
-
-### 例示（最小の観測：コマンドは補助）
+## 手を動かす検証（Labs連動：観測点を明確に）
+- 証跡ディレクトリ
 ~~~~
-# 例：ブラウザでSSOを実行し、Proxyで「リダイレクト連鎖」「state/nonce」「token/Assertion」を観測する
-# （コマンドより、観測項目の固定が主役）
+mkdir -p ~/keda_evidence/idp_01 2>/dev/null
+cd ~/keda_evidence/idp_01
 ~~~~
+- 取得する証跡：ブラウザネットワークログ(har)、SAML Response / JWT(ID/Access)、state/nonce、redirect_uri、発行者/受信者
+- 観測の取り方：同一ユーザ・同一入口でパラメータのみ変更し差分を見る
+- 相関キー：{User, App, Flow(SAML/OIDC/OAuth), redirect_uri, state/nonce, Iss/Aud}
 
-## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回）
-- ASVS：
-  - 認証とセッションはIdP連携で成立し、権限は属性で決まり得るため、AuthN/AuthZ/セッション管理の“前提を支える技術”として扱う
-- WSTG：
-  - 認証（SSO）、セッション、リダイレクト、トークン/クレデンシャルの観点を、観測→意味→検証（差分）へ落とし込む
-- PTES：
-  - Intelligence Gathering：SP/IdP/連携先の境界（責任分界）を確定
-  - Vulnerability Analysis：境界が崩れた時の影響（越権/越境/長期権限）で優先度を付ける
-- MITRE ATT&CK：
-  - 戦術：Credential Access（トークン/委任）、Privilege Escalation（属性での越権）、Discovery（連携構造把握）等
-  - 本ファイルは、技術名より「信頼の崩れ方」を状態として整理する
+## コマンド/リクエスト例（例示は最小限）
+~~~~
+# JWTのヘッダ/ペイロードを確認
+python - <<'PY'
+import jwt,sys
+token=sys.stdin.read().strip()
+print(jwt.get_unverified_header(token))
+print(jwt.decode(token, options={"verify_signature": False}))
+PY
+~~~~
+- 観測していること：iss/aud/sub/exp/nonce/claims の妥当性
+- 出力の注目点：Issuer/Audience/exp/nbf、scope/role/tenant
+- 使えないケース：暗号化SAML/暗号化JWTのみ提供の場合（IdP/ゲートウェイで復号確認が必要）
+
+## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
+- ASVS：認証・セッションの前提として IdP 連携の信頼/署名/戻り先を固定する（AuthN/AuthZ 章）。  
+  https://github.com/OWASP/ASVS
+- WSTG：Authentication/Authorization テストで SSO フローとトークン検証を観測する。  
+  https://owasp.org/www-project-web-security-testing-guide/
+- PTES：Intelligence Gathering→Vulnerability Analysis で連携境界を確認、攻撃面（戻り先/属性/委任）を特定。  
+  https://pentest-standard.readthedocs.io/
+- MITRE ATT&CK：Credential Access/Privilege Escalation（信頼崩壊によるトークン奪取・越権）。  
+  https://attack.mitre.org/
 
 ## 参考（必要最小限）
-- `01_topics/02_web/02_authn_認証・セッション・トークン.md`
-- `01_topics/02_web/03_authz_認可（IDOR BOLA BFLA）境界モデル化.md`
-- `01_topics/03_network/03_creds_認証情報の所在と扱い（攻撃 検知の両面）.md`
-- `01_topics/04_saas/02_saas_共有・外部連携・監査ログの勘所.md`
+- SAML/SSO 基本：https://www.oasis-open.org/standards#samlv2.0
+- OIDC Core：https://openid.net/specs/openid-connect-core-1_0.html
+- OAuth 2.0：https://datatracker.ietf.org/doc/html/rfc6749
+- JWT：https://datatracker.ietf.org/doc/html/rfc7519
+
+## リポジトリ内リンク（最大3つまで）
+- 関連 topics：`01_topics/02_web/02_authn_認証・セッション・トークン.md`
+- 関連 playbooks：なし
+- 関連 labs / cases：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+
+---
+
+## 深掘りリンク（最大8）
+- `02_saas_共有・外部連携・監査ログの勘所.md`
+- `10_saas_oauth_consent_phishing_成立条件.md`
+- `14_sso_bypass_パス（ローカルログイン残存）.md`
+- `15_token_lifetime_更新と失効（SaaS側）.md`
+- `03_m365_権限境界（アプリ登録_Consent）.md`
+- `05_okta_サインオンポリシーとトークン境界.md`
+- `06_google_workspace_oauth_スコープ境界.md`
+- `12_audit_logs_取得と相関（誰が何をいつ）.md`
