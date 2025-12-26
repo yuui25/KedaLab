@@ -1,4 +1,4 @@
-<<<BEGIN>>>
+﻿<<<BEGIN>>>
 # 01_aws_lab_構成と検証観点.md
 
 ## 目的（この技術で到達する状態）
@@ -15,9 +15,9 @@
   - 実環境・第三者資産への探索/侵害を意図する行為
   - クリック手順の羅列（手順書化）で終えること
 - 依存（観測点と復帰）：
-  - ローカル観測：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md` / `03_capture_証跡取得（pcap/har/log）.md`
+- ローカル観測：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md` / `04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
   - 巻き戻し：`04_labs/05_automation/01_iac_terraform_or_bicep.md`
-  - 参照：`01_topics/01_asm-osint/05_cloud_露出面（CDN/WAF/Storage等）推定.md`
+  - 参照：`01_topics/01_asm-osint/05_cloud_露出面（CDN_WAF_Storage等）推定.md`
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 ### 観測対象（AWSで“状態”として押さえるもの）
@@ -136,13 +136,14 @@
 ## 参考（必要最小限）
 - `04_labs/04_cloud/03_logging_クラウド監査ログの取り方.md`
 - `04_labs/05_automation/01_iac_terraform_or_bicep.md`
-- `01_topics/01_asm-osint/05_cloud_露出面（CDN/WAF/Storage等）推定.md`
+- `01_topics/01_asm-osint/05_cloud_露出面（CDN_WAF_Storage等）推定.md`
 
 ## リポジトリ内リンク（最大3つまで）
 - 関連 labs：`04_labs/04_cloud/03_logging_クラウド監査ログの取り方.md`
 - 関連 labs：`04_labs/05_automation/01_iac_terraform_or_bicep.md`
-- 関連 topics：`01_topics/01_asm-osint/05_cloud_露出面（CDN/WAF/Storage等）推定.md`
+- 関連 topics：`01_topics/01_asm-osint/05_cloud_露出面（CDN_WAF_Storage等）推定.md`
 
 ---
 
 <<<END>>>
+

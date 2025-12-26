@@ -1,4 +1,4 @@
-<<<BEGIN>>>
+﻿<<<BEGIN>>>
 # 00_index.md（ローカル検証基盤：作業端末・計測・証跡の全体像）
 
 ## 目的（このローカル基盤で到達する状態）
@@ -23,7 +23,7 @@
 ├─ 00_index.md
 ├─ 01_attack-box_作業端末設計.md
 ├─ 02_proxy_計測・改変ポイント設計.md
-└─ 03_capture_証跡取得（pcap/har/log）.md
+└─ 03_capture_証跡取得（pcap_harl_log）.md
 ~~~~
 
 ## 設計の中核（ローカルで“技術”を上げるための3要素）
@@ -82,12 +82,12 @@
 ## 次に作るファイル（このフォルダ内の推奨順）
 1) 04_labs/01_local/01_attack-box_作業端末設計.md  
 2) 04_labs/01_local/02_proxy_計測・改変ポイント設計.md  
-3) 04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md  
+3) 04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md  
 
 ## リポジトリ内リンク（最大3つまで）
 - 関連 labs：04_labs/05_automation/02_snapshots_reset_検証の巻き戻し.md
-- 関連 topics：01_topics/02_web/01_web_recon_入口・境界・攻め筋の確定.md
-- 関連 topics：01_topics/01_asm-osint/03_http_観測（ヘッダ/挙動）と意味.md
+- 関連 topics：01_topics/02_web/01_web_00_recon_入口・境界・攻め筋の確定.md
+- 関連 topics：01_topics/01_asm-osint/03_http_観測（ヘッダ・挙動）と意味.md
 
 ---
 

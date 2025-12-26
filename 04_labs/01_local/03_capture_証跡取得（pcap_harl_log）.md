@@ -1,5 +1,5 @@
-<<<BEGIN>>>
-# 03_capture_証跡取得（pcap/har/log）.md
+﻿<<<BEGIN>>>
+# 03_capture_証跡取得（pcap_harl_log）.md
 
 ## 目的（この技術で到達する状態）
 - Web/NW検証の結論を「感覚」ではなく、証跡（HAR/Proxyログ/pcap/各種ログ）に基づいて説明できる。
@@ -54,7 +54,7 @@
 - 例（概念）
   - `har_app1_20251213-1030_vm_tenantA_user.har`
   - `proxy_app1_20251213-1030_vm_tenantA_user.log`
-  - `note_app1_20251213-1030_vm_tenantA_user.md`
+  - note_app1_20251213-1030_vm_tenantA_user.md
 
 ## 取得手順（目的別：何を取るかが主）
 > 手順は最小限。重要なのは「どの条件差で取るか」。
@@ -142,9 +142,10 @@ mkdir -p ~/pentest-work/captures/pcap
 ## リポジトリ内リンク（最大3つまで）
 - 関連 labs：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
 - 関連 labs：`04_labs/05_automation/02_snapshots_reset_検証の巻き戻し.md`
-- 関連 topics：`01_topics/02_web/01_web_recon_入口・境界・攻め筋の確定.md`
+- 関連 topics：`01_topics/02_web/01_web_00_recon_入口・境界・攻め筋の確定.md`
 
 ---
 
 
 <<<END>>>
+

@@ -1,4 +1,4 @@
-<<<BEGIN>>>
+﻿<<<BEGIN>>>
 # 00_index.md（Cloud：AWS/Azure検証環境の全体像と狙い）
 
 ## 目的（この技術で到達する状態）
@@ -70,10 +70,10 @@
 ~~~~
 
 ## ファイル構成（このフォルダ内）
-- `00_index.md`：入口（このファイル）
-- `01_aws_lab_構成と検証観点.md`：AWSでの最小構成、境界、観測点、差分セット
-- `02_azure_lab_構成と検証観点.md`：Azureでの最小構成、境界、観測点、差分セット
-- `03_logging_クラウド監査ログの取り方.md`：監査ログ/ネットワークログ/相関キーと“結論の根拠”の作り方
+- `04_labs/04_cloud/00_index.md`：入口（このファイル）
+- `04_labs/04_cloud/01_aws_lab_構成と検証観点.md`：AWSでの最小構成、境界、観測点、差分セット
+- `04_labs/04_cloud/02_azure_lab_構成と検証観点.md`：Azureでの最小構成、境界、観測点、差分セット
+- `04_labs/04_cloud/03_logging_クラウド監査ログの取り方.md`：監査ログ/ネットワークログ/相関キーと“結論の根拠”の作り方
 
 ## 次に試すこと（仮説A/Bの分岐と検証）
 - 仮説A：クラウドの理解が「サービス名の暗記」で止まっている
@@ -124,8 +124,8 @@
 
 ## 参考（必要最小限）
 - 04_labs/05_automation/01_iac_terraform_or_bicep.md
-- 04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md
-- 01_topics/01_asm-osint/05_cloud_露出面（CDN/WAF/Storage等）推定.md
+- 04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md
+- 01_topics/01_asm-osint/05_cloud_露出面（CDN_WAF_Storage等）推定.md
 
 ## リポジトリ内リンク（最大3つまで）
 - 関連 labs：`04_labs/04_cloud/01_aws_lab_構成と検証観点.md`
@@ -136,3 +136,4 @@
 
 
 <<<END>>>
+

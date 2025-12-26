@@ -1,4 +1,4 @@
-<<<BEGIN>>>
+﻿<<<BEGIN>>>
 # 03_logging_クラウド監査ログの取り方.md
 
 ## 目的（この技術で到達する状態）
@@ -10,8 +10,8 @@
 - 対象：自分が管理するAWSアカウント / Azureサブスクリプション（検証環境）に限定する。
 - 想定：クラウドの論点は「設定と権限」。ログが無いと、結果が“たまたま”に見えてしまう。
 - 依存（関連ファイル）：
-  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`（ローカル証跡）
-  - `04_labs/04_cloud/01_aws_lab_構成と検証観点.md` / `02_azure_lab_構成と検証観点.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`（ローカル証跡）
+- `04_labs/04_cloud/01_aws_lab_構成と検証観点.md` / `04_labs/04_cloud/02_azure_lab_構成と検証観点.md`
 - やらないこと：
   - ログの設定手順の網羅（クリック手順の羅列）
   - ログの“集めるだけ”運用（結論の根拠にするための相関キーが主役）
@@ -162,15 +162,16 @@
   - Discovery/Collection の観測（ログ）を整え、攻撃者行動の痕跡と境界を説明できる状態を作る
 
 ## 参考（必要最小限）
-- `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- `04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
 - `04_labs/04_cloud/01_aws_lab_構成と検証観点.md`
 - `04_labs/04_cloud/02_azure_lab_構成と検証観点.md`
 
 ## リポジトリ内リンク（最大3つまで）
-- 関連 labs：`04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 関連 labs：`04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
 - 関連 labs：`04_labs/04_cloud/01_aws_lab_構成と検証観点.md`
 - 関連 labs：`04_labs/04_cloud/02_azure_lab_構成と検証観点.md`
 
 ---
 
 <<<END>>>
+

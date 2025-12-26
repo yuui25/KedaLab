@@ -1,4 +1,4 @@
-<<<BEGIN>>>
+﻿<<<BEGIN>>>
 # 01_attack-box_作業端末設計.md
 
 ## 目的（この技術で到達する状態）
@@ -73,7 +73,7 @@
 - テキスト処理/比較（diff、grep等）
 - スクリプト実行環境（Python等、必要な範囲で）
 
-※具体ツール名や詳細設定は `04_labs/01_local/02_proxy_計測・改変ポイント設計.md` と `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md` に寄せる。
+※具体ツール名や詳細設定は `04_labs/01_local/02_proxy_計測・改変ポイント設計.md` と `04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md` に寄せる。
 
 ## 巻き戻し（検証速度を上げる）
 - VMを使う場合：スナップショットを“検証前”に切り、壊したら即戻す
@@ -111,12 +111,12 @@ mkdir -p ~/pentest-work/captures/{har,proxy,pcap} ~/pentest-work/notes
 
 ## 参考（必要最小限）
 - 04_labs/01_local/02_proxy_計測・改変ポイント設計.md
-- 04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md
+- 04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md
 - 04_labs/02_virtualization/03_networking_nat_hostonly_bridge.md
 
 ## リポジトリ内リンク（最大3つまで）
 - 関連 labs：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
-- 関連 labs：`04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 関連 labs：`04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
 - 関連 labs：`04_labs/05_automation/02_snapshots_reset_検証の巻き戻し.md`
 
 ---

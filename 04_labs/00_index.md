@@ -1,4 +1,4 @@
-<<<BEGIN>>>
+﻿<<<BEGIN>>>
 # 00_index.md（検証環境：全体像と狙い）
 
 ## 目的（この検証環境で到達する状態）
@@ -22,7 +22,7 @@
 │  ├─ 00_index.md
 │  ├─ 01_attack-box_作業端末設計.md
 │  ├─ 02_proxy_計測・改変ポイント設計.md
-│  └─ 03_capture_証跡取得（pcap/har/log）.md
+│  └─ 03_capture_証跡取得（pcap_harl_log）.md
 │
 ├─ 02_virtualization/
 │  ├─ 00_index.md

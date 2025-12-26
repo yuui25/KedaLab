@@ -1,4 +1,4 @@
-# 02_proxy_計測・改変ポイント設計.md
+﻿# 02_proxy_計測・改変ポイント設計.md
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
 - ASVS：
@@ -179,12 +179,13 @@ mkdir -p ~/pentest-work/captures/proxy
 
 ## 参考（必要最小限）
 - `04_labs/01_local/01_attack-box_作業端末設計.md`
-- `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- `04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
 - `04_labs/05_automation/02_snapshots_reset_検証の巻き戻し.md`
 
 ## リポジトリ内リンク（最大3つまで）
 - 関連 labs：`04_labs/01_local/01_attack-box_作業端末設計.md`
-- 関連 labs：`04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
-- 関連 topics：`01_topics/01_asm-osint/03_http_観測（ヘッダ/挙動）と意味.md`
+- 関連 labs：`04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
+- 関連 topics：`01_topics/01_asm-osint/03_http_観測（ヘッダ・挙動）と意味.md`
 
 ---
+

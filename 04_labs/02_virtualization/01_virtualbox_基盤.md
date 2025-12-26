@@ -1,4 +1,4 @@
-<<<BEGIN>>>
+﻿<<<BEGIN>>>
 # 01_virtualbox_基盤.md
 
 ## 目的（この技術で到達する状態）
@@ -13,7 +13,7 @@
 - 依存（関連ファイル）：
   - `04_labs/01_local/01_attack-box_作業端末設計.md`
   - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
-  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
   - `04_labs/05_automation/02_snapshots_reset_検証の巻き戻し.md`
   - `04_labs/02_virtualization/03_networking_nat_hostonly_bridge.md`
 
@@ -103,7 +103,7 @@ mkdir -p ~/pentest-work/captures/{har,proxy,pcap} ~/pentest-work/notes
 
 ### D：証跡が散逸する
 - 観点：保存先が固定されていない、命名メタ（対象/日時/視点/条件）が残っていない
-- 参照：`04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 参照：`04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
 
 ## 完了条件（このファイルのDone）
 - Attack Box VMが起動し、NATで外部疎通できる
@@ -125,15 +125,16 @@ mkdir -p ~/pentest-work/captures/{har,proxy,pcap} ~/pentest-work/notes
 ## 参考（必要最小限）
 - `04_labs/02_virtualization/03_networking_nat_hostonly_bridge.md`
 - `04_labs/01_local/01_attack-box_作業端末設計.md`
-- `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- `04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
 - `04_labs/05_automation/02_snapshots_reset_検証の巻き戻し.md`
 
 ## リポジトリ内リンク（最大3つまで）
 - 関連 labs：`04_labs/02_virtualization/03_networking_nat_hostonly_bridge.md`
-- 関連 labs：`04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 関連 labs：`04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
 - 関連 labs：`04_labs/05_automation/02_snapshots_reset_検証の巻き戻し.md`
 
 ---
 
 
 <<<END>>>
+

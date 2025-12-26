@@ -80,7 +80,7 @@
    - VirtualBox: ファイル→設定→ネットワーク→ホストオンリーネットワーク
    - VMware: 編集→仮想ネットワークエディタ
 2. ターゲットVMの作成
-   - 検証用アプリ（DVWA/JuiceShop等）の導入
+   - 検証用アプリ（keda_app 等）の導入
    - Host-Onlyネットワークに接続
 3. Attack Boxからターゲットへの接続確認
 
@@ -112,13 +112,10 @@
 **参照**: `04_labs/03_targets/01_web_targets_検証用アプリ選定.md`
 
 **手順**:
-1. DVWA（Damn Vulnerable Web Application）の導入
-   - DockerまたはVMでの導入
-   - 設定レベル（Low/Medium/High）の理解
-2. Juice Shopの導入
-   - Node.jsベースの脆弱なWebアプリ
-   - API/認証/認可の検証に適している
-3. 各ターゲットの観測ポイントの確認
+1. KedaLab 自作教材（keda_app）の導入
+   - `04_labs/03_targets/04_keda_app_教材Webアプリ（自作）.md` に従う
+   - AuthN/AuthZ/API/Config/Logging を「観測→差分→分岐」で回す
+2. 各ターゲットの観測ポイントの確認
    - 入口（URL、機能）
    - 境界（認証、認可、入力）
    - 証跡（ログ、レスポンス）

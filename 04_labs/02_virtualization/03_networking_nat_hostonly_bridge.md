@@ -1,4 +1,4 @@
-<<<BEGIN>>>
+﻿<<<BEGIN>>>
 # 03_networking_nat_hostonly_bridge.md
 
 ## 目的（この技術で到達する状態）
@@ -12,7 +12,7 @@
 - やらないこと：Bridgeの常用（実ネットワークへ影響しやすく、制御が難しいため）。
 - 関連：
   - `04_labs/02_virtualization/01_virtualbox_基盤.md`
-  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
   - `04_labs/05_automation/02_snapshots_reset_検証の巻き戻し.md`
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
@@ -85,7 +85,7 @@
 - pcap観測
   - Host-Onlyは“検証セグメント全体”を観測しやすい（VM間通信の把握に向く）
   - Bridgeは実ネットワークの雑音が増え、観測が難しくなることがある
-- 連動：`04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 連動：`04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
 
 ## 次に試すこと（仮説A/Bの分岐と検証）
 - 仮説A：到達性が想定と違い、検証結果がブレている（経路が固定できていない）
@@ -136,15 +136,16 @@
 
 ## 参考（必要最小限）
 - `04_labs/02_virtualization/01_virtualbox_基盤.md`
-- `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- `04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
 - `04_labs/05_automation/02_snapshots_reset_検証の巻き戻し.md`
 
 ## リポジトリ内リンク（最大3つまで）
 - 関連 labs：`04_labs/02_virtualization/01_virtualbox_基盤.md`
-- 関連 labs：`04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 関連 labs：`04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
 - 関連 labs：`04_labs/05_automation/02_snapshots_reset_検証の巻き戻し.md`
 
 ---
 
 
 <<<END>>>
+

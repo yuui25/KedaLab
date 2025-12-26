@@ -1,4 +1,4 @@
-<<<BEGIN>>>
+﻿<<<BEGIN>>>
 # 02_api_targets_検証用API選定.md
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
@@ -27,7 +27,7 @@
   - Target（API教材）は Host-Only 等の閉域で稼働し、外部露出は最小化する
 - 依存（関連ファイル）：
   - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
-  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
   - `04_labs/02_virtualization/03_networking_nat_hostonly_bridge.md`
   - `04_labs/05_automation/02_snapshots_reset_検証の巻き戻し.md`
 - やらないこと：
@@ -136,9 +136,10 @@
 
 ## リポジトリ内リンク（最大3つまで）
 - 関連 labs：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
-- 関連 labs：`04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 関連 labs：`04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
 - 関連 labs：`04_labs/05_automation/02_snapshots_reset_検証の巻き戻し.md`
 
 ---
 
 <<<END>>>
+

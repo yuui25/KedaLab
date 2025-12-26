@@ -1,4 +1,4 @@
-<<<BEGIN>>>
+﻿<<<BEGIN>>>
 # 02_snapshots_reset_検証の巻き戻し.md
 
 ## 目的（この技術で到達する状態）
@@ -11,7 +11,7 @@
 - 想定：VirtualBox（またはVMware）でAttack Box/Target VMを運用する。
 - 依存（関連ファイル）：
   - `04_labs/02_virtualization/01_virtualbox_基盤.md`
-  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 - 巻き戻しは「便利機能」ではなく、検証の精度を上げる“条件固定装置”
@@ -128,15 +128,16 @@ mkdir -p ~/pentest-work/captures/{har,proxy,pcap} ~/pentest-work/notes
 
 ## 参考（必要最小限）
 - `04_labs/02_virtualization/01_virtualbox_基盤.md`
-- `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- `04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
 - `04_labs/02_virtualization/03_networking_nat_hostonly_bridge.md`
 
 ## リポジトリ内リンク（最大3つまで）
-- 関連 labs：`04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 関連 labs：`04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
 - 関連 labs：`04_labs/02_virtualization/03_networking_nat_hostonly_bridge.md`
-- 関連 topics：`01_topics/02_web/03_authz_認可（IDOR/BOLA/BFLA）境界モデル化.md`
+- 関連 topics：`01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
 
 ---
 
 
 <<<END>>>
+

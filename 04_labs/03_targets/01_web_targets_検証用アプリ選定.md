@@ -1,4 +1,4 @@
-<<<BEGIN>>>
+﻿<<<BEGIN>>>
 # 01_web_targets_検証用アプリ選定.md
 
 ## 目的（この技術で到達する状態）
@@ -13,7 +13,7 @@
   - Target（Web教材）：Host-Only等の閉じたセグメントで稼働（外部に露出させない）
 - 依存（関連ファイル）：
   - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
-  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+  - `04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
   - `04_labs/02_virtualization/03_networking_nat_hostonly_bridge.md`
   - `04_labs/05_automation/02_snapshots_reset_検証の巻き戻し.md`
 - 想定：
@@ -52,20 +52,13 @@
 
 ## 次に試すこと（仮説A/Bの分岐と検証）
 ### 仮説A：最小セットで「Webの境界」を広く回したい
-- 選定（推奨：まず2つ）
-  - OWASP Juice Shop：現代的な不安全Webアプリで、多数の課題を持つ（Dockerで動かせる）:contentReference[oaicite:2]{index=2}
-  - DVWA：PHP/MySQLの典型脆弱性を段階的に扱える教材（Dockerイメージがある）:contentReference[oaicite:3]{index=3}
+- 選定（推奨：まず1つ）
+  - KedaLab 自作教材：`04_labs/03_targets/04_keda_app_教材Webアプリ（自作）.md`
 - 取りたい最小差分セット（例）
   - 未ログイン → ログイン後（Cookie/Authorization差分）
   - 一般 → 管理者（権限差分：403/機能差）
 - 次の一手
-  - 差分が取れたら、`04_labs/01_local/02_proxy_...` に戻って「改変ポイント」を固定し、同条件比較で検証を回す
-
-### 仮説B：Java系の“典型的なWeb脆弱性の学習動線”を明確にしたい
-- 選定
-  - OWASP WebGoat：Java系の典型脆弱性を学ぶ目的の教材で、Dockerで動かせる前提が整っている:contentReference[oaicite:4]{index=4}
-- 次の一手
-  - 教材を増やす前に、認証/セッション/認可の「観測点（どのヘッダ/トークンが境界か）」を言語化して、差分説明できる状態にする
+  - 差分が取れたら、`04_labs/01_local/02_proxy_計測・改変ポイント設計.md` に戻って「改変ポイント」を固定し、同条件比較で検証を回す
 
 ### 仮説C：教材が“多すぎて比較不能”になりそう
 - 分岐基準（増やす条件）
@@ -85,10 +78,9 @@
   - Reconnaissance / Discovery（攻撃面・境界把握）、Credential Access（認証/セッションの観測）、Collection（データ到達性の確認）を教材で再現する
 
 ## 参考（必要最小限）
-- OWASP Juice Shop（概要/実行ガイド）:contentReference[oaicite:5]{index=5}
-- OWASP WebGoat（概要/Docker前提）:contentReference[oaicite:6]{index=6}
-- DVWA（Dockerイメージ）:contentReference[oaicite:7]{index=7}
+- 追加教材は「境界差分が取れるか」を条件に選定する
 
 ---
 
 <<<END>>>
+

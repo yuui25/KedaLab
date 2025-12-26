@@ -1,4 +1,4 @@
-<<<BEGIN>>>
+﻿<<<BEGIN>>>
 # 00_index.md（検証ターゲット設計：Web/NW=5:5を“回せる教材”にする入口）
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
@@ -25,8 +25,8 @@
 - 既存の前提：
   - 作業端末（Attack Box）設計：`04_labs/01_local/01_attack-box_作業端末設計.md`
   - 計測点（Proxy）設計：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
-  - 証跡設計：`04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
-  - 仮想化/到達性：`04_labs/02_virtualization/01_virtualbox_基盤.md` / `03_networking_nat_hostonly_bridge.md`
+  - 証跡設計：`04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
+  - 仮想化/到達性：`04_labs/02_virtualization/01_virtualbox_基盤.md` / `04_labs/02_virtualization/03_networking_nat_hostonly_bridge.md`
   - 巻き戻し運用：`04_labs/05_automation/02_snapshots_reset_検証の巻き戻し.md`
 - やらないこと：
   - ターゲットの網羅（“教材化”が目的。最小で強いセットから始める）
@@ -90,11 +90,15 @@
   - “同条件比較”の最小差分セット（2条件）を取って説明できる
   - 巻き戻し（snapshot/reset）でクリーンに戻せる
 
+## すぐ使える教材（自作）
+- `04_labs/03_targets/04_keda_app_教材Webアプリ（自作）.md`
+
 ## リポジトリ内リンク（最大3つまで）
-- 関連 labs：`04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 関連 labs：`04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
 - 関連 labs：`04_labs/02_virtualization/03_networking_nat_hostonly_bridge.md`
 - 関連 labs：`04_labs/05_automation/02_snapshots_reset_検証の巻き戻し.md`
 
 ---
 
 <<<END>>>
+

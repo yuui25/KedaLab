@@ -1,4 +1,4 @@
-<<<BEGIN>>>
+﻿<<<BEGIN>>>
 # 03_ad_lab_検証用ドメイン構成.md
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
@@ -27,7 +27,7 @@
   - ADラボ：Host-Only 等の検証セグメント内で完結
 - 依存（関連ファイル）：
   - `04_labs/02_virtualization/03_networking_nat_hostonly_bridge.md`（到達性の設計）
-  - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`（証跡の最小セット）
+  - `04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`（証跡の最小セット）
   - `04_labs/05_automation/02_snapshots_reset_検証の巻き戻し.md`（復帰運用）
 - やらないこと：
   - “攻撃手順書”の作成（ここはラボの設計＝観測と差分比較の土台）
@@ -158,9 +158,10 @@ ip route
 
 ## リポジトリ内リンク（最大3つまで）
 - 関連 labs：`04_labs/02_virtualization/03_networking_nat_hostonly_bridge.md`
-- 関連 labs：`04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 関連 labs：`04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
 - 関連 labs：`04_labs/05_automation/02_snapshots_reset_検証の巻き戻し.md`
 
 ---
 
 <<<END>>>
+

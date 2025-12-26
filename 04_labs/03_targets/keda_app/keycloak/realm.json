@@ -1,0 +1,38 @@
+{
+  "realm": "keda",
+  "enabled": true,
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "users": [
+    {
+      "username": "alice",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "alice@example.invalid",
+      "credentials": [
+        { "type": "password", "value": "alice", "temporary": false }
+      ]
+    },
+    {
+      "username": "bob",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "bob@example.invalid",
+      "credentials": [
+        { "type": "password", "value": "bob", "temporary": false }
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "keda-app",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["http://localhost:8080/oidc/callback"],
+      "webOrigins": ["http://localhost:8080"]
+    }
+  ]
+}
+

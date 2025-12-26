@@ -1,4 +1,4 @@
-<<<BEGIN>>>
+﻿<<<BEGIN>>>
 # 00_index.md（仮想化基盤：視点分離・到達性・巻き戻しの全体像）
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
@@ -55,7 +55,7 @@
 - 目的：観測（ログ/pcap/HAR）が散逸しないように、集約点を先に固定する。
 - 接続：
   - Proxy設計：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
-  - 証跡設計：`04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+  - 証跡設計：`04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
 
 ### 4) 巻き戻し（スナップショット）を“検証前”に標準化
 - 目的：壊して学ぶ→即復帰を標準運用にする（学習効率と安全性が上がる）。
@@ -74,9 +74,10 @@
 
 ## リポジトリ内リンク（最大3つまで）
 - 関連 labs：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
-- 関連 labs：`04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+- 関連 labs：`04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
 - 関連 labs：`04_labs/05_automation/02_snapshots_reset_検証の巻き戻し.md`
 
 ---
 
 <<<END>>>
+
