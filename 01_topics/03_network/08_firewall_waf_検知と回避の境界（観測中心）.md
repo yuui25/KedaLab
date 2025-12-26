@@ -1,6 +1,7 @@
 # 08_firewall_waf_検知と回避の境界（観測中心）
+遮断/検知/制限を状態として観測し、次の一手を決める
 
-## 目的（この技術で到達する状態）
+## 目標（この技術で到達する状態）
 - 「繋がらない/403が出る/途中で落ちる」を、感想ではなく **状態（state）** として説明できる
   - 例：「L4でDROP（無応答）」「L4でRST（能動拒否）」「L7で403（WAFブロックページ）」「429（レート制限）」「TLS握手段階で切断（SNI/JA3/ポリシー）」など
 - その状態から、次の一手を**分岐（仮説A/B）**で選べる
@@ -12,7 +13,7 @@
 
 ---
 
-## 前提（対象・範囲・想定）
+## 前提・対象・範囲・想定
 - 対象：Network Firewall / Security Group / NACL（L3/L4中心）、Host Firewall（Windows Firewall, iptables等）、IDS/IPS（シグネチャ/異常検知。ブロックする場合はinline）、WAF / Bot Mitigation（L7中心：HTTP/HTTPS。チャレンジ/403/JS/CAPTCHA等）、LB/CDN/Reverse Proxy（TLS終端・ALPN・HTTP/2・ヘッダ改変・キャッシュの境界）
 - 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
   - 境界装置の配置が混在する環境
