@@ -1,4 +1,31 @@
-# 06_config_01_CORSと信頼境界（Origin_資格情報_プリフライト）
+﻿# 06_config_01_CORSと信頼境界（Origin_資格情報_プリフライト）
+
+## このファイルで扱う概念
+- Origin/資格情報/プリフライトの信頼境界。
+
+## 危険性を一言で
+- 反射許可で第三者オリジンからの読み取りが成立する。
+
+## 最小限の成立判断（目安）
+- Origin A/B で許可/拒否が差分として再現する。
+
+## 観測例（差分のイメージ）
+- A: `Origin: https://a.example` → 許可
+- B: `Origin: https://b.example` → 拒否
+
+## 観測が取れない場合の代替
+- `Access-Control-Allow-Origin` と `Vary: Origin` の有無を確認する。
+
+## 時間制約下の最小観測点
+- 反射許可かどうか（Origin値がそのまま返るか）。
+
+## 対策の優先順位
+1) allowlist固定
+2) 資格情報の最小化
+3) プリフライトの厳格化
+
+## 具体例（反射判定）
+- Originを2種類で送って応答ヘッダの差分を比較する
 CORSを「許可されている/されていない」ではなく、**どのOriginに・どの条件（資格情報・メソッド・ヘッダ）で・何が許可されるか**を観測→差分で説明できる
 
 ---
@@ -138,26 +165,6 @@ CORSを「許可されている/されていない」ではなく、**どのOrig
 
 ~~~~
 # 目的：CORS許可の境界（Origin/credentials/プリフライト）を差分で確定する
-
-# 差分セット（最小）
-# 1) Originなし（ツール/同一オリジン相当）でAPIを呼ぶ → レスポンスとヘッダを保存
-# 2) Origin=A を付けて呼ぶ → ACAO/ACAC/Expose を保存
-# 3) Origin=B（別ドメイン）を付けて呼ぶ → 差分を比較
-# 4) 非単純リクエスト（例：カスタムヘッダ）を想定し OPTIONS を観測 → 許可/拒否を保存
-
-# 記録すべきもの
-# - 対象エンドポイント
-# - Origin値（A/B）
-# - 返ってきたCORSヘッダ一式
-# - 401/403/200等の結果（認証・認可の結果は別途整理）
-~~~~
-
-- この例で観測していること：
-  - CORS許可の境界（Origin/credentials/プリフライト）を差分で確定する
-- 出力のどこを見るか（注目点）：
-  - Access-Control-Allow-Origin（ACAO）、Access-Control-Allow-Credentials（ACAC）、Access-Control-Allow-Methods（ACAM）、Access-Control-Allow-Headers（ACAH）、Access-Control-Expose-Headers、Vary: Origin
-- この例が使えないケース（前提が崩れるケース）：
-  - ブラウザ以外（サーバ/ツール）はCORSに縛られないため、ブラウザ経由での観測が必要
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
 - ASVS：

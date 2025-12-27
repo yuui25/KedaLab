@@ -1,4 +1,32 @@
-# 06_config_03_security_headers（CSP_HSTS_XFO等）
+﻿# 06_config_03_security_headers（CSP_HSTS_XFO等）
+
+## このファイルで扱う概念
+- セキュリティヘッダの適用境界。
+
+## 危険性を一言で
+- 例外パスでヘッダが欠落すると防御が崩れる。
+
+## 最小限の成立判断（目安）
+- 正常/例外でヘッダ差分が再現する。
+
+## 観測例（差分のイメージ）
+- A: HSTS/CSPあり、B: エラーページで欠落。
+
+## 観測が取れない場合の代替
+- 生成主体ごとのヘッダ設定を確認する。
+
+## 時間制約下の最小観測点
+- 3xx/4xx/5xx のヘッダ有無。
+
+## 対策の優先順位
+1) 全経路で一貫付与
+2) 例外パスの統一
+3) 監視
+
+## 具体例（設定値）
+- HSTS: `max-age=31536000; includeSubDomains`
+- X-Frame-Options: `DENY` または `SAMEORIGIN`
+- Referrer-Policy: `no-referrer` / `strict-origin-when-cross-origin`
 セキュリティヘッダ（CSP / HSTS / Frame等）：ブラウザ境界を"仕様化"し、例外運用で崩れない状態にする
 
 ---
@@ -131,18 +159,6 @@
 
 ~~~~
 # 重要：同一Hostで「ページ種別×ステータス」を揃えて差分を見る
-# - /, /login, /admin, /api/health
-# - 200, 302, 401/403, 500
-# 観測対象：CSP, HSTS, frame-ancestors/XFO, Referrer-Policy, nosniff
-# 目的：例外パスでの抜け（=攻撃者の入口）を特定する
-~~~~
-
-- この例で観測していること：
-  - 同一Hostで「ページ種別×ステータス」を揃えて差分を見る（例外パスでの抜け（=攻撃者の入口）を特定する）
-- 出力のどこを見るか（注目点）：
-  - CSP, HSTS, frame-ancestors/XFO, Referrer-Policy, nosniff
-- この例が使えないケース（前提が崩れるケース）：
-  - セキュリティヘッダが付与されていない場合、観測できない
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
 - ASVS：

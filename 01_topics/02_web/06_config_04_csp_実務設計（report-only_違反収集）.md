@@ -1,4 +1,33 @@
-# 06_config_04_csp_実務設計（report-only_違反収集）
+﻿# 06_config_04_csp_実務設計（report-only_違反収集）
+
+## このファイルで扱う概念
+- CSP導入と違反収集の境界。
+
+## 危険性を一言で
+- 例外許可が広いと実行境界が崩れる。
+
+## 最小限の成立判断（目安）
+- report-onlyで違反分類が再現できる。
+
+## 観測例（差分のイメージ）
+- inline/eval/external/connect の違反が分かれる。
+
+## 観測が取れない場合の代替
+- `Content-Security-Policy-Report-Only`の適用を確認する。
+
+## 時間制約下の最小観測点
+- 違反カテゴリの分解（inline/eval/external/connect）。
+
+## 対策の優先順位
+1) report-onlyで収集
+2) 段階的に強制
+3) 例外の最小化
+
+## 具体例（違反判定）
+- inline: `script-src 'unsafe-inline'` の必要性
+- eval: `script-src 'unsafe-eval'` の有無
+- external: `script-src` の許可ドメイン
+- connect: `connect-src` の許可先
 CSP実務設計（Report-Only → 強制）：壊さず観測し、例外を増やさず強くする
 
 ---
@@ -132,19 +161,6 @@ CSP実務設計（Report-Only → 強制）：壊さず観測し、例外を増�
 
 ~~~~
 # CSPの現実的な進め方（要点）
-# 1) Report-Onlyで壊さず観測
-# 2) 違反を inline / eval / 外部 / connect に分類
-# 3) 管理/重要操作ページから強制へ
-# 4) 例外はテンプレ単位で統制（パス単位で増やさない）
-# 5) reportingはログ：アクセス制御・最小化・保持を要件化
-~~~~
-
-- この例で観測していること：
-  - CSPの段階導入（Report-Only運用、違反収集、強制移行の判断）
-- 出力のどこを見るか（注目点）：
-  - Report-Onlyが当たっているページ範囲、違反の内訳（inline/eval/外部/connect）、レポートがどこに送られているか、例外がパス単位で増えていないか
-- この例が使えないケース（前提が崩れるケース）：
-  - CSPが未導入の場合、Report-Onlyも適用できない
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
 - ASVS：
