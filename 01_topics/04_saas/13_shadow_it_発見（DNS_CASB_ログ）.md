@@ -1,4 +1,4 @@
-# 13_shadow_it_発見（DNS_CASB_ログ）
+﻿# 13_shadow_it_発見（DNS_CASB_ログ）
 Shadow IT を DNS/CASB/プロキシ/EDR ログで発見し、リスクと対処を明確にする。
 
 ## 目的（この技術で到達する状態）
@@ -37,14 +37,14 @@ Shadow IT を DNS/CASB/プロキシ/EDR ログで発見し、リスクと対処�
 - 戦略変更：可視化が強い場合は許可アプリの例外やAPI経由を検討
 
 ## 次に試すこと（仮説A/Bの分岐と検証）
-- 仮説A：ログ保持が短い  
-  - 次の検証：DNS/Proxy/CASB の保持期間とエクスポート可否を確認  
+- 仮説A：ログ保持が短い
+  - 次の検証：DNS/Proxy/CASB の保持期間とエクスポート可否を確認
   - 期待：短期ならアーカイブ/延長を提案
-- 仮説B：アプリ識別が粗い  
-  - 次の検証：アプリカテゴリ/識別結果を確認し、主要SaaSが区別できるかを確認  
+- 仮説B：アプリ識別が粗い
+  - 次の検証：アプリカテゴリ/識別結果を確認し、主要SaaSが区別できるかを確認
   - 期待：粗い場合はSSL検査やカスタムカテゴリを検討
-- 仮説C：プロキシバイパスがある  
-  - 次の検証：Direct-to-Internet トラフィック有無（443直）を確認  
+- 仮説C：プロキシバイパスがある
+  - 次の検証：Direct-to-Internet トラフィック有無（443直）を確認
   - 期待：あるならブロック/監査強化を提案
 
 ## 手を動かす検証（Labs連動：観測点を明確に）
@@ -59,19 +59,22 @@ cd ~/keda_evidence/shadow_it_13
 ## コマンド/リクエスト例
 ~~~~
 # 例：DNSログから主要クラウドドメインを抽出（仮）
+
+## リンク確認
+- 参照先ファイルの存在を確認して記載する
 grep -Ei 'drive\\.google|dropbox|box\\.com|mega\\.nz' dns.log
 ~~~~
 - 注目点：頻度/時間帯/ユーザ、アップロードイベントの有無
 - 使えないケース：ログが取得されていない場合（まず収集を整備）
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-- ASVS：ログとモニタリング。  
+- ASVS：ログとモニタリング。
   https://github.com/OWASP/ASVS
-- WSTG：情報収集/構成確認で egress/監査を評価。  
+- WSTG：情報収集/構成確認で egress/監査を評価。
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES：情報収集→報告で持ち出し経路を提示。  
+- PTES：情報収集→報告で持ち出し経路を提示。
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Exfiltration Over Web Service、Valid Accounts（SaaS）。  
+- MITRE ATT&CK：Exfiltration Over Web Service、Valid Accounts（SaaS）。
   https://attack.mitre.org/
 
 ## 参考（必要最小限）

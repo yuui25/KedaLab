@@ -1,4 +1,4 @@
-# 12_audit_logs_取得と相関（誰が何をいつ）
+﻿# 12_audit_logs_取得と相関（誰が何をいつ）
 SaaS の監査ログを収集・相関し、「誰が何をいつどこで」を説明できる状態を作る。
 
 ## 目的（この技術で到達する状態）
@@ -36,14 +36,14 @@ SaaS の監査ログを収集・相関し、「誰が何をいつどこで」を
 - 戦略変更：保持が強い場合は量や匿名化で検知を逃れる必要がある（別検討）
 
 ## 次に試すこと（仮説A/Bの分岐と検証）
-- 仮説A：保持期間が短い  
-  - 次の検証：各SaaSの保持期間/アーカイブ設定を確認  
+- 仮説A：保持期間が短い
+  - 次の検証：各SaaSの保持期間/アーカイブ設定を確認
   - 期待：短期ならエクスポート/延長を提案
-- 仮説B：主要キーが欠損  
-  - 次の検証：サンプルイベントで User/Resource/IP/Client が含まれるか確認  
+- 仮説B：主要キーが欠損
+  - 次の検証：サンプルイベントで User/Resource/IP/Client が含まれるか確認
   - 期待：欠損なら補完（Proxy/EDR 連携）を提案
-- 仮説C：取得が手動のみ  
-  - 次の検証：API/Webhook/SIEM 連携可否を確認  
+- 仮説C：取得が手動のみ
+  - 次の検証：API/Webhook/SIEM 連携可否を確認
   - 期待：自動化できない場合は運用リスク
 
 ## 手を動かす検証（Labs連動：観測点を明確に）
@@ -58,22 +58,28 @@ cd ~/keda_evidence/audit_logs_12
 ## コマンド/リクエスト例
 ~~~~
 # 例：Slack Audit Logs API (Enterprise)
+
+## 相関例（最小）
+- `user + time` でIdP/SaaSのログを結合
 curl -H "Authorization: Bearer <TOKEN>" "https://api.slack.com/audit/v1/logs?limit=10"
 
 # 例：GitHub Audit Log API
+
+## 相関例（最小）
+- `user + time` でIdP/SaaSのログを結合
 curl -H "Authorization: Bearer <TOKEN>" "https://api.github.com/orgs/<org>/audit-log?per_page=10"
 ~~~~
 - 注目点：キーの有無（actor, action, created_at, ip, resource）、保持期間
 - 使えないケース：契約/権限が不足する場合（GUIエクスポートで代替）
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-- ASVS：ログ・監査の確保、時間同期、改ざん防止。  
+- ASVS：ログ・監査の確保、時間同期、改ざん防止。
   https://github.com/OWASP/ASVS
-- WSTG：情報収集/テスト計画でログ取得と相関を前提にする。  
+- WSTG：情報収集/テスト計画でログ取得と相関を前提にする。
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES：情報収集→報告で根拠としてログを提示。  
+- PTES：情報収集→報告で根拠としてログを提示。
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Collection/Exfiltration/Defense Evasion での検知基盤。  
+- MITRE ATT&CK：Collection/Exfiltration/Defense Evasion での検知基盤。
   https://attack.mitre.org/
 
 ## 参考（必要最小限）

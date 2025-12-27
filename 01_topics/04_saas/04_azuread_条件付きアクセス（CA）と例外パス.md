@@ -1,4 +1,4 @@
-# 04_azuread_条件付きアクセス（CA）と例外パス
+﻿# 04_azuread_条件付きアクセス（CA）と例外パス
 Azure AD 条件付きアクセス(CA)の適用範囲と例外を観測し、バイパス成立条件を特定する。
 
 ## 目的（この技術で到達する状態）
@@ -36,14 +36,14 @@ Azure AD 条件付きアクセス(CA)の適用範囲と例外を観測し、バ�
 - 戦略変更：例外が少ない場合はトークン存続期間やデバイス準拠判定を確認
 
 ## 次に試すこと（仮説A/Bの分岐と検証）
-- 仮説A：旧プロトコル許可が残存  
-  - 次の検証：CA ポリシーの「クライアントアプリ」で旧プロトコルが対象外か確認  
+- 仮説A：旧プロトコル許可が残存
+  - 次の検証：CA ポリシーの「クライアントアプリ」で旧プロトコルが対象外か確認
   - 期待：対象外なら回避余地、対象なら遮断
-- 仮説B：信頼済み場所が広い  
-  - 次の検証：Named Location の設定範囲を確認（国/IPv4/IPv6）  
+- 仮説B：信頼済み場所が広い
+  - 次の検証：Named Location の設定範囲を確認（国/IPv4/IPv6）
   - 期待：広い場合はMFA回避経路
-- 仮説C：サービスアカウントが除外  
-  - 次の検証：対象/除外のグループにサービスアカウントが含まれるか確認  
+- 仮説C：サービスアカウントが除外
+  - 次の検証：対象/除外のグループにサービスアカウントが含まれるか確認
   - 期待：含まれる場合は監査と代替制御を要提案
 
 ## 手を動かす検証（Labs連動：観測点を明確に）
@@ -58,10 +58,16 @@ cd ~/keda_evidence/ca_04
 ## コマンド/リクエスト例
 ~~~~
 # Graph: CA ポリシー一覧
+
+## 状態パターンの根拠
+- 例外パスは認証強度を下げるため高リスク
 curl -H "Authorization: Bearer <TOKEN>" \
   https://graph.microsoft.com/beta/identity/conditionalAccess/policies
 
 # サインインログ取得（例）
+
+## 状態パターンの根拠
+- 例外パスは認証強度を下げるため高リスク
 curl -H "Authorization: Bearer <TOKEN>" \
   "https://graph.microsoft.com/beta/auditLogs/signIns?$top=20"
 ~~~~
@@ -69,13 +75,13 @@ curl -H "Authorization: Bearer <TOKEN>" \
 - 使えないケース：Graph 権限不足（AuditLog.Read.All 等が必要）
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-- ASVS：認証・セッションの強化として MFA/デバイス条件を強制。  
+- ASVS：認証・セッションの強化として MFA/デバイス条件を強制。
   https://github.com/OWASP/ASVS
-- WSTG：Authentication テストで MFA/ポリシー適用を確認。  
+- WSTG：Authentication テストで MFA/ポリシー適用を確認。
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES：情報収集→脆弱性分析でポリシー例外を棚卸し。  
+- PTES：情報収集→脆弱性分析でポリシー例外を棚卸し。
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Valid Accounts/Multi-Factor Authentication Interception。  
+- MITRE ATT&CK：Valid Accounts/Multi-Factor Authentication Interception。
   https://attack.mitre.org/
 
 ## 参考（必要最小限）

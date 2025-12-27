@@ -1,4 +1,4 @@
-# 10_saas_oauth_consent_phishing_成立条件
+﻿# 10_saas_oauth_consent_phishing_成立条件
 SaaS/OAuth の同意フィッシングが成立する条件を観測し、封じ方を示す。
 
 ## 目的（この技術で到達する状態）
@@ -36,14 +36,14 @@ SaaS/OAuth の同意フィッシングが成立する条件を観測し、封じ
 - 戦略変更：同意が厳しい場合は既存承認済みアプリの権限昇格/トークン長寿命を確認
 
 ## 次に試すこと（仮説A/Bの分岐と検証）
-- 仮説A：ユーザ同意が許可  
-  - 次の検証：同意ポリシー設定を確認し、ユーザが高権限スコープに同意できるかをテスト（許可範囲で）  
+- 仮説A：ユーザ同意が許可
+  - 次の検証：同意ポリシー設定を確認し、ユーザが高権限スコープに同意できるかをテスト（許可範囲で）
   - 期待：可能なら同意フィッシング成立余地
-- 仮説B：redirect_uri が緩い  
-  - 次の検証：許可リスト/ワイルドカード有無を確認  
+- 仮説B：redirect_uri が緩い
+  - 次の検証：許可リスト/ワイルドカード有無を確認
   - 期待：緩い場合はコード/トークン窃取の余地
-- 仮説C：verified publisher 要件なし  
-  - 次の検証：検証済み発行者の強制設定有無を確認  
+- 仮説C：verified publisher 要件なし
+  - 次の検証：検証済み発行者の強制設定有無を確認
   - 期待：なしならブランド偽装余地
 
 ## 手を動かす検証（Labs連動：観測点を明確に）
@@ -58,6 +58,9 @@ cd ~/keda_evidence/oauth_phish_10
 ## コマンド/リクエスト例
 ~~~~
 # 例：OAuth 認可リクエストを生成（実行は自テナント・検証用ドメインのみ）
+
+## 追加観点
+- 検知/対応の動線を明示する
 https://login.microsoftonline.com/<tenant>/oauth2/v2.0/authorize?
 client_id=<APPID>&response_type=code&redirect_uri=<REDIRECT>&scope=<SCOPES>&state=xyz&nonce=abc
 ~~~~
@@ -65,13 +68,13 @@ client_id=<APPID>&response_type=code&redirect_uri=<REDIRECT>&scope=<SCOPES>&stat
 - 使えないケース：外部同意が完全禁止のテナント
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-- ASVS：外部連携と認証情報保護の観点で、発行者検証と同意制御を強制。  
+- ASVS：外部連携と認証情報保護の観点で、発行者検証と同意制御を強制。
   https://github.com/OWASP/ASVS
-- WSTG：Authentication/Authorization テストで OAuth 設定と同意画面を確認。  
+- WSTG：Authentication/Authorization テストで OAuth 設定と同意画面を確認。
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES：情報収集→脆弱性分析で同意ポリシーとスコープを棚卸し。  
+- PTES：情報収集→脆弱性分析で同意ポリシーとスコープを棚卸し。
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Valid Accounts（Cloud）、Phishing (T1566) との組み合わせ。  
+- MITRE ATT&CK：Valid Accounts（Cloud）、Phishing (T1566) との組み合わせ。
   https://attack.mitre.org/
 
 ## 参考（必要最小限）

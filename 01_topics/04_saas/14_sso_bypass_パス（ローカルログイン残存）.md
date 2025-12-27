@@ -1,4 +1,4 @@
-# 14_sso_bypass_パス（ローカルログイン残存）
+﻿# 14_sso_bypass_パス（ローカルログイン残存）
 SSO をバイパスする経路（ローカルアカウント・回復用フロー・例外URL）を観測し、封じ方を特定する。
 
 ## 目的（この技術で到達する状態）
@@ -36,14 +36,14 @@ SSO をバイパスする経路（ローカルアカウント・回復用フロ�
 - 戦略変更：ローカルが閉じている場合は IdP 側例外（CAの信頼済み場所）を確認
 
 ## 次に試すこと（仮説A/Bの分岐と検証）
-- 仮説A：ローカルログインが残存  
-  - 次の検証：SSO 強制設定を確認し、ログアウト状態でローカルログインページが利用できるか試行  
+- 仮説A：ローカルログインが残存
+  - 次の検証：SSO 強制設定を確認し、ログアウト状態でローカルログインページが利用できるか試行
   - 期待：利用可能ならバイパス経路
-- 仮説B：招待/パスワードリセットでドメイン制限がない  
-  - 次の検証：外部メールで招待/リセットを試行（許可範囲で）  
+- 仮説B：招待/パスワードリセットでドメイン制限がない
+  - 次の検証：外部メールで招待/リセットを試行（許可範囲で）
   - 期待：外部でも通るならリスク
-- 仮説C：非常用アカウントが未管理  
-  - 次の検証：ローカル管理者一覧/パスワードローテーション/MFA有無を確認  
+- 仮説C：非常用アカウントが未管理
+  - 次の検証：ローカル管理者一覧/パスワードローテーション/MFA有無を確認
   - 期待：MFA無効なら高リスク
 
 ## 手を動かす検証（Labs連動：観測点を明確に）
@@ -60,13 +60,13 @@ cd ~/keda_evidence/sso_bypass_14
 - 監査 API でローカルログインイベントを取得（SaaS/IdP のログ）
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-- ASVS：認証・セッションの一貫性を要求（ローカル例外を閉じる）。  
+- ASVS：認証・セッションの一貫性を要求（ローカル例外を閉じる）。
   https://github.com/OWASP/ASVS
-- WSTG：Authentication テストで SSO 強制とローカル例外を確認。  
+- WSTG：Authentication テストで SSO 強制とローカル例外を確認。
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES：情報収集→脆弱性分析で例外ログインを棚卸し。  
+- PTES：情報収集→脆弱性分析で例外ログインを棚卸し。
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Valid Accounts、Authentication Bypass。  
+- MITRE ATT&CK：Valid Accounts、Authentication Bypass。
   https://attack.mitre.org/
 
 ## 参考（必要最小限）

@@ -1,4 +1,4 @@
-# 02_saas_共有・外部連携・監査ログの勘所
+﻿# 02_saas_共有・外部連携・監査ログの勘所
 SaaS での共有設定・外部連携・監査ログを観測し、越権と漏えいの成立条件を特定する。
 
 ## 目的（この技術で到達する状態）
@@ -37,14 +37,14 @@ SaaS での共有設定・外部連携・監査ログを観測し、越権と漏
 - 戦略変更：外部共有が閉じている場合は内部横持ち出し（別SaaS/ローカル同期）を検討
 
 ## 次に試すこと（仮説A/Bの分岐と検証）
-- 仮説A：外部共有がデフォルト許可  
-  - 次の検証：新規アイテム共有ダイアログで外部メール可否、公開リンク生成可否を確認  
+- 仮説A：外部共有がデフォルト許可
+  - 次の検証：新規アイテム共有ダイアログで外部メール可否、公開リンク生成可否を確認
   - 期待：可能ならデフォルト設定を所見として記録
-- 仮説B：ユーザが外部アプリを自由に承認できる  
-  - 次の検証：OAuthアプリ同意画面を表示し、管理者同意要否を確認  
+- 仮説B：ユーザが外部アプリを自由に承認できる
+  - 次の検証：OAuthアプリ同意画面を表示し、管理者同意要否を確認
   - 期待：ユーザ同意のみでトークン発行されるならリスク
-- 仮説C：監査ログが不足  
-  - 次の検証：共有変更/アプリ承認/ダウンロードイベントが記録されるか確認  
+- 仮説C：監査ログが不足
+  - 次の検証：共有変更/アプリ承認/ダウンロードイベントが記録されるか確認
   - 期待：不足なら保持/出力設定を是正提案
 
 ## 手を動かす検証（Labs連動：観測点を明確に）
@@ -61,6 +61,9 @@ cd ~/keda_evidence/saas_share_02
 - SaaSごとの API/CLI（例：Microsoft Graph, Google Drive API, Slack Admin API）で共有設定・監査イベントを取得
 ~~~~
 # 例：Graph API で SharePoint 共有リンク一覧を取得（適切な権限付与前提）
+
+## 代替手順（権限不足時）
+- GUIで監査ログの取得可否を確認する
 curl -H "Authorization: Bearer <TOKEN>" \
   "https://graph.microsoft.com/v1.0/sites/<site-id>/drive/items/<item-id>/permissions"
 ~~~~
@@ -68,13 +71,13 @@ curl -H "Authorization: Bearer <TOKEN>" \
 - 使えないケース：管理者権限やAPI許可が無い場合（GUIで代替）
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-- ASVS：アクセス制御/データ保護の前提として、共有と外部連携の最小化と監査。  
+- ASVS：アクセス制御/データ保護の前提として、共有と外部連携の最小化と監査。
   https://github.com/OWASP/ASVS
-- WSTG：Configuration/Deployment Management と Authorization テストで共有設定・外部連携を確認。  
+- WSTG：Configuration/Deployment Management と Authorization テストで共有設定・外部連携を確認。
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES：情報収集→脆弱性分析で共有/外部連携の境界を評価。  
+- PTES：情報収集→脆弱性分析で共有/外部連携の境界を評価。
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Exfiltration Over Web Service（T1567）、Valid Accounts（SaaSトークン）。  
+- MITRE ATT&CK：Exfiltration Over Web Service（T1567）、Valid Accounts（SaaSトークン）。
   https://attack.mitre.org/
 
 ## 参考（必要最小限）

@@ -1,4 +1,4 @@
-# 03_m365_権限境界（アプリ登録_Consent）
+﻿# 03_m365_権限境界（アプリ登録_Consent）
 Microsoft 365/Azure AD のアプリ登録と同意モデルを観測し、どこで権限が決まり越権が生じるかを特定する。
 
 ## 目的（この技術で到達する状態）
@@ -36,14 +36,14 @@ Microsoft 365/Azure AD のアプリ登録と同意モデルを観測し、どこ
 - 戦略変更：同意が厳しい場合は既存承認済みアプリの権限昇格経路を探る
 
 ## 次に試すこと（仮説A/Bの分岐と検証）
-- 仮説A：ユーザ同意が許可されている  
-  - 次の検証：ポータル設定と Graph `/policies/authorizationPolicy` を確認  
+- 仮説A：ユーザ同意が許可されている
+  - 次の検証：ポータル設定と Graph `/policies/authorizationPolicy` を確認
   - 期待：許可なら同意フィッシング余地あり
-- 仮説B：高権限スコープが既に承認済み  
-  - 次の検証：Enterprise Applications の権限一覧をエクスポートし危険権限を抽出  
+- 仮説B：高権限スコープが既に承認済み
+  - 次の検証：Enterprise Applications の権限一覧をエクスポートし危険権限を抽出
   - 期待：Directory.Read.All 等があれば要レビュー
-- 仮説C：マルチテナント/redirect_uri が緩い  
-  - 次の検証：アプリ登録の設定を確認し、ワイルドカードやローカルホスト登録の有無を確認  
+- 仮説C：マルチテナント/redirect_uri が緩い
+  - 次の検証：アプリ登録の設定を確認し、ワイルドカードやローカルホスト登録の有無を確認
   - 期待：緩い場合は不正再利用リスク
 
 ## 手を動かす検証（Labs連動：観測点を明確に）
@@ -58,10 +58,16 @@ cd ~/keda_evidence/m365_app_03
 ## コマンド/リクエスト例
 ~~~~
 # Graph: ユーザ同意設定の確認
+
+## 具体例（注目点）
+- Consent種別（Admin/User）と権限の差
 curl -H "Authorization: Bearer <TOKEN>" \
   https://graph.microsoft.com/v1.0/policies/authorizationPolicy/authorizationPolicy
 
 # Graph: アプリの権限一覧
+
+## 具体例（注目点）
+- Consent種別（Admin/User）と権限の差
 curl -H "Authorization: Bearer <TOKEN>" \
   "https://graph.microsoft.com/v1.0/applications/<APP-ID>/requiredResourceAccess"
 ~~~~
@@ -69,13 +75,13 @@ curl -H "Authorization: Bearer <TOKEN>" \
 - 使えないケース：Graph権限不足（管理者承認が必要）
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-- ASVS：認証/セッションの前提として IdP/同意モデルの制御。  
+- ASVS：認証/セッションの前提として IdP/同意モデルの制御。
   https://github.com/OWASP/ASVS
-- WSTG：Authentication/Authorization テストにおける IdP 設定確認。  
+- WSTG：Authentication/Authorization テストにおける IdP 設定確認。
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES：情報収集→脆弱性分析で同意ポリシーと権限を棚卸し。  
+- PTES：情報収集→脆弱性分析で同意ポリシーと権限を棚卸し。
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Valid Accounts（Cloud Accounts）、Exfiltration Over Web Service。  
+- MITRE ATT&CK：Valid Accounts（Cloud Accounts）、Exfiltration Over Web Service。
   https://attack.mitre.org/
 
 ## 参考（必要最小限）

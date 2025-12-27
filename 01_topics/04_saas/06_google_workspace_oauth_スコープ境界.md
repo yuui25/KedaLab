@@ -1,4 +1,4 @@
-# 06_google_workspace_oauth_スコープ境界
+﻿# 06_google_workspace_oauth_スコープ境界
 Google Workspace の OAuth スコープとアプリ信頼設定を観測し、越権の成立条件を特定する。
 
 ## 目的（この技術で到達する状態）
@@ -36,14 +36,14 @@ Google Workspace の OAuth スコープとアプリ信頼設定を観測し、�
 - 戦略変更：外部が閉じている場合は既存承認済みアプリ/Service Account キー管理を確認
 
 ## 次に試すこと（仮説A/Bの分岐と検証）
-- 仮説A：外部アプリが許可  
-  - 次の検証：APIアクセス制御で「外部アプリを許可」が有効か確認、consent screen 種別を見る  
+- 仮説A：外部アプリが許可
+  - 次の検証：APIアクセス制御で「外部アプリを許可」が有効か確認、consent screen 種別を見る
   - 期待：許可ならフィッシング成立余地
-- 仮説B：DWD が有効  
-  - 次の検証：セキュリティ > API の管理で DWD 設定を確認し、client id とスコープを抽出  
+- 仮説B：DWD が有効
+  - 次の検証：セキュリティ > API の管理で DWD 設定を確認し、client id とスコープを抽出
   - 期待：広いスコープなら越権余地
-- 仮説C：制限スコープが要求されている  
-  - 次の検証：承認済みアプリのスコープ一覧を確認し、制限スコープが含まれるか確認  
+- 仮説C：制限スコープが要求されている
+  - 次の検証：承認済みアプリのスコープ一覧を確認し、制限スコープが含まれるか確認
   - 期待：含まれる場合は承認プロセス/審査要否を確認
 
 ## 手を動かす検証（Labs連動：観測点を明確に）
@@ -58,6 +58,9 @@ cd ~/keda_evidence/gws_oauth_06
 ## コマンド/リクエスト例
 ~~~~
 # Admin SDK: DWD 設定取得例（要権限）
+
+## 具体例（注目点）
+- スコープは最小権限かどうか
 curl -H "Authorization: Bearer <TOKEN>" \
   "https://admin.googleapis.com/admin/directory/v1/customer/my_customer/delegatedAdmin/roles"
 ~~~~
@@ -65,13 +68,13 @@ curl -H "Authorization: Bearer <TOKEN>" \
 - 使えないケース：API 権限不足（管理者承認が必要）
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-- ASVS：データ保護/アクセス制御の前提として、外部アプリ制御とスコープ最小化。  
+- ASVS：データ保護/アクセス制御の前提として、外部アプリ制御とスコープ最小化。
   https://github.com/OWASP/ASVS
-- WSTG：Configuration/Authorization テストで OAuth 設定を確認。  
+- WSTG：Configuration/Authorization テストで OAuth 設定を確認。
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES：情報収集→脆弱性分析でスコープ/外部アプリ/委任を棚卸し。  
+- PTES：情報収集→脆弱性分析でスコープ/外部アプリ/委任を棚卸し。
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Valid Accounts（Cloud）、Exfiltration Over Web Service。  
+- MITRE ATT&CK：Valid Accounts（Cloud）、Exfiltration Over Web Service。
   https://attack.mitre.org/
 
 ## 参考（必要最小限）

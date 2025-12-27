@@ -1,4 +1,4 @@
-# 07_github_組織権限境界（PAT_App_Actions）
+﻿# 07_github_組織権限境界（PAT_App_Actions）
 GitHub 組織における PAT/Apps/Actions 権限を観測し、ソースコード・シークレット流出の成立条件を特定する。
 
 ## 目的（この技術で到達する状態）
@@ -37,14 +37,14 @@ GitHub 組織における PAT/Apps/Actions 権限を観測し、ソースコー�
 - 戦略変更：厳格な設定ならリポジトリ設定（保護ブランチ/環境シークレット）を確認
 
 ## 次に試すこと（仮説A/Bの分岐と検証）
-- 仮説A：Classic PAT が長寿命・広権限  
-  - 次の検証：組織ポリシーと監査ログで Classic PAT 利用を確認  
+- 仮説A：Classic PAT が長寿命・広権限
+  - 次の検証：組織ポリシーと監査ログで Classic PAT 利用を確認
   - 期待：存在するなら失効/再発行ポリシーを提案
-- 仮説B：GitHub Apps が全リポジトリに高権限でインストール  
-  - 次の検証：アプリの権限と対象リポジトリを確認  
+- 仮説B：GitHub Apps が全リポジトリに高権限でインストール
+  - 次の検証：アプリの権限と対象リポジトリを確認
   - 期待：必要最小権限へ再設定を提案
-- 仮説C：Actions がフォーク PR で secrets を渡す  
-  - 次の検証：リポジトリ設定（Require approval for first-time contributors、workflow permissions）を確認  
+- 仮説C：Actions がフォーク PR で secrets を渡す
+  - 次の検証：リポジトリ設定（Require approval for first-time contributors、workflow permissions）を確認
   - 期待：渡しているなら漏えい経路
 
 ## 手を動かす検証（Labs連動：観測点を明確に）
@@ -59,6 +59,9 @@ cd ~/keda_evidence/github_07
 ## コマンド/リクエスト例
 ~~~~
 # Actions ワークフロー権限確認 (GraphQL API例)
+
+## 監査ログ取得（GUI）
+- Organization → Audit log
 curl -H "Authorization: Bearer <TOKEN>" -X POST https://api.github.com/graphql -d '{
   "query": "query { repository(owner: \"ORG\", name: \"REPO\") { actionsDefaultWorkflowPermissions, actionsCanApprovePullRequestReviews } }"
 }'
@@ -67,13 +70,13 @@ curl -H "Authorization: Bearer <TOKEN>" -X POST https://api.github.com/graphql -
 - 使えないケース：APIトークン権限不足
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-- ASVS：ソースコード保護・認証情報保護。  
+- ASVS：ソースコード保護・認証情報保護。
   https://github.com/OWASP/ASVS
-- WSTG：Configuration/Authorization 観点でリポジトリ権限・トークンを確認。  
+- WSTG：Configuration/Authorization 観点でリポジトリ権限・トークンを確認。
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES：情報収集→脆弱性分析でトークンと自動化の境界を棚卸し。  
+- PTES：情報収集→脆弱性分析でトークンと自動化の境界を棚卸し。
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Valid Accounts（Code Repo）、Exfiltration Over Web Service。  
+- MITRE ATT&CK：Valid Accounts（Code Repo）、Exfiltration Over Web Service。
   https://attack.mitre.org/
 
 ## 参考（必要最小限）

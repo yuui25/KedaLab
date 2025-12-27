@@ -1,4 +1,4 @@
-# 15_token_lifetime_更新と失効（SaaS側）
+﻿# 15_token_lifetime_更新と失効（SaaS側）
 SaaS 側のトークン有効期間・更新・失効挙動を観測し、持続リスクと封じ方を特定する。
 
 ## 目的（この技術で到達する状態）
@@ -37,14 +37,14 @@ SaaS 側のトークン有効期間・更新・失効挙動を観測し、持続
 - 戦略変更：期限が短い場合はブラウザ/デバイスのセッション復元やトークンキャッシュを狙う
 
 ## 次に試すこと（仮説A/Bの分岐と検証）
-- 仮説A：リフレッシュローテーションが無効  
-  - 次の検証：同一リフレッシュトークンで複数回更新を試し、再利用できるか確認（許可範囲で）  
+- 仮説A：リフレッシュローテーションが無効
+  - 次の検証：同一リフレッシュトークンで複数回更新を試し、再利用できるか確認（許可範囲で）
   - 期待：再利用できるなら持続リスク
-- 仮説B：パスワード変更でもトークンが失効しない  
-  - 次の検証：パスワード変更後に既存セッション/トークンが有効か確認  
+- 仮説B：パスワード変更でもトークンが失効しない
+  - 次の検証：パスワード変更後に既存セッション/トークンが有効か確認
   - 期待：有効なら失効設計不足
-- 仮説C：Remember me が長期  
-  - 次の検証：クッキー期限と再認証要否を確認  
+- 仮説C：Remember me が長期
+  - 次の検証：クッキー期限と再認証要否を確認
   - 期待：長期ならMFA回避リスク
 
 ## 手を動かす検証（Labs連動：観測点を明確に）
@@ -59,6 +59,9 @@ cd ~/keda_evidence/token_life_15
 ## コマンド/リクエスト例
 ~~~~
 # JWT デコード（署名検証なし例）
+
+## 前提知識（最低限）
+- トークン種別（access/refresh）の違い
 python - <<'PY'
 import jwt,sys
 token=sys.stdin.read().strip()
@@ -69,13 +72,13 @@ PY
 - 使えないケース：暗号化トークンのみの場合（IdP側で確認）
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-- ASVS：セッション管理・トークン失効要件。  
+- ASVS：セッション管理・トークン失効要件。
   https://github.com/OWASP/ASVS
-- WSTG：Authentication/Session Management テストで期限/失効を確認。  
+- WSTG：Authentication/Session Management テストで期限/失効を確認。
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES：情報収集→脆弱性分析で長寿命トークンを棚卸し。  
+- PTES：情報収集→脆弱性分析で長寿命トークンを棚卸し。
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Valid Accounts、Defense Evasion（長期トークン保持）。  
+- MITRE ATT&CK：Valid Accounts、Defense Evasion（長期トークン保持）。
   https://attack.mitre.org/
 
 ## 参考（必要最小限）

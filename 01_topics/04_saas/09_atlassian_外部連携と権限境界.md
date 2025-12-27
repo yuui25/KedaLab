@@ -1,4 +1,4 @@
-# 09_atlassian_外部連携と権限境界
+﻿# 09_atlassian_外部連携と権限境界
 Atlassian Cloud（Jira/Confluence等）の外部連携と権限境界を観測し、データ漏えい・越権の成立条件を特定する。
 
 ## 目的（この技術で到達する状態）
@@ -36,14 +36,14 @@ Atlassian Cloud（Jira/Confluence等）の外部連携と権限境界を観測�
 - 戦略変更：外部共有が閉じている場合は内部ロールの過剰権限を確認
 
 ## 次に試すこと（仮説A/Bの分岐と検証）
-- 仮説A：リンク共有/匿名アクセスが許可  
-  - 次の検証：スペース/プロジェクトの共有設定を確認し、匿名閲覧の可否を確認  
+- 仮説A：リンク共有/匿名アクセスが許可
+  - 次の検証：スペース/プロジェクトの共有設定を確認し、匿名閲覧の可否を確認
   - 期待：許可なら所見
-- 仮説B：広いPAT/アプリスコープが存在  
-  - 次の検証：PAT一覧と有効期限、アプリのスコープを確認  
+- 仮説B：広いPAT/アプリスコープが存在
+  - 次の検証：PAT一覧と有効期限、アプリのスコープを確認
   - 期待：広権限なら失効/再発行を提案
-- 仮説C：Webhookが外部へ送信  
-  - 次の検証：Webhook設定と送信先を確認し、IP制限/署名有無を確認  
+- 仮説C：Webhookが外部へ送信
+  - 次の検証：Webhook設定と送信先を確認し、IP制限/署名有無を確認
   - 期待：外部送信なら監査と制限を提案
 
 ## 手を動かす検証（Labs連動：観測点を明確に）
@@ -58,6 +58,9 @@ cd ~/keda_evidence/atlassian_09
 ## コマンド/リクエスト例
 ~~~~
 # Jira Cloud PAT (API) でプロジェクト一覧取得例（権限要）
+
+## 監査ログ取得（GUI）
+- Admin → Security → Audit log
 curl -H "Authorization: Bearer <PAT>" \
   "https://your-domain.atlassian.net/rest/api/3/project"
 ~~~~
@@ -65,13 +68,13 @@ curl -H "Authorization: Bearer <PAT>" \
 - 使えないケース：APIアクセス無効な場合（GUIで確認）
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-- ASVS：アクセス制御とデータ保護。  
+- ASVS：アクセス制御とデータ保護。
   https://github.com/OWASP/ASVS
-- WSTG：Configuration/Authorization 観点で外部連携・共有設定を確認。  
+- WSTG：Configuration/Authorization 観点で外部連携・共有設定を確認。
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES：情報収集→脆弱性分析で連携/権限/共有を棚卸し。  
+- PTES：情報収集→脆弱性分析で連携/権限/共有を棚卸し。
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Valid Accounts（SaaS）、Exfiltration Over Web Service。  
+- MITRE ATT&CK：Valid Accounts（SaaS）、Exfiltration Over Web Service。
   https://attack.mitre.org/
 
 ## 参考（必要最小限）

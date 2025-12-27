@@ -1,4 +1,4 @@
-# 01_idp_連携（SAML OIDC OAuth）と信頼境界
+﻿# 01_idp_連携（SAML OIDC OAuth）と信頼境界
 SAML/OIDC/OAuth 連携で本人性・権限・信頼境界がどこで成立するかを観測し、誤設定リスクを特定する。
 
 ## 目的（この技術で到達する状態）
@@ -41,14 +41,14 @@ SAML/OIDC/OAuth 連携で本人性・権限・信頼境界がどこで成立す�
 - 戦略変更：検証が強い場合は IdP 側設定の例外（外部IdP/動的登録）を調査
 
 ## 次に試すこと（仮説A/Bの分岐と検証）
-- 仮説A：戻り先が緩い  
-  - 次の検証：正規/異常 redirect_uri で state/nonce を変えずに試行  
+- 仮説A：戻り先が緩い
+  - 次の検証：正規/異常 redirect_uri で state/nonce を変えずに試行
   - 期待：拒否されない場合は不正リダイレクト余地
-- 仮説B：claim/scope が権限に直結  
-  - 次の検証：ロール違いユーザで SAML Attribute / ID Token claim / scope を比較  
+- 仮説B：claim/scope が権限に直結
+  - 次の検証：ロール違いユーザで SAML Attribute / ID Token claim / scope を比較
   - 期待：差分が権限に直結し、操作結果が変わるかを確認
-- 仮説C：署名・検証責務が曖昧  
-  - 次の検証：Issuer/Audience/署名鍵と検証ログを確認（IdP or SP or Gateway）  
+- 仮説C：署名・検証責務が曖昧
+  - 次の検証：Issuer/Audience/署名鍵と検証ログを確認（IdP or SP or Gateway）
   - 期待：検証が一箇所なら責務明確、無いなら重大
 
 ## 手を動かす検証（Labs連動：観測点を明確に）
@@ -64,6 +64,11 @@ cd ~/keda_evidence/idp_01
 ## コマンド/リクエスト例（例示は最小限）
 ~~~~
 # JWTのヘッダ/ペイロードを確認
+
+## 前提知識（最低限）
+- SAML: XMLでの認証連携
+- OIDC: IDトークン中心
+- OAuth: 委任の枠組み
 python - <<'PY'
 import jwt,sys
 token=sys.stdin.read().strip()
@@ -76,13 +81,13 @@ PY
 - 使えないケース：暗号化SAML/暗号化JWTのみ提供の場合（IdP/ゲートウェイで復号確認が必要）
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-- ASVS：認証・セッションの前提として IdP 連携の信頼/署名/戻り先を固定する（AuthN/AuthZ 章）。  
+- ASVS：認証・セッションの前提として IdP 連携の信頼/署名/戻り先を固定する（AuthN/AuthZ 章）。
   https://github.com/OWASP/ASVS
-- WSTG：Authentication/Authorization テストで SSO フローとトークン検証を観測する。  
+- WSTG：Authentication/Authorization テストで SSO フローとトークン検証を観測する。
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES：Intelligence Gathering→Vulnerability Analysis で連携境界を確認、攻撃面（戻り先/属性/委任）を特定。  
+- PTES：Intelligence Gathering→Vulnerability Analysis で連携境界を確認、攻撃面（戻り先/属性/委任）を特定。
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Credential Access/Privilege Escalation（信頼崩壊によるトークン奪取・越権）。  
+- MITRE ATT&CK：Credential Access/Privilege Escalation（信頼崩壊によるトークン奪取・越権）。
   https://attack.mitre.org/
 
 ## 参考（必要最小限）

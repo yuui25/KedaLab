@@ -1,4 +1,4 @@
-# 08_slack_トークン境界（xox_署名検証）
+﻿# 08_slack_トークン境界（xox_署名検証）
 Slack のトークン種類と署名検証を観測し、ボット/ユーザトークンの越権や漏えい経路を特定する。
 
 ## 目的（この技術で到達する状態）
@@ -37,14 +37,14 @@ Slack のトークン種類と署名検証を観測し、ボット/ユーザト�
 - 戦略変更：エンドポイントが堅牢ならトークン保管場所（CI/CD・Actions）を確認
 
 ## 次に試すこと（仮説A/Bの分岐と検証）
-- 仮説A：署名検証が実装されていない  
-  - 次の検証：受信エンドポイントに過去タイムスタンプ/改変ボディを送信（許可範囲で）し検証の有無を確認  
+- 仮説A：署名検証が実装されていない
+  - 次の検証：受信エンドポイントに過去タイムスタンプ/改変ボディを送信（許可範囲で）し検証の有無を確認
   - 期待：通る場合は重大所見
-- 仮説B：広いスコープのトークンが存在  
-  - 次の検証：App 設定で付与スコープを確認し、最小化できるか判断  
+- 仮説B：広いスコープのトークンが存在
+  - 次の検証：App 設定で付与スコープを確認し、最小化できるか判断
   - 期待：`channels:history/files:read` 等が不要なら削減提案
-- 仮説C：Webhookが外部公開  
-  - 次の検証：送信先URLの制限/IP Allowlist有無を確認  
+- 仮説C：Webhookが外部公開
+  - 次の検証：送信先URLの制限/IP Allowlist有無を確認
   - 期待：外部向けなら漏えい経路
 
 ## 手を動かす検証（Labs連動：観測点を明確に）
@@ -59,6 +59,9 @@ cd ~/keda_evidence/slack_08
 ## コマンド/リクエスト例
 ~~~~
 # Audit Logs API（Enterprise）
+
+## 前提知識（最低限）
+- xoxp/xoxb/xoxa/xoxe の用途差
 curl -H "Authorization: Bearer <TOKEN>" \
   "https://api.slack.com/audit/v1/logs?limit=100"
 ~~~~
@@ -66,13 +69,13 @@ curl -H "Authorization: Bearer <TOKEN>" \
 - 使えないケース：Audit Logs API 未契約のワークスペース
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-- ASVS：認証情報保護と外部連携の最小化。  
+- ASVS：認証情報保護と外部連携の最小化。
   https://github.com/OWASP/ASVS
-- WSTG：Configuration/Authorization テストでトークン・Webhook を確認。  
+- WSTG：Configuration/Authorization テストでトークン・Webhook を確認。
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES：情報収集→脆弱性分析でトークン/署名/外部連携を棚卸し。  
+- PTES：情報収集→脆弱性分析でトークン/署名/外部連携を棚卸し。
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Valid Accounts（SaaS）、Exfiltration Over Web Service。  
+- MITRE ATT&CK：Valid Accounts（SaaS）、Exfiltration Over Web Service。
   https://attack.mitre.org/
 
 ## 参考（必要最小限）

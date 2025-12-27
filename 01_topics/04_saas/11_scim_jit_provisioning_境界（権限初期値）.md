@@ -1,4 +1,4 @@
-# 11_scim_jit_provisioning_境界（権限初期値）
+﻿# 11_scim_jit_provisioning_境界（権限初期値）
 SCIM/JIT プロビジョニングの権限初期値と境界を観測し、過剰権限・なりすましの成立条件を特定する。
 
 ## 目的（この技術で到達する状態）
@@ -36,14 +36,14 @@ SCIM/JIT プロビジョニングの権限初期値と境界を観測し、過�
 - 戦略変更：マッピングが厳しい場合は停止/非アクティブ化の遅延を確認
 
 ## 次に試すこと（仮説A/Bの分岐と検証）
-- 仮説A：デフォルトロールが高い  
-  - 次の検証：新規ユーザ作成時のデフォルト権限を確認（テストユーザで）  
+- 仮説A：デフォルトロールが高い
+  - 次の検証：新規ユーザ作成時のデフォルト権限を確認（テストユーザで）
   - 期待：管理者/編集者なら要是正
-- 仮説B：グループマッピングが曖昧  
-  - 次の検証：IdP グループ変更で付与ロールが変わるか比較  
+- 仮説B：グループマッピングが曖昧
+  - 次の検証：IdP グループ変更で付与ロールが変わるか比較
   - 期待：誤設定で昇格するなら所見
-- 仮説C：外部ドメインもプロビジョニング対象  
-  - 次の検証：許可ドメイン設定を確認し、外部メールで作成可否を確認（許可範囲で）  
+- 仮説C：外部ドメインもプロビジョニング対象
+  - 次の検証：許可ドメイン設定を確認し、外部メールで作成可否を確認（許可範囲で）
   - 期待：可能ならリスク
 
 ## 手を動かす検証（Labs連動：観測点を明確に）
@@ -58,19 +58,22 @@ cd ~/keda_evidence/scim_jit_11
 ## コマンド/リクエスト例
 ~~~~
 # SCIM エンドポイントに対するメタデータ取得（許可環境のみ）
+
+## 前提知識（最低限）
+- SCIMはID同期、JITは初回作成
 curl -H "Authorization: Bearer <SCIM_TOKEN>" https://<saas>/scim/v2/ServiceProviderConfig
 ~~~~
 - 注目点：対応 schema、ロール/グループ属性、認可モデル
 - 使えないケース：SCIM 無効なSaaS、トークン権限不足
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK）
-- ASVS：認証/アクセス制御の前提として、アカウント作成時の権限最小化。  
+- ASVS：認証/アクセス制御の前提として、アカウント作成時の権限最小化。
   https://github.com/OWASP/ASVS
-- WSTG：Authorization/Configuration テストでプロビジョニング設定を確認。  
+- WSTG：Authorization/Configuration テストでプロビジョニング設定を確認。
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES：情報収集→脆弱性分析で初期権限/マッピングを棚卸し。  
+- PTES：情報収集→脆弱性分析で初期権限/マッピングを棚卸し。
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Valid Accounts（SaaS）。  
+- MITRE ATT&CK：Valid Accounts（SaaS）。
   https://attack.mitre.org/
 
 ## 参考（必要最小限）
