@@ -1,4 +1,18 @@
-# 05_input_05_command_injection_02_args（option_injection）
+﻿# 05_input_05_command_injection_02_args（option_injection）
+
+## 危険性を一言で
+- 入力がオプションとして解釈されると、実行対象や動作が変わる。
+
+## 最小限の成立判断（目安）
+- オプション有無で挙動が変わる差分が再現できる。
+
+## 観測例（差分のイメージ）
+- 期待: 通常処理、差分: オプション扱いで結果が変わる。
+
+## 対策の優先順位
+1) argv配列で引数を固定
+2) `--` によるオプション終端
+3) allowlistで許容値を限定
 
 ## 目的（このファイルで到達する状態）
 - shell を使っていない（メタ文字が効かない）状況でも成立する **argvベースのコマンド注入**を、
@@ -273,9 +287,11 @@
 
 ~~~~
 # 悪い例（概念）：ユーザ入力が第一引数、end-of-optionsがない
+
 execve(["tool", USER_INPUT])
 
 # 良い例（概念）：end-of-optionsを入れ、入力はpositionalとして固定
+
 execve(["tool", "--", USER_INPUT])
 ~~~~
 
@@ -285,10 +301,12 @@ execve(["tool", "--", USER_INPUT])
 
 ~~~~
 # 悪い例（概念）：ユーザ入力を分割してargvが増える（語彙が混ざる）
+
 args = ["tool"] + USER_INPUT.split(" ")
 execve(args)
 
 # 良い例（概念）：複数値は配列で受け、各要素を検証してからargvへ
+
 args = ["tool", "--", item1, item2]  # itemNは検証済み
 execve(args)
 ~~~~

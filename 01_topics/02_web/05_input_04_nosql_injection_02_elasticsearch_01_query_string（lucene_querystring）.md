@@ -1,4 +1,18 @@
-# 05_input_04_nosql_injection_02_elasticsearch_01_query_string（lucene_querystring）
+﻿# 05_input_04_nosql_injection_02_elasticsearch_01_query_string（lucene_querystring）
+
+## 危険性を一言で
+- query_stringがLucene構文として解釈され、検索条件が改変される。
+
+## 最小限の成立判断（目安）
+- AND/ORなどの構文差分で件数が変わり、再現できる。
+
+## 観測例（差分のイメージ）
+- 期待: 1件、差分: 条件が緩み複数件になる。
+
+## 対策の優先順位
+1) query_stringを避けDSLに移行
+2) フィールドのallowlist化
+3) 構文エスケープ
 
 ## 目的（この技術で到達する状態）
 - Elasticsearch を利用するWeb/APIで、入力が「文字列」ではなく **Lucene Query String（検索DSLの一種）** として解釈されることで起きる境界破壊を、次の形で評価・説明できる。
@@ -94,9 +108,11 @@
 
 ~~~~
 # 危険：自由入力を query_string に直結（入力が"検索式"になる）
+
 { "query": { "query_string": { "query": userInput } } }
 
 # 安全：キーワードは match 系で扱い、構文はユーザに渡さない
+
 { "query": { "multi_match": { "query": userInput, "fields": allowedFields } } }
 ~~~~
 
@@ -106,9 +122,11 @@
 
 ~~~~
 # 危険：認可条件をユーザ入力と同レイヤで合成（揺らぎやすい）
+
 # （固定条件が"検索式"と混ざる設計は避ける）
 
 # 安全：認可は filter レイヤで強制、入力は query へ閉じ込める
+
 { "query": { "bool": { "filter": [ tenantFilter ], "must": [ userQuery ] } } }
 ~~~~
 

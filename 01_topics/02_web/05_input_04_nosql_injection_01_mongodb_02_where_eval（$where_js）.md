@@ -1,4 +1,18 @@
-# 05_input_04_nosql_injection_01_mongodb_02_where_eval（$where_js）
+﻿# 05_input_04_nosql_injection_01_mongodb_02_where_eval（$where_js）
+
+## 危険性を一言で
+- 入力がJavaScriptとして評価されると、条件がコードとして実行される。
+
+## 最小限の成立判断（目安）
+- 評価結果の真偽や時間差がA/B比較で再現できる。
+
+## 観測例（差分のイメージ）
+- Boolean: 条件が真になると件数が増える、偽だと 0 件になる。
+
+## 対策の優先順位
+1) $whereの利用を禁止
+2) 代替の演算子で条件を表現
+3) タイムアウト/リソース制限
 
 ## 目的（この技術で到達する状態）
 - MongoDB の `$where`（JS評価）を、NoSQLi の中でも別格の「入力→コード評価」境界として切り出し、
@@ -154,10 +168,12 @@
 
 ~~~~
 # 危険：汎用filterを直渡し（$where混入が可能）
+
 query = JSON.parse(req.query.filter)
 db.collection.find(query)
 
 # 安全：アプリ独自DSLを解釈してクエリ生成（演算子/フィールドallowlist）
+
 input = JSON.parse(req.query.filter)
 assert field in allowlist
 assert op in allowlist
@@ -171,11 +187,13 @@ query = buildQuery(input)   # サーバで生成（$whereを生成しない）
 
 ~~~~
 # 危険：権限条件とユーザ条件を同階層merge
+
 base = { tenant_id: t }
 user = JSON.parse(req.query.filter)
 query = { ...base, ...user }     # 同階層で混ぜるのが危険
 
 # 安全：baseは固定、userは安全に生成した条件のみAND結合
+
 query = { $and: [ base, safeUserCondition ] }
 ~~~~
 

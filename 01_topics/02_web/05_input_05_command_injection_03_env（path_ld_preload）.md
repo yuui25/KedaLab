@@ -1,4 +1,18 @@
-# 05_input_05_command_injection_03_env（path_ld_preload）
+﻿# 05_input_05_command_injection_03_env（path_ld_preload）
+
+## 危険性を一言で
+- 環境変数/検索パスが混入すると、実行対象やロード対象が差し替わる。
+
+## 最小限の成立判断（目安）
+- 環境変数の差分で挙動が変わり、元に戻すと差分が消える。
+
+## 観測例（差分のイメージ）
+- 期待: 正常実行、差分: PATH/LD系の変更で実行結果が変わる。
+
+## 対策の優先順位
+1) 環境変数の固定/削除
+2) 実行パス/ライブラリパスの固定
+3) 低権限・隔離環境での実行
 
 ## 目的（このファイルで到達する状態）
 - 「メタ文字が効かない＝安全」でも、「argvが固定＝安全」でもなく、**envが制御できると“実行結果”が変わる**ことを、現実の実装パターンに即して評価できる
@@ -225,9 +239,11 @@
 
 ~~~~
 # 悪い例（概念）：PATH依存・env継承
+
 execve(["convert", input, output], env=inherited_env)
 
 # 良い例（概念）：絶対パス固定・env allowlist
+
 safe_env = { "PATH": "/usr/bin:/bin", "LANG": "C" }  # 必要最小限
 execve(["/usr/bin/convert", input, output], env=safe_env)
 ~~~~
@@ -238,6 +254,7 @@ execve(["/usr/bin/convert", input, output], env=safe_env)
 
 ~~~~
 # 悪い例（概念）：ユーザ設定をenvへマージ（second-orderの温床）
+
 safe_env = inherited_env + user_config_env
 execve([ABS_CMD, ...], env=safe_env)
 ~~~~

@@ -1,4 +1,20 @@
-# 05_input_03_sql_injection_02_mysql（境界_プレースホルダ_動的組立）
+﻿# 05_input_03_sql_injection_02_mysql（境界_プレースホルダ_動的組立）
+
+## 危険性を一言で
+- 入力がSQLの「値」ではなく「構文」として解釈されると、条件や実行範囲が変わる。
+
+## 最小限の成立判断（目安）
+- A/B比較で件数差分・エラー差分・時間差分のいずれかが安定して再現する。
+- エラーは「成立根拠」と「情報露出」を分け、根拠は差分の再現で示す。
+
+## 観測例（差分のイメージ）
+- Boolean: 1件→0件（条件が偽になる）
+- Time: 応答が +3s 以上遅延する
+
+## 対策の優先順位
+1) プレースホルダで値を固定
+2) 識別子/構文はallowlistで生成
+3) DB権限の最小化と監査
 
 ## 目的（この技術で到達する状態）
 
@@ -241,9 +257,11 @@
 
 ~~~~
 # 危険：動的ORDER BY（列名はプレースホルダ化できない）
+
 SELECT * FROM items ORDER BY {sort} {dir} LIMIT ?
 
 # 安全：入力は選択肢→サーバ側で列名にマップ
+
 sort=createdAt|price|name のように受け、サーバで
 createdAt -> created_at
 price     -> price
@@ -253,17 +271,21 @@ name      -> name
 
 ~~~~
 # 危険：INリストをCSVで連結
+
 SELECT * FROM items WHERE id IN ({csv_ids})
 
 # 安全：要素数分プレースホルダを展開
+
 SELECT * FROM items WHERE id IN (?, ?, ?, ...)
 ~~~~
 
 ~~~~
 # 危険：LIKEの%をSQL文字列側で連結（断片化）
+
 ... WHERE name LIKE '%" + q + "%'
 
 # 安全：%を含めて値としてバインド
+
 ... WHERE name LIKE ?
 param = "%" + q + "%"
 ~~~~
@@ -284,9 +306,11 @@ param = "%" + q + "%"
 ## コマンド/リクエスト例（例示は最小限・意味の説明が主）
 ~~~~
 # 危険：動的ORDER BY（列名はプレースホルダ化できない）
+
 SELECT * FROM items ORDER BY {sort} {dir} LIMIT ?
 
 # 安全：入力は選択肢→サーバ側で列名にマップ
+
 sort=createdAt|price|name のように受け、サーバで
 createdAt -> created_at
 price     -> price
@@ -294,15 +318,19 @@ name      -> name
 に変換してSQL文字列を生成する（入力値をそのまま入れない）
 
 # 危険：INリストをCSVで連結
+
 SELECT * FROM items WHERE id IN ({csv_ids})
 
 # 安全：要素数分プレースホルダを展開
+
 SELECT * FROM items WHERE id IN (?, ?, ?, ...)
 
 # 危険：LIKEの%をSQL文字列側で連結（断片化）
+
 ... WHERE name LIKE '%" + q + "%'
 
 # 安全：%を含めて値としてバインド
+
 ... WHERE name LIKE ?
 param = "%" + q + "%"
 ~~~~

@@ -1,4 +1,18 @@
-# 05_input_04_nosql_injection_03_neo4j_cypher_02_apoc（procedure_security）
+﻿# 05_input_04_nosql_injection_03_neo4j_cypher_02_apoc（procedure_security）
+
+## 危険性を一言で
+- APOC手続きが意図せず呼ばれると、処理範囲や副作用が拡大する。
+
+## 最小限の成立判断（目安）
+- procedureの呼び出し可否が差分として再現できる。
+
+## 観測例（差分のイメージ）
+- 期待: procedure不可、差分: 実行可能になり結果が返る。
+
+## 対策の優先順位
+1) APOCの有効範囲を最小化/無効化
+2) procedure allowlist
+3) 実行権限の限定
 
 ## 目的（この技術で到達する状態）
 - Neo4j の APOC（Awesome Procedures On Cypher）を「便利な拡張」ではなく、
@@ -249,6 +263,7 @@
 
 ~~~~
 # 安全設計（概念）：CALLするプロシージャは固定、入力はparamsのみ、かつサーバ側でallowlist検証
+
 CALL apoc.<fixed_proc>($param1, $param2)
 ~~~~
 
@@ -258,7 +273,9 @@ CALL apoc.<fixed_proc>($param1, $param2)
 
 ~~~~
 # 危険設計（概念）：プロシージャ名やクエリ断片を入力で決める/連結するのは境界破壊
+
 # ※具体の悪用payloadは提示しない
+
 ~~~~
 
 - この例で観測していること：プロシージャ名やクエリ断片が入力由来になっている危険な設計

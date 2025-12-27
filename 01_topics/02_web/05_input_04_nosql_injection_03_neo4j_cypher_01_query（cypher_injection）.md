@@ -1,4 +1,18 @@
-# 05_input_04_nosql_injection_03_neo4j_cypher_01_query（cypher_injection）
+﻿# 05_input_04_nosql_injection_03_neo4j_cypher_01_query（cypher_injection）
+
+## 危険性を一言で
+- 入力がCypher構文として解釈されると、探索条件や返却範囲が変わる。
+
+## 最小限の成立判断（目安）
+- A/B比較で件数やパスの差分が再現できる。
+
+## 観測例（差分のイメージ）
+- 期待: 1ノード、差分: 複数ノードが返る。
+
+## 対策の優先順位
+1) パラメータ化
+2) クエリ構文のallowlist化
+3) 権限の最小化
 
 ## 目的（この技術で到達する状態）
 - Neo4j（Cypher）を使うWeb/APIで、入力が「検索語」ではなく **Cypher構文** として解釈される境界破壊を、
@@ -216,6 +230,7 @@
 
 ~~~~
 # 安全：paramsで値だけ渡す（概念例）
+
 MATCH (n:User)
 WHERE n.email = $email AND n.tenant_id = $tenant
 RETURN n.id, n.name
@@ -227,7 +242,9 @@ RETURN n.id, n.name
 
 ~~~~
 # 危険（概念）：文字列連結でWHERE等を組み立てる設計はInjection境界が開くため禁止
+
 # ※具体の悪用payloadは提示しない
+
 ~~~~
 
 - この例で観測していること：文字列連結でCypherを生成している危険な設計

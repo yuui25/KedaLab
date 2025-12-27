@@ -1,4 +1,18 @@
-# 05_input_05_command_injection_01_shell（metachar_pipeline）
+﻿# 05_input_05_command_injection_01_shell（metachar_pipeline）
+
+## 危険性を一言で
+- 入力がシェルのメタ文字として解釈されると、意図しないコマンド連結が起きる。
+
+## 最小限の成立判断（目安）
+- 出力/終了コード/時間差のいずれかがA/B比較で再現できる。
+
+## 観測例（差分のイメージ）
+- Time: 応答が +3s 以上遅延する、または出力が変わる。
+
+## 対策の優先順位
+1) shell経由の実行を避ける
+2) argv配列で引数を固定
+3) allowlist/エスケープの併用
 
 ## 目的（この技術で到達する状態）
 - 「OSコマンドを呼んでいる」だけではなく、**(1) shell を経由しているか（＝メタ文字が“文法”として解釈されるか）**、**(2) どの境界で入力が結合されるか（文字列連結/テンプレ/ログ/ジョブ）**、**(3) どの観測で“成立根拠”を確定できるか（低侵襲）** をモデル化して説明できる
@@ -173,14 +187,18 @@
 ## コマンド/リクエスト例（例示は最小限・意味の説明が主）
 ~~~~
 # 擬似：外部コマンド起動が疑わしい API
+
 POST /api/tools/ping
 Body: { "host": "<USER_INPUT>" }
 
 # 観測の考え方（具体ペイロードは目的に応じて最小化）
+
 # - base_input と metachar_input の差分で「shell関与」を疑う
+
 # - 出力が返らないなら timing / job_status / error_model を見る
 
 # 差分観測（擬似）
+
 host = "example.com"                         -> baseline
 host = "example.com<SEP><SAFE_MARKER>"       -> sep差分が出る？
 host = "example.com<PIPE><SAFE_MARKER>"      -> pipe差分が出る？
@@ -188,6 +206,7 @@ host = "example.com<REDIR><SAFE_MARKER>"     -> redir差分が出る？
 host = "example.com<SUB><SAFE_MARKER>"       -> subshell差分が出る？
 
 # SAFE_MARKER は「影響が小さい観測用」に限定する（ラボで再現推奨）
+
 ~~~~
 - この例で観測していること：
   - “host という引数”が、実は shell 文の一部として解釈されていないか（境界跨ぎ）

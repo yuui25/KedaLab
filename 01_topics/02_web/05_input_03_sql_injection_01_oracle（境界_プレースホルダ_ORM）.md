@@ -1,4 +1,20 @@
-# 05_input_03_sql_injection_01_oracle（境界_プレースホルダ_ORM）
+﻿# 05_input_03_sql_injection_01_oracle（境界_プレースホルダ_ORM）
+
+## 危険性を一言で
+- 入力がSQLの「値」ではなく「構文」として解釈されると、条件や実行範囲が変わる。
+
+## 最小限の成立判断（目安）
+- A/B比較で件数差分・エラー差分・時間差分のいずれかが安定して再現する。
+- エラーは「成立根拠」と「情報露出」を分け、根拠は差分の再現で示す。
+
+## 観測例（差分のイメージ）
+- Boolean: 1件→0件（条件が偽になる）
+- Time: 応答が +3s 以上遅延する
+
+## 対策の優先順位
+1) プレースホルダで値を固定
+2) 識別子/構文はallowlistで生成
+3) DB権限の最小化と監査
 
 ## 目的（この技術で到達する状態）
 - 「Oracle DB方言としてのSQLi」を、(1)Oracle推定、(2)sink（注入文脈）分類、(3)成立根拠＝差分（oracle）確立、(4)プレースホルダ/ORM境界の破綻点、(5)影響範囲（越境混入/列過剰/書込み/二次注入）まで、最小試行で説明・証跡化できる
@@ -232,15 +248,18 @@
 ## コマンド/リクエスト例（例示は最小限・意味の説明が主）
 ~~~~
 # 例（擬似）：同一エンドポイントで入力だけ変えて差分を取る
+
 GET /api/items?filter=<BASELINE>
 GET /api/items?filter=<CANDIDATE_TRUE>
 GET /api/items?filter=<CANDIDATE_FALSE>
 
 # 例（擬似）：ソート/表示列（識別子）境界の観測
+
 GET /api/items?sort=<BASELINE_SORT>
 GET /api/items?sort=<CANDIDATE_SORT>
 
 # 例（擬似）：保存→実行（二次注入）経路の切り分け
+
 POST /api/saved-searches  body: { "name": "<INPUT>", "query": "<INPUT>" }
 GET  /admin/saved-searches/<ID>/run
 ~~~~

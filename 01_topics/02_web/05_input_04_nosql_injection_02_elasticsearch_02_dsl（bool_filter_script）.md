@@ -1,4 +1,18 @@
-# 05_input_04_nosql_injection_02_elasticsearch_02_dsl（bool_filter_script）
+﻿# 05_input_04_nosql_injection_02_elasticsearch_02_dsl（bool_filter_script）
+
+## 危険性を一言で
+- DSL構造に入力が混入すると、filterやscriptが追加され条件が変わる。
+
+## 最小限の成立判断（目安）
+- filter条件の差分が件数として再現できる。
+
+## 観測例（差分のイメージ）
+- 期待: 0件、差分: filterが変わり件数が増える。
+
+## 対策の優先順位
+1) DSL構造を固定して生成
+2) scriptの無効化
+3) allowlistで入力制限
 
 ## 目的（この技術で到達する状態）
 - Elasticsearch を使うWeb/APIで、ユーザ入力が「検索語」ではなく **Query DSL（JSON構造）** として解釈されているかを判定できる。
@@ -124,6 +138,7 @@
 
 ~~~~
 # 例：bool の filter と must を分離して“固定条件（認可）”と“ユーザ検索”を別レイヤに置く（設計例）
+
 POST /<index>/_search
 {
   "query": {
@@ -147,7 +162,9 @@ POST /<index>/_search
 
 ~~~~
 # 例：script を“入力で自由に書かせない”前提で、サーバが固定の stored script を呼ぶ（設計例）
+
 # ※具体のスクリプト内容ではなく、入力→実行の境界を閉じる発想だけを示す
+
 {
   "query": {
     "script": {

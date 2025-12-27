@@ -1,4 +1,18 @@
-# 05_input_04_nosql_injection_02_elasticsearch_04_template（mustache_stored_template）
+﻿# 05_input_04_nosql_injection_02_elasticsearch_04_template（mustache_stored_template）
+
+## 危険性を一言で
+- テンプレートで入力が再解釈されると、生成クエリの構造が変わる。
+
+## 最小限の成立判断（目安）
+- 生成されたクエリの差分が結果に反映される。
+
+## 観測例（差分のイメージ）
+- 期待: 1件、差分: 生成クエリが変わり複数件になる。
+
+## 対策の優先順位
+1) stored templateの固定と再利用
+2) パラメータ型の制約
+3) テンプレートエスケープ
 
 ## 目的（この技術で到達する状態）
 - Elasticsearch の Search Template（Mustache、stored template）を「便利機能」ではなく **入力→実行境界（テンプレ展開→Query DSL生成）** として扱い、
@@ -217,6 +231,7 @@
 
 ~~~~
 # 安全：stored template（id参照）＋ params（data）のみ
+
 POST /<index>/_search/template
 {
   "id": "search_v1",
@@ -234,7 +249,9 @@ POST /<index>/_search/template
 
 ~~~~
 # 危険（概念）：テンプレ本文（JSON構文）にユーザ入力を連結する設計は、code/data境界が壊れるため禁止
+
 # ※悪用payloadは提示しない
+
 ~~~~
 
 - この例で観測していること：テンプレ本文（code）に入力が混入している危険な設計

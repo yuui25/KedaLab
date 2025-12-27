@@ -1,4 +1,18 @@
-# 05_input_04_nosql_injection_02_elasticsearch_03_painless（script_injection）
+﻿# 05_input_04_nosql_injection_02_elasticsearch_03_painless（script_injection）
+
+## 危険性を一言で
+- Painlessスクリプトが実行されると、検索処理がコードとして動く。
+
+## 最小限の成立判断（目安）
+- スクリプト評価の有無で結果/時間差が再現できる。
+
+## 観測例（差分のイメージ）
+- Time: 応答が +3s 以上遅延する。
+
+## 対策の優先順位
+1) script機能を無効化
+2) stored scriptを固定して使用
+3) allowlistで関数制限
 
 ## 目的（この技術で到達する状態）
 - Elasticsearch の Painless スクリプト（script query / script_score / runtime fields 等）について、
@@ -186,6 +200,7 @@
 
 ~~~~
 # 安全設計例：本文は stored script（id参照）、入力は params のみ
+
 {
   "query": {
     "script_score": {
@@ -205,7 +220,9 @@
 
 ~~~~
 # 危険設計の説明（例示は概念のみ）
+
 # 「ユーザ入力を script.source に連結する」実装は、入力→実行境界が開くため禁止
+
 ~~~~
 
 - この例で観測していること：本文が入力由来になっている危険な設計

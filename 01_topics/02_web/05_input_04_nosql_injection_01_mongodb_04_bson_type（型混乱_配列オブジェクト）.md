@@ -1,4 +1,18 @@
-# 05_input_04_nosql_injection_01_mongodb_04_bson_type（型混乱_配列オブジェクト）
+﻿# 05_input_04_nosql_injection_01_mongodb_04_bson_type（型混乱_配列オブジェクト）
+
+## 危険性を一言で
+- 型が崩れると比較や条件判定の意味が変わり、境界がすり抜ける。
+
+## 最小限の成立判断（目安）
+- 型の違いだけで結果が変わり、型制約で差分が消えることを確認する。
+
+## 観測例（差分のイメージ）
+- 期待: 1件一致、差分: 型を変えると一致範囲が広がる。
+
+## 対策の優先順位
+1) スキーマ/型強制
+2) 受け入れ型の明示的な絞り込み
+3) 正規化による型の固定
 
 ## 目的（この技術で到達する状態）
 - MongoDB（BSON）特有の「型の自由度」を悪用した **型混乱（Type Confusion）** を、Operator Injection（$ne等）とは別枠で整理できる。
@@ -213,10 +227,12 @@
 
 ~~~~
 # 危険：受理型を固定していない（object/arrayがそのまま通る）
+
 const username = req.body.username
 db.users.find({ username: username })
 
 # 安全：入口で型拘束（stringのみ）
+
 assert(typeof req.body.username === "string")
 db.users.find({ username: req.body.username })
 ~~~~
@@ -227,11 +243,13 @@ db.users.find({ username: req.body.username })
 
 ~~~~
 # 危険：filterパース＋deep merge（型衝突・上書きが起きる）
+
 base = { tenant_id: t }
 user = JSON.parse(req.query.filter)
 query = deepMerge(base, user)
 
 # 安全：base固定、ユーザ条件は安全DSLから生成してAND結合
+
 query = { $and: [ base, safeUserCondition ] }
 ~~~~
 
@@ -241,9 +259,11 @@ query = { $and: [ base, safeUserCondition ] }
 
 ~~~~
 # 危険：IDキャストが経路で揺れる（ある経路はObjectId、別経路は文字列）
+
 findById(id)  # 実装によりキャスト有無が混在
 
 # 安全：入口で必ず正規化してからDBアクセス層へ渡す（失敗は一貫して400）
+
 id = normalizeObjectId(req.params.id)
 findById(id)
 ~~~~

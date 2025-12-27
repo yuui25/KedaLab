@@ -1,4 +1,18 @@
-# 05_input_04_nosql_injection_01_mongodb_03_aggregation（pipeline_$lookup）
+﻿# 05_input_04_nosql_injection_01_mongodb_03_aggregation（pipeline_$lookup）
+
+## 危険性を一言で
+- 入力がパイプライン構造に混入すると、集計の範囲や結合条件が改変される。
+
+## 最小限の成立判断（目安）
+- 期待と異なる集計結果（件数/フィールド）が再現する。
+
+## 観測例（差分のイメージ）
+- 期待: 集計結果が 1 件、差分: 不要な結合で件数が増える。
+
+## 対策の優先順位
+1) パイプライン構造を固定して生成
+2) ステージ/フィールドをallowlist化
+3) 入力は値のみに限定
 
 ## 目的（この技術で到達する状態）
 - MongoDB の aggregation pipeline を「入力→実行境界」の中でも **動的クエリ生成（SQLiの動的SQL相当）** として整理し、
@@ -176,10 +190,12 @@
 
 ~~~~
 # 危険：クライアントのpipelineをほぼそのまま実行（構造注入の余地）
+
 pipeline = JSON.parse(req.query.pipeline)
 db.collection.aggregate(pipeline)
 
 # 安全：クライアントは"意図"のみ、サーバが固定テンプレから生成（allowlist）
+
 - allowedGroupToggle = ["status", "day", "owner"]
 - allowedSortKey     = ["createdAt", "score"]
 - filters はフィールド/演算子/型のallowlistで拘束
@@ -193,10 +209,12 @@ db.collection.aggregate(pipeline, { maxTimeMS: ... })
 
 ~~~~
 # 危険：主にtenant条件があっても、$lookup先が無条件（適用範囲漏れ）
+
 [ { $match: { tenant_id: t } },
   { $lookup: { from: "other", localField: "x", foreignField: "y", as: "joined" } } ]
 
 # 安全：join先にも境界条件と投影を適用（設計として）
+
 - $lookup を許すなら "from/keys" は固定
 - join先は tenant/owner 条件を必ず適用
 - joined は必要最小限のフィールドだけ返す
