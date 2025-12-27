@@ -1,7 +1,7 @@
 # 01_ec_order_flow（EC注文フロー）
 
 ## 背景（CTF風）
-KedaMart は中小ECサイト。急拡大で注文・在庫・決済がAPI化され、権限境界の整理が追いついていない。  
+KedaMart は中小ECサイト。急拡大で注文・在庫・決済がAPI化され、権限境界の整理が追いついていない。
 あなたは外部検証として「注文データの境界」と「認証/認可の成立条件」を観測し、改善提案を出す役割。
 
 ## 目的
@@ -19,7 +19,7 @@ KedaMart は中小ECサイト。急拡大で注文・在庫・決済がAPI化さ
 
 ## 起動
 ~~~~
-cd 04_labs/scenarios/01_ec_order_flow/env
+cd /04_labs/scenarios/01_ec_order_flow/env
 docker compose up -d --build
 ~~~~
 
@@ -28,9 +28,6 @@ docker compose up -d --build
 docker compose down -v
 ~~~~
 
-## DBシード
-- 初期データは `env/app/db_seed.sql` に定義
-
 ## ユーザー（初期）
 - alice / alice（tenant-a, user）
 - bob / bob（tenant-a, admin）
@@ -38,3 +35,4 @@ docker compose down -v
 
 ## 入口URL
 - http://localhost:8080/
+
