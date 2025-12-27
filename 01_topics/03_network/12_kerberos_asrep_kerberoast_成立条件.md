@@ -1,4 +1,10 @@
-# 12_kerberos_asrep_kerberoast_成立条件
+﻿# 12_kerberos_asrep_kerberoast_成立条件
+
+## 前提知識（最低限）
+- AS-REP/Serviceチケットの違い
+
+## 次に試すこと
+- `14_delegation（unconstrained_constrained_RBCD）.md`へ接続
 Kerberosの成立条件（事前認証/SPN/暗号方式/証跡）を観測で確定し、次の一手を決める
 
 ## 目標（この技術で到達する状態）
@@ -118,10 +124,22 @@ Kerberosの成立条件（事前認証/SPN/暗号方式/証跡）を観測で確
 ## コマンド/リクエスト例（例示は最小限・意味の説明が主）
 ~~~~
 # DONT_REQ_PREAUTH（0x400000）の抽出（LDAPフィルタ例）
+
+## 前提知識（最低限）
+- AS-REP/Serviceチケットの違い
+
+## 次に試すこと
+- `14_delegation（unconstrained_constrained_RBCD）.md`へ接続
 (&(objectCategory=person)(objectClass=user)
  (userAccountControl:1.2.840.113556.1.4.803:=4194304))
 
 # SPN主体の抽出（LDAPフィルタ例）
+
+## 前提知識（最低限）
+- AS-REP/Serviceチケットの違い
+
+## 次に試すこと
+- `14_delegation（unconstrained_constrained_RBCD）.md`へ接続
 (&(objectCategory=person)(objectClass=user)(servicePrincipalName=*))
 ~~~~
 - ここで観測すること：成立条件（preauth無効/SPN/暗号方式）

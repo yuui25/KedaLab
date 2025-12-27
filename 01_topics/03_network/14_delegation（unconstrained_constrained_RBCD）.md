@@ -1,4 +1,7 @@
-# 14_delegation（unconstrained_constrained_RBCD）
+﻿# 14_delegation（unconstrained_constrained_RBCD）
+
+## 前提知識（最低限）
+- 委任の種類と適用範囲
 委任（Delegation）をタイプ別に分解し、権限がどこに置かれているかを観測で確定する
 
 ## 目標（この技術で到達する状態）
@@ -98,21 +101,33 @@
 #### Step 1：委任タイプ別の棚卸し
 ~~~~
 # Unconstrained（Computer）
+
+## 前提知識（最低限）
+- 委任の種類と適用範囲
 ldapsearch -x -H ldap://<DC_IP> -b "<DOMAIN_DN>" -s sub \
   "(&(objectClass=computer)(userAccountControl:1.2.840.113556.1.4.803:=<TRUSTED_FOR_DELEGATION_BIT>))" \
   cn dNSHostName userAccountControl
 
 # Unconstrained（User）
+
+## 前提知識（最低限）
+- 委任の種類と適用範囲
 ldapsearch -x -H ldap://<DC_IP> -b "<DOMAIN_DN>" -s sub \
   "(&(objectCategory=person)(objectClass=user)(userAccountControl:1.2.840.113556.1.4.803:=<TRUSTED_FOR_DELEGATION_BIT>))" \
   sAMAccountName userAccountControl servicePrincipalName
 
 # KCD
+
+## 前提知識（最低限）
+- 委任の種類と適用範囲
 ldapsearch -x -H ldap://<DC_IP> -b "<DOMAIN_DN>" -s sub \
   "(msDS-AllowedToDelegateTo=*)" \
   cn sAMAccountName dNSHostName servicePrincipalName msDS-AllowedToDelegateTo userAccountControl
 
 # RBCD
+
+## 前提知識（最低限）
+- 委任の種類と適用範囲
 ldapsearch -x -H ldap://<DC_IP> -b "<DOMAIN_DN>" -s sub \
   "(msDS-AllowedToActOnBehalfOfOtherIdentity=*)" \
   cn dNSHostName msDS-AllowedToActOnBehalfOfOtherIdentity

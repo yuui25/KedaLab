@@ -1,4 +1,7 @@
-# 16_gpo_永続化と権限境界
+﻿# 16_gpo_永続化と権限境界
+
+## 前提知識（最低限）
+- GPO適用範囲と継承
 GPOの二重構造（GPC/GPT）と権限（作成/編集/リンク）を分離し、永続化の成立条件を確定する
 
 ## 目標（この技術で到達する状態）
@@ -91,9 +94,15 @@ GPOの二重構造（GPC/GPT）と権限（作成/編集/リンク）を分離�
 ## コマンド/リクエスト例（例示は最小限・意味の説明が主）
 ~~~~
 # GPO一覧（RSAT）
+
+## 前提知識（最低限）
+- GPO適用範囲と継承
 Get-GPO -All | Select-Object DisplayName, Id, CreationTime, ModificationTime
 
 # GPOレポート（XML）
+
+## 前提知識（最低限）
+- GPO適用範囲と継承
 Get-GPOReport -Guid <GPO_GUID> -ReportType Xml -Path .\\gpo_<GPO_GUID>.xml
 ~~~~
 - ここで観測すること：GPOの一覧、内容、適用範囲の根拠
