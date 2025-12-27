@@ -1,7 +1,7 @@
 # 04_api_11_grpc_メタデータと認可境界
 
 ## 目的（この技術で到達する状態）
-- gRPCにおける「認証情報（メタデータ）」「認可判定点（Interceptor / Service / Gateway）」「テナント分離」「内部/外部経路のズレ」を、実務ペネトレで短時間に“確定”できる観測設計を持つ
+- gRPCにおける「認証情報（メタデータ）」「認可判定点（Interceptor / Service / Gateway）」「テナント分離」「内部/外部経路のズレ」を、実務検証で短時間に“確定”できる観測設計を持つ
 - REST/GraphQLと同等レベルで、gRPC特有の落とし穴（Reflection、Transcoding、Grpc-web、HTTP/2 proxy、metadata信頼、streaming境界）を整理し、BOLA/BFLAや情報漏えいの成立条件を差分証跡で示せる
 - エンジニアが「どこで何を強制するか（Gateway/Interceptor/Service/Envoy）」を具体的に実装へ落とせる（“何を見れば良いか”ではなく“何を直すか”まで）
 
@@ -23,6 +23,11 @@
   - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ## 観測ポイント（何を見ているか：gRPCの境界分解）
+### 0) 最小前提（用語だけ揃える）
+- metadata：HTTPヘッダ相当。認証情報はここに載ることが多い。
+- status code：gRPC独自の結果分類（UNAUTHENTICATED / PERMISSION_DENIED / NOT_FOUND 等）。
+- streaming：1接続で複数メッセージを送る方式。認可の継続性が問題になりやすい。
+
 ### 1) 経路の分解：同じ機能の“入口”が複数あるか（最初に確定）
 - 入口パターン
   - gRPC直（通常は 443/8443/50051 等）
@@ -332,6 +337,10 @@ grpcurl -H "authorization: Bearer <TOKEN>" -d '{"id":"123"}' <host>:<port> <pack
 # ID_EXISTS（権限無し） -> PERMISSION_DENIED
 # ID_NOTFOUND -> NOT_FOUND
 ~~~~
+~~~~
+# 実際の観測例（抜粋）
+rpc error: code = PermissionDenied desc = permission denied
+~~~~
 - この例で観測していること：
   - gRPCの“メソッド単位”で認証/認可が成立し、Gatewayの制御を迂回できないか
 - 出力のどこを見るか（注目点）：
@@ -377,3 +386,4 @@ grpcurl -H "authorization: Bearer <TOKEN>" -d '{"id":"123"}' <host>:<port> <pack
 - 関連 labs / cases：
   - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
   - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+

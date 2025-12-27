@@ -2,7 +2,7 @@
 
 ## 目的（この技術で到達する状態）
 - GraphQLの“攻撃面”を、(1)schema公開面（型・フィールド・操作）、(2)introspectionの運用境界、(3)クエリコスト境界（depth/complexity/timeout/rate）、(4)persisted query/allowlist境界、(5)エラー・監査境界、に分解して評価できる
-- ペネトレ実務として「負荷をかけずに」境界の有無（守りの有無）を証跡で確定し、設計是正に落とし込める
+- 検証実務として「負荷をかけずに」境界の有無（守りの有無）を証跡で確定し、設計是正に落とし込める
 - GraphQLがあるだけで危険という誤解を避け、危険なのは「無制限な探索（schema/introspection）」「無制限な要求（cost制御無し）」「入口一貫性の欠如（AuthZ drift）」である、と具体化できる
 
 ## 前提（対象・範囲・想定）
@@ -24,6 +24,11 @@
   - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
+### 0) 最小前提（用語だけ揃える）
+- Resolver：Query/Mutation/フィールドの実行単位。ここで境界が崩れやすい。
+- Directive：`@auth` のような宣言型ルール。実装により“強制/ヒント”の差がある。
+- DataLoader：複数resolverのDB取得をまとめる。tenant/roleがキーに入らないと混線する。
+
 ### 1) GraphQLの入口を固定する（単一endpointでも“入口は複数”）
 - 入口の種類（運用でよく混在）
   - /graphql（本体）
@@ -234,6 +239,16 @@ POST /graphql
 - エラーが一貫するか（漏えいの有無）
 - trace id / operationName が残るか（監査可能性）
 ~~~~
+~~~~
+# 実際の観測例（抜粋）
+HTTP/1.1 400 Bad Request
+{
+  "errors": [
+    { "message": "Query depth exceeded", "extensions": { "code": "QUERY_TOO_COMPLEX" } }
+  ],
+  "data": null
+}
+~~~~
 - この例で観測していること：
   - GraphQLの“探索可能性（schema/introspection）”と“濫用耐性（cost制御）”が、サーバ側で強制されているか
 - 出力のどこを見るか（注目点）：
@@ -280,3 +295,4 @@ POST /graphql
 - 関連 labs / cases：
   - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
   - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+

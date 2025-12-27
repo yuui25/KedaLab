@@ -1,7 +1,7 @@
 # 04_api_12_websocket_sse_認証・認可境界
 
 ## 目的（この技術で到達する状態）
-- WebSocket/SSE を「リアルタイム機能」ではなく「長時間接続の認証/認可境界」としてモデル化し、典型事故（購読IDOR、ルーム越境、失効未反映、再接続穴、Origin誤信頼、イベント混線、濫用）を実務ペネトレで差分観測により“確定”できる
+- WebSocket/SSE を「リアルタイム機能」ではなく「長時間接続の認証/認可境界」としてモデル化し、典型事故（購読IDOR、ルーム越境、失効未反映、再接続穴、Origin誤信頼、イベント混線、濫用）を実務検証で差分観測により“確定”できる
 - 入口（handshake）だけでなく、継続（push）、再接続、購読変更、切断後の挙動まで含めて評価し、エンジニアが修正できる具体策（サーバ強制scoping、subscribe権限チェック、token更新・再認証、同時接続制御、backpressure/レート、監査）を提示できる
 - “HTTPは堅牢でもWS/SSEが穴”を防ぐための共通観測テンプレを持つ
 
@@ -26,6 +26,13 @@
   - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
 
 ## 観測ポイント（何を見ているか：入口→継続→再接続→解除）
+### 最優先で見る順序（迷わないための順番）
+1. 購読IDOR（room/topic/Last-Event-ID）
+2. 失効反映（ログアウト/権限変更後の継続配信）
+3. テナント分離（client指定が効かないこと）
+4. 再接続（再認証・再認可）
+5. Origin/CSWSH（Cookie認証の安全性）
+
 ### 1) 入口（handshake / connect）での認証：どこにtokenが載るか
 - WebSocket handshakeの観測点
   - URL（wss://.../ws）
@@ -352,6 +359,11 @@ Authorization: Bearer <TOKEN>
 # SSE：Last-Event-ID（擬似）
 Last-Event-ID: 9999
 ~~~~
+~~~~
+# 実際の観測例（抜粋）
+HTTP/1.1 101 Switching Protocols
+Upgrade: websocket
+~~~~
 - この例で観測していること：
   - 購読単位のAuthZが存在し、room/topic改変で越境できないか
 - 出力のどこを見るか（注目点）：
@@ -399,3 +411,4 @@ Last-Event-ID: 9999
 - 関連 labs / cases：
   - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
   - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+

@@ -3,7 +3,7 @@
 ## 目的（この技術で到達する状態）
 - RESTの一覧/検索APIを、(1)テナント境界（03）、(2)認可条件（RBAC/ABAC：04）、(3)状態（10）、(4)最小開示（列/フィールド）、(5)濫用耐性（上限・コスト）、(6)観測オラクル（エラー差分/件数差分）、の観点でモデル化し、短時間で“越境混入/静かな漏洩”を確定できる
 - 「フィルタは自由に見せても良い」という誤解を避け、危険なのは“クライアントが境界条件を指定できる/外せる”こと、と設計に落とせる
-- ペンテスターとして、低侵襲（少数リクエスト）で「境界の欠落」を証跡化し、修正方針（サーバ強制、allowlist、上限、監査）まで提示できる
+- 検証者として、低侵襲（少数リクエスト）で「境界の欠落」を証跡化し、修正方針（サーバ強制、allowlist、上限、監査）まで提示できる
 
 ## 前提（対象・範囲・想定）
 - 対象：一覧/検索API（例：/users, /projects, /orders, /invoices, /tickets など）
@@ -248,6 +248,19 @@ GET /api/orders?status=paid&fields=id,amount,customer_email&expand=customer
 - cursor が検索条件/スコープにバインドされているか
 - fields/expand で一覧が過剰開示にならないか
 ~~~~
+~~~~
+# 実際の観測例（抜粋）
+GET /api/orders?status=paid&limit=2&offset=0
+
+HTTP/1.1 200 OK
+{
+  "items": [
+    { "id": "O1001", "amount": 1200, "tenant_id": "T1" },
+    { "id": "O1002", "amount": 900, "tenant_id": "T1" }
+  ],
+  "total": 2
+}
+~~~~
 - この例で観測していること：
   - REST一覧/検索の境界（強制条件・上限・最小開示・オラクル）を、低侵襲の差分で確定する
 - 出力のどこを見るか（注目点）：
@@ -295,3 +308,4 @@ GET /api/orders?status=paid&fields=id,amount,customer_email&expand=customer
 - 関連 labs / cases：
   - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
   - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+
