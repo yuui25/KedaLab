@@ -31,6 +31,26 @@ NW列挙（到達性→サービス→認証→権限）を「結果の羅列」
 ## 所要時間の目安
 - 全体：30〜45分
 
+## 具体的に実施する方法（最小セット）
+### 0) 証跡ディレクトリ（`nw_06`）
+~~~~
+# Windows (PowerShell)
+$dir = Join-Path $HOME "keda_evidence\\nw_06"
+New-Item -ItemType Directory -Force $dir | Out-Null
+Set-Location $dir
+"range: ...`nnotes: ..." | Set-Content -Encoding utf8 00_context.txt
+~~~~
+
+### 1) 到達性→サービス→認証→権限の順で進める（代表点のみ）
+- 到達性（例）：TCP到達を `01_reachability.txt` に保存
+  - Windows: `Test-NetConnection <HOST> -Port 445 | Out-File 01_reachability.txt`
+  - macOS/Linux: `nc -vz <HOST> 445 |& tee 01_reachability.txt`
+- サービス推定（例）：`02_ports.txt` に保存
+  - `nmap -sV -Pn -p 22,80,443,445,3389 <HOST> -oN 02_ports.txt`
+
+### 2) 失敗時の切り分け（最小）
+- `filtered` が多い：経路/ACL/プロキシ経由の差分を確認して範囲を絞る
+
 ## 手順（分岐中心：迷うポイントだけ）
 
 ### Step 0：最初の5分（必ずやる / 目安: 5分）
@@ -43,11 +63,6 @@ NW列挙（到達性→サービス→認証→権限）を「結果の羅列」
 ~~~~
 # Windows (PowerShell)
 
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 $dir = Join-Path $HOME "keda_evidence\\network_06"
 New-Item -ItemType Directory -Force $dir | Out-Null
 Set-Location $dir
@@ -55,11 +70,6 @@ Set-Location $dir
 
 # macOS/Linux (bash)
 
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 mkdir -p ~/keda_evidence/network_06
 cd ~/keda_evidence/network_06
 date > 00_time.txt
@@ -128,22 +138,12 @@ date > 00_time.txt
 ~~~~
 # Windows（地点と射程）
 
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 ipconfig /all
 route print
 whoami /all
 
 # Linux（地点と射程）
 
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 ip a
 ip r
 id

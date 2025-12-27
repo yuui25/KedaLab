@@ -29,6 +29,31 @@
 ## 所要時間の目安
 - 全体：35〜50分
 
+## 具体的に実施する方法（最小セット）
+### 0) 証跡ディレクトリ（`input_exec_07`）
+~~~~
+# Windows (PowerShell)
+$dir = Join-Path $HOME "keda_evidence\\input_exec_07"
+New-Item -ItemType Directory -Force $dir | Out-Null
+Set-Location $dir
+"targets: ...`nnotes: ..." | Set-Content -Encoding utf8 00_context.txt
+~~~~
+
+### 1) まず「差分が出る」最小入力で境界を特定する
+- A：通常入力、B：入力の1点だけ変える（長さ/型/構造/予約文字など）
+- 目的：成立の根拠は“差分”で取り、過度な動作確認を避ける
+
+### 2) 代表の証跡を残す（HTTP差分）
+~~~~
+# curl
+curl -sS -D 01_headers_A.txt -o 01_body_A.txt \"https://example.com/api?x=A\"
+curl -sS -D 01_headers_B.txt -o 01_body_B.txt \"https://example.com/api?x=B\"
+
+# Windows (PowerShell)
+Invoke-WebRequest -Uri \"https://example.com/api?x=A\" -UseBasicParsing | Out-File 01_iwr_A.txt
+Invoke-WebRequest -Uri \"https://example.com/api?x=B\" -UseBasicParsing | Out-File 01_iwr_B.txt
+~~~~
+
 ## 手順（分岐中心：迷うポイントだけ）
 
 ### Step 0：最初の5分（必ずやる / 目安: 5分）
@@ -40,11 +65,6 @@
 ~~~~
 # Windows (PowerShell)
 
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 $dir = Join-Path $HOME "keda_evidence\\input_07"
 New-Item -ItemType Directory -Force $dir | Out-Null
 Set-Location $dir
@@ -52,11 +72,6 @@ Set-Location $dir
 
 # macOS/Linux (bash)
 
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 mkdir -p ~/keda_evidence/input_07
 cd ~/keda_evidence/input_07
 printf "base_url: ...\nentry: ...\nmarker: keda_probe_...\n" > 00_context.txt
@@ -154,11 +169,6 @@ printf "base_url: ...\nentry: ...\nmarker: keda_probe_...\n" > 00_context.txt
 ~~~~
 # 例：マーカー差分を作る（値はすべてプレースホルダ）
 
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 curl -sS "https://<BASE>/search?q=normal" -D - -o /dev/null
 curl -sS "https://<BASE>/search?q=keda_probe_12345" -D - -o /dev/null
 ~~~~

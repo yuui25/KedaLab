@@ -35,6 +35,46 @@
 ## 所要時間の目安
 - 全体：25〜35分
 
+## 具体的に実施する方法（最小セット）
+### 0) 証跡ディレクトリ（`asm_passive_01`）
+~~~~
+# Windows (PowerShell)
+$dir = Join-Path $HOME "keda_evidence\\asm_passive_01"
+New-Item -ItemType Directory -Force $dir | Out-Null
+Set-Location $dir
+"scope: ...`ndate: ...`nseeds: example.com / login.example.com / api.example.com" | Set-Content -Encoding utf8 00_scope.txt
+
+# macOS/Linux (bash)
+mkdir -p ~/keda_evidence/asm_passive_01
+cd ~/keda_evidence/asm_passive_01
+printf "scope: ...\ndate: ...\nseeds: example.com / login.example.com / api.example.com\n" > 00_scope.txt
+~~~~
+
+### 1) DNS（委譲/委託の根拠を取る）
+~~~~
+dig +noall +answer NS  example.com > 01_dns_ns.txt
+dig +noall +answer SOA example.com > 01_dns_soa.txt
+dig +noall +answer CNAME api.example.com > 01_dns_cname_api.txt
+~~~~
+- 注目点：NSが外部委譲か、CNAMEが外部サービスに向くか
+
+### 2) TLS（終端/委託の根拠を取る）
+~~~~
+echo | openssl s_client -servername api.example.com -connect api.example.com:443 2>$null |
+  openssl x509 -noout -issuer -subject -ext subjectAltName > 02_tls_cert_api.txt
+~~~~
+- 注目点：Issuer/SANが第三者運用の手がかりになる
+
+### 3) HTTP（入口/SSO/管理の根拠を取る）
+~~~~
+curl -sS -I https://login.example.com/ > 03_http_head_login.txt
+curl -sS -I -L https://login.example.com/login > 03_http_head_login_follow.txt
+~~~~
+- 注目点：`Location` でIdPへ飛ぶか、`Set-Cookie` が出るか
+
+### 4) まとめ（`99_summary.md` に1行で）
+- 例：`api.example.com CNAME d123.cloudfront.net` → 外部依存（CDN/WAF/例外運用）を優先
+
 ## 手順（分岐中心：迷うポイントだけ）
 > ここでは“全列挙”をしない。**代表点で状態を確定**し、次のplaybookに渡す。
 
@@ -46,24 +86,12 @@
 - 証跡（最小）：
 ~~~~
 # Windows (PowerShell)
-
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 $dir = Join-Path $HOME "keda_evidence\\asm_passive_01"
 New-Item -ItemType Directory -Force $dir | Out-Null
 Set-Location $dir
 "scope: ...`ndate: ...`nseeds: ..." | Set-Content -Encoding utf8 00_scope.txt
 
 # macOS/Linux (bash)
-
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 mkdir -p ~/keda_evidence/asm_passive_01
 cd ~/keda_evidence/asm_passive_01
 printf "scope: ...\ndate: ...\nseeds: ...\n" > 00_scope.txt

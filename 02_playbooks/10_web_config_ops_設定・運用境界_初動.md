@@ -28,6 +28,34 @@ Webの設定/運用を「設定チェック」ではなく、外部に滲む境�
 ## 所要時間の目安
 - 全体：30〜45分
 
+## 具体的に実施する方法（最小セット）
+### 0) 証跡ディレクトリ（`web_config_10`）
+~~~~
+# Windows (PowerShell)
+$dir = Join-Path $HOME "keda_evidence\\web_config_10"
+New-Item -ItemType Directory -Force $dir | Out-Null
+Set-Location $dir
+"base_url: https://example.com" | Set-Content -Encoding utf8 00_context.txt
+~~~~
+
+### 1) 例外パスも含めてヘッダ差分を保存
+~~~~
+curl -sS -I https://example.com/ > 01_head_root.txt
+curl -sS -I https://example.com/404 > 01_head_404.txt
+curl -sS -I https://example.com/500 > 01_head_500.txt
+~~~~
+- 注目点：CORS/Cache-Control/Security Headers が例外で欠落していないか
+
+### 2) JS/設定から「境界に効く値」を拾う
+- 検索パターン例：`apiKey`, `client_id`, `redirect_uri`, `token`, `secret`
+~~~~
+rg -n \"apiKey|client_id|redirect_uri|token|secret\" -S . > 02_rg_config_hints.txt
+~~~~
+
+### 3) 見つけた値は「秘密かどうか」を判定して記録
+- 署名/権限付与に使う値なら秘密（例：秘密鍵、長期トークン）
+- 保存先：`03_secret_triage.md`（根拠：どこに出ていたか、誰が読めるか）
+
 ## 手順（分岐中心：迷うポイントだけ）
 
 ### Step 0：最初の5分（必ずやる / 目安: 5分）
@@ -39,11 +67,6 @@ Webの設定/運用を「設定チェック」ではなく、外部に滲む境�
 ~~~~
 # Windows (PowerShell)
 
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 $dir = Join-Path $HOME "keda_evidence\\web_config_10"
 New-Item -ItemType Directory -Force $dir | Out-Null
 Set-Location $dir
@@ -51,11 +74,6 @@ Set-Location $dir
 
 # macOS/Linux (bash)
 
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 mkdir -p ~/keda_evidence/web_config_10
 cd ~/keda_evidence/web_config_10
 printf "base_url: ...\nurls: ...\n" > 00_context.txt
@@ -136,20 +154,10 @@ curl -sS -I "https://<BASE>/login" | sed -n '1,80p' > 01_head_login.txt
 ~~~~
 # ヘッダ観測（代表点）
 
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 curl -sS -I "https://<BASE>/" | sed -n '1,80p'
 
 # エラーページ観測（意図的に404など）
 
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 curl -sS -i "https://<BASE>/this_path_should_not_exist" | sed -n '1,80p'
 ~~~~
 - 何を観測する例か：ヘッダ/エラーページから、設定境界の当たりを付ける。

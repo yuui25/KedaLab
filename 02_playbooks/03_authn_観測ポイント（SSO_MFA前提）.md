@@ -40,6 +40,23 @@ AuthN/SSO/MFA/セッションの成立点を観測で確定し、例外・寿命
 ## 所要時間の目安
 - 全体：40〜60分
 
+## 具体的に実施する方法（最小セット）
+### 1) 入口のリダイレクトを保存（SAML/OIDCの当たり）
+~~~~
+curl -sS -I -L https://example.com/login > 01_login_follow.txt
+~~~~
+- 注目点：
+  - SAML寄り：`SAMLRequest` / `SAMLResponse`
+  - OIDC寄り：`/authorize`、`code=`、`/.well-known/openid-configuration`
+
+### 2) OIDC候補なら well-known を確認
+~~~~
+curl -sS https://example.com/.well-known/openid-configuration > 02_oidc_wellknown.json
+~~~~
+
+### 3) 誤判定時の対処
+- SAML/OIDCが曖昧なら「混在/例外」として入口を変えて再観測し、差分を `03_mixed_notes.txt` に残す
+
 ## 手順（分岐中心：迷うポイントだけ）
 
 ### Step 0：最初の5分（必ずやる / 目安: 5分）
@@ -51,24 +68,12 @@ AuthN/SSO/MFA/セッションの成立点を観測で確定し、例外・寿命
 - 証跡（最小）：
 ~~~~
 # Windows (PowerShell)
-
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 $dir = Join-Path $HOME "keda_evidence\\authn_03"
 New-Item -ItemType Directory -Force $dir | Out-Null
 Set-Location $dir
 "base_url: ...`nuserA: ...`nuserB: ...`nflow: login->home" | Set-Content -Encoding utf8 00_context.txt
 
 # macOS/Linux (bash)
-
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 mkdir -p ~/keda_evidence/authn_03
 cd ~/keda_evidence/authn_03
 printf "base_url: ...\nuserA: ...\nuserB: ...\nflow: login->home\n" > 00_context.txt
@@ -209,11 +214,6 @@ SAMLResponse/RelayState/ACS が見える -> SAML
 ~~~~
 # JWTのclaim観測（署名検証なし）
 
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 python - <<'PY'
 import jwt,sys
 token=sys.stdin.read().strip()

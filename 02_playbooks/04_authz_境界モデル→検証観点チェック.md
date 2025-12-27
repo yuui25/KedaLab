@@ -29,6 +29,25 @@ AuthZ を「IDORがあるか」ではなく、境界（所有/ロール/テナ�
 ## 所要時間の目安
 - 全体：35〜50分
 
+## 具体的に実施する方法（最小セット）
+### 0) 証跡ディレクトリ（`authz_04`）
+~~~~
+# Windows (PowerShell)
+$dir = Join-Path $HOME "keda_evidence\\authz_04"
+New-Item -ItemType Directory -Force $dir | Out-Null
+Set-Location $dir
+"targets: /resource/{id} /admin" | Set-Content -Encoding utf8 00_context.txt
+~~~~
+
+### 1) A/B比較で境界を確定（同じ操作で1点だけ変える）
+- A：自分の `id`（所有者）で取得/更新
+- B：別 `id`（他者/他テナント相当）で取得/更新
+- 保存：A/B のリクエストとレスポンスを `01_authz_A.txt` / `01_authz_B.txt` に残す
+
+### 2) 注目点（判定の根拠）
+- 403/404/200 の差分（隠蔽か拒否か）
+- 返却フィールドの差分（見えるべきでない情報が混入しないか）
+
 ## 手順（分岐中心：迷うポイントだけ）
 
 ### Step 0：最初の5分（必ずやる / 目安: 5分）
@@ -40,11 +59,6 @@ AuthZ を「IDORがあるか」ではなく、境界（所有/ロール/テナ�
 ~~~~
 # Windows (PowerShell)
 
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 $dir = Join-Path $HOME "keda_evidence\\authz_04"
 New-Item -ItemType Directory -Force $dir | Out-Null
 Set-Location $dir
@@ -52,11 +66,6 @@ Set-Location $dir
 
 # macOS/Linux (bash)
 
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 mkdir -p ~/keda_evidence/authz_04
 cd ~/keda_evidence/authz_04
 printf "feature: ...\nuserA: ...\nuserB: ...\nresource_ids: ...\n" > 00_context.txt
@@ -150,11 +159,6 @@ printf "feature: ...\nuserA: ...\nuserB: ...\nresource_ids: ...\n" > 00_context.
 ~~~~
 # 例：read-onlyの差分を作る（値はすべてプレースホルダ）
 
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 curl -sS -H "Authorization: Bearer <TOKEN_A>" "https://<BASE>/api/<resource>/<id_A>" -D - -o /dev/null
 curl -sS -H "Authorization: Bearer <TOKEN_A>" "https://<BASE>/api/<resource>/<id_B>" -D - -o /dev/null
 ~~~~

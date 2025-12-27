@@ -33,6 +33,24 @@ SaaS を「プロダクト個別」ではなく、信頼（IdP/プロビジョ�
 ## 所要時間の目安
 - 全体：30〜45分
 
+## 具体的に実施する方法（最小セット）
+### 0) 証跡ディレクトリ（`saas_08`）
+~~~~
+# Windows (PowerShell)
+$dir = Join-Path $HOME "keda_evidence\\saas_08"
+New-Item -ItemType Directory -Force $dir | Out-Null
+Set-Location $dir
+"tenant: ...`napps: ..." | Set-Content -Encoding utf8 00_context.txt
+~~~~
+
+### 1) まず監査ログを「見える状態」にする（GUI）
+- GitHub: Organization → Audit log（画面のURLとフィルタ条件を `01_audit_gui.txt` に残す）
+- Slack: Admin → Audit logs（同様にURLと条件を保存）
+
+### 2) 相関キーを固定してから深掘りする
+- 最小：`user + time(±5min) + action + ip` で結合できる形に揃える
+- 保存：`02_keys.md` に「誰/いつ/何/どこ」テンプレで記録
+
 ## 手順（分岐中心：迷うポイントだけ）
 
 ### Step 0：最初の5分（必ずやる / 目安: 5分）
@@ -45,11 +63,6 @@ SaaS を「プロダクト個別」ではなく、信頼（IdP/プロビジョ�
 ~~~~
 # Windows (PowerShell)
 
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 $dir = Join-Path $HOME "keda_evidence\\saas_08"
 New-Item -ItemType Directory -Force $dir | Out-Null
 Set-Location $dir
@@ -57,11 +70,6 @@ Set-Location $dir
 
 # macOS/Linux (bash)
 
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 mkdir -p ~/keda_evidence/saas_08
 cd ~/keda_evidence/saas_08
 printf "targets: ...\nadmin_access: ...\nlog_sources: ...\n" > 00_context.txt
@@ -154,11 +162,6 @@ printf "targets: ...\nadmin_access: ...\nlog_sources: ...\n" > 00_context.txt
 ~~~~
 # 例：監査ログAPIがある場合の“疎通”レベル（プロダクトごとに置き換える）
 
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 curl -sS -H "Authorization: Bearer <TOKEN>" "https://<AUDIT_API_ENDPOINT>?$top=5"
 ~~~~
 - 何を観測する例か：監査ログが取れるか（取得可否/粒度の当たり）。

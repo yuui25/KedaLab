@@ -29,6 +29,21 @@
 ## 所要時間の目安
 - 全体：25〜35分
 
+## 具体的に実施する方法（最小セット）
+### 0) 証跡ディレクトリ（`egress_09`）
+~~~~
+# Windows (PowerShell)
+$dir = Join-Path $HOME "keda_evidence\\egress_09"
+New-Item -ItemType Directory -Force $dir | Out-Null
+Set-Location $dir
+"env: ...`nnotes: ..." | Set-Content -Encoding utf8 00_context.txt
+~~~~
+
+### 1) 出口は「設定→ログ→差分」で確定する
+- 設定：egress許可/denyのルール（FW/Proxy/SG）をスクショ or エクスポートして `01_egress_rules.*` に保存
+- ログ：許可/拒否のイベントを `02_egress_logs.txt` に保存（時刻窓と相関キーを併記）
+- 差分：DNS/HTTP/SMB それぞれ「通る/遮断」の根拠を `03_matrix.md` にまとめる
+
 ## 手順（分岐中心：迷うポイントだけ）
 
 ### Step 0：最初の5分（必ずやる / 目安: 5分）
@@ -40,11 +55,6 @@
 ~~~~
 # Windows (PowerShell)
 
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 $dir = Join-Path $HOME "keda_evidence\\egress_09"
 New-Item -ItemType Directory -Force $dir | Out-Null
 Set-Location $dir
@@ -52,11 +62,6 @@ Set-Location $dir
 
 # macOS/Linux (bash)
 
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 mkdir -p ~/keda_evidence/egress_09
 cd ~/keda_evidence/egress_09
 printf "host: ...\nactive_external_allowed: Yes/No/Unknown\nlog_sources: ...\n" > 00_context.txt
@@ -137,29 +142,14 @@ printf "host: ...\nactive_external_allowed: Yes/No/Unknown\nlog_sources: ...\n" 
 ~~~~
 # DNS設定（例）
 
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 ipconfig /all
 
 # HTTP(S)の挙動（例：proxyの有無は環境依存）
 
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 curl -sS -I https://example.com/ | sed -n '1,20p'
 
 # SMB到達性（例：Windows）
 
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 Test-NetConnection -ComputerName <HOST> -Port 445
 ~~~~
 - 何を観測する例か：DNS/HTTP/SMB の “出口の成立” の手掛かり。

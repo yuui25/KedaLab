@@ -29,6 +29,28 @@ API を「エンドポイント列挙」ではなく、権限伝播（主体→�
 ## 所要時間の目安
 - 全体：35〜50分
 
+## 具体的に実施する方法（最小セット）
+### 0) 証跡ディレクトリ（`api_05`）
+~~~~
+# Windows (PowerShell)
+$dir = Join-Path $HOME "keda_evidence\\api_05"
+New-Item -ItemType Directory -Force $dir | Out-Null
+Set-Location $dir
+"api: /api/* or /graphql" | Set-Content -Encoding utf8 00_context.txt
+~~~~
+
+### 1) フロント→APIの相関を取る
+- ブラウザで1回操作し、HARを `01_front.har` として保存
+- 同時にAPIの代表リクエストを `curl -v` 等で再現し、`02_api_replay.txt` に保存
+
+### 2) GraphQLの最小観測例（差分観測）
+~~~~
+curl -sS https://example.com/graphql \
+  -H \"Content-Type: application/json\" \
+  -d '{\"query\":\"query { me { id role } }\"}' > 03_graphql_me.json
+~~~~
+- 注目点：ロール/テナント差で返るフィールドや件数が変わるか
+
 ## 手順（分岐中心：迷うポイントだけ）
 
 ### Step 0：最初の5分（必ずやる / 目安: 5分）
@@ -40,11 +62,6 @@ API を「エンドポイント列挙」ではなく、権限伝播（主体→�
 ~~~~
 # Windows (PowerShell)
 
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 $dir = Join-Path $HOME "keda_evidence\\api_05"
 New-Item -ItemType Directory -Force $dir | Out-Null
 Set-Location $dir
@@ -52,11 +69,6 @@ Set-Location $dir
 
 # macOS/Linux (bash)
 
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 mkdir -p ~/keda_evidence/api_05
 cd ~/keda_evidence/api_05
 printf "base_url: ...\nuserA: ...\nuserB: ...\napis: ...\n" > 00_context.txt
@@ -160,11 +172,6 @@ printf "base_url: ...\nuserA: ...\nuserB: ...\napis: ...\n" > 00_context.txt
 ~~~~
 # 例：同じAPIを主体差で比較する（read-only）
 
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 curl -sS -H "Authorization: Bearer <TOKEN_A>" "https://<BASE>/api/<resource>/<id>" -D - -o /dev/null
 curl -sS -H "Authorization: Bearer <TOKEN_B>" "https://<BASE>/api/<resource>/<id>" -D - -o /dev/null
 ~~~~

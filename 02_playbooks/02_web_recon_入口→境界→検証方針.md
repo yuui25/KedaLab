@@ -35,6 +35,37 @@ Webの入口（画面/API/管理/連携）を境界（資産/信頼/権限/実�
 ## 所要時間の目安
 - 全体：30〜45分
 
+## 具体的に実施する方法（最小セット）
+### 0) 証跡ディレクトリ（`web_recon_02`）
+~~~~
+# Windows (PowerShell)
+$dir = Join-Path $HOME "keda_evidence\\web_recon_02"
+New-Item -ItemType Directory -Force $dir | Out-Null
+Set-Location $dir
+"base_url: https://example.com`naccounts: userA/userB" | Set-Content -Encoding utf8 00_context.txt
+
+# macOS/Linux (bash)
+mkdir -p ~/keda_evidence/web_recon_02
+cd ~/keda_evidence/web_recon_02
+printf "base_url: https://example.com\naccounts: userA/userB\n" > 00_context.txt
+~~~~
+
+### 1) HARを取る（ブラウザ）
+- DevTools → Network → Preserve log → ログイン/主要操作を実行 → “Save all as HAR” を `01_browser.har` として保存
+- 注目点：入口URL、リダイレクト、Cookie、API呼び出し先、外部ドメイン
+
+### 2) 入口のヘッダ差分（CLIで保存）
+~~~~
+curl -sS -I https://example.com/ > 02_head_root.txt
+curl -sS -I -L https://example.com/login > 02_head_login_follow.txt
+~~~~
+- 注目点：`Location`、`Set-Cookie`、`Server`、`Cache-Control`
+
+### 3) JSから設定/面を拾う（最小）
+~~~~
+rg -n \"apiKey|client_id|redirect_uri|token|secret|/api/|/graphql\" -S . > 03_rg_js_hints.txt
+~~~~
+
 ## 手順（分岐中心：迷うポイントだけ）
 
 ### Step 0：最初の5分（必ずやる / 目安: 5分）
@@ -46,24 +77,12 @@ Webの入口（画面/API/管理/連携）を境界（資産/信頼/権限/実�
 - 証跡（最小）：
 ~~~~
 # Windows (PowerShell)
-
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 $dir = Join-Path $HOME "keda_evidence\\web_recon_02"
 New-Item -ItemType Directory -Force $dir | Out-Null
 Set-Location $dir
 "scope: ...`nbase_url: ...`nseeds: ...`naccounts: ..." | Set-Content -Encoding utf8 00_context.txt
 
 # macOS/Linux (bash)
-
-## 補足（運用メモ）
-- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
-- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
-- 所要時間：目安。初回は1.5倍程度を想定
-- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 mkdir -p ~/keda_evidence/web_recon_02
 cd ~/keda_evidence/web_recon_02
 printf "scope: ...\nbase_url: ...\nseeds: ...\naccounts: ...\n" > 00_context.txt
