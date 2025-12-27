@@ -1,4 +1,10 @@
-# 27_persistence_永続化（schtasks_services_wmi）
+﻿# 27_persistence_永続化（schtasks_services_wmi）
+
+## 前提知識（最低限）
+- 永続化は複数経路で成立
+
+## 具体例（注目点）
+- 監査ログと登録先の照合
 Windows の永続化入口（タスク・サービス・WMI）を棚卸しし、成立条件と是正を確定する。
 
 ## 目的（この技術で到達する状態）

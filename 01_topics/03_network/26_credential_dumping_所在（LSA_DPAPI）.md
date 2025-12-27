@@ -1,4 +1,10 @@
-# 26_credential_dumping_所在（LSA_DPAPI）
+﻿# 26_credential_dumping_所在（LSA_DPAPI）
+
+## 前提知識（最低限）
+- LSASS/LSA Secrets/DPAPIの役割
+
+## 具体例（注目点）
+- 保護状態（PPL等）の有無
 Windows でのクレデンシャル所在（LSASS/LSA Secrets/DPAPI）を観測し、保護状態と是正を確定する。
 
 ## 目的（この技術で到達する状態）

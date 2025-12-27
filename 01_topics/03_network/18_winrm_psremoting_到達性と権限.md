@@ -1,4 +1,16 @@
-# 18_winrm_psremoting_到達性と権限
+﻿# 18_winrm_psremoting_到達性と権限
+
+## 前提知識（最低限）
+- WinRMは管理通信、PSRemotingは実行機能
+
+## 具体例（注目点）
+- Listenerの有無と認証方式
+
+## 失敗パターンと対処
+- 接続失敗: 5985/5986の到達性と認証設定を切り分け
+
+## ツール選択の基準
+- Test-WSManは到達性確認、Invoke-Commandは実行確認
 WinRM/PSRemotingの到達性と権限境界を観測で確定する
 
 ## 目標（この技術で到達する状態）

@@ -1,4 +1,14 @@
-# 17_laps_ローカル管理者パスワード境界
+﻿# 17_laps_ローカル管理者パスワード境界
+
+## 前提知識（最低限）
+- Legacy LAPS と Windows LAPS の違い
+- 代表属性: `ms-Mcs-AdmPwd`, `msLAPS-Password`
+
+## 具体例（注目点）
+- LAPS属性の値と有効期限を読む
+
+## 失敗パターンと対処
+- 読み取り不可: 権限付与範囲を確認
 LAPSの方式/適用範囲/読取権限を境界として確定し、横展開リスクを評価する
 
 ## 目標（この技術で到達する状態）
@@ -57,10 +67,30 @@ LAPSの方式/適用範囲/読取権限を境界として確定し、横展開�
 ### 実施方法（判定→スコープ→権限→リスク→検知/是正）
 ~~~~
 # Legacy LAPS（期限属性）
+
+## 前提知識（最低限）
+- Legacy LAPS と Windows LAPS の違い
+- 代表属性: `ms-Mcs-AdmPwd`, `msLAPS-Password`
+
+## 具体例（注目点）
+- LAPS属性の値と有効期限を読む
+
+## 失敗パターンと対処
+- 読み取り不可: 権限付与範囲を確認
 ldapsearch -x -H ldap://<DC_IP> -b "<DomainDN>" -s sub \
   "(ms-Mcs-AdmPwdExpirationTime=*)" dn ms-Mcs-AdmPwdExpirationTime
 
 # Windows LAPS（期限属性）
+
+## 前提知識（最低限）
+- Legacy LAPS と Windows LAPS の違い
+- 代表属性: `ms-Mcs-AdmPwd`, `msLAPS-Password`
+
+## 具体例（注目点）
+- LAPS属性の値と有効期限を読む
+
+## 失敗パターンと対処
+- 読み取り不可: 権限付与範囲を確認
 ldapsearch -x -H ldap://<DC_IP> -b "<DomainDN>" -s sub \
   "(msLAPS-PasswordExpirationTime=*)" dn msLAPS-PasswordExpirationTime
 ~~~~

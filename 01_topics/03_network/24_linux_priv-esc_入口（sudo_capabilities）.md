@@ -1,4 +1,13 @@
-# 24_linux_priv-esc_入口（sudo_capabilities）
+﻿# 24_linux_priv-esc_入口（sudo_capabilities）
+
+## 前提知識（最低限）
+- sudo権限とcapabilitiesは別経路
+
+## ツール選択の基準
+- sudo -lは権限、getcapは権能
+
+## 時間目安
+- 収集対象を絞れば短時間で判定可能
 Linux の権限昇格入口（sudoers と file capabilities）を観測で確定し、安全な検証と是正まで落とす。
 
 ## 目的（この技術で到達する状態）

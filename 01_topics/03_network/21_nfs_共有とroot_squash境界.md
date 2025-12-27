@@ -1,4 +1,13 @@
-# 21_nfs_共有とroot_squash境界
+﻿# 21_nfs_共有とroot_squash境界
+
+## 前提知識（最低限）
+- root_squashはrootを匿名UIDへ変換
+
+## 具体例（注目点）
+- UID/GIDの一致と書込可否
+
+## 失敗パターンと対処
+- showmountが空: エクスポート設定を確認
 NFSの到達性/exports/IDマッピングを境界として確定する
 
 ## 目標（この技術で到達する状態）
