@@ -40,7 +40,14 @@ AuthN/SSO/MFA/セッションの成立点を観測で確定し、例外・寿命
   - “代表フロー”を1つ決める：`ログイン → トップ表示` まで。
 - 証跡（最小）：
 ~~~~
-mkdir -p ~/keda_evidence/authn_03 2>/dev/null
+# Windows (PowerShell)
+$dir = Join-Path $HOME "keda_evidence\\authn_03"
+New-Item -ItemType Directory -Force $dir | Out-Null
+Set-Location $dir
+"base_url: ...`nuserA: ...`nuserB: ...`nflow: login->home" | Set-Content -Encoding utf8 00_context.txt
+
+# macOS/Linux (bash)
+mkdir -p ~/keda_evidence/authn_03
 cd ~/keda_evidence/authn_03
 printf "base_url: ...\nuserA: ...\nuserB: ...\nflow: login->home\n" > 00_context.txt
 ~~~~
@@ -176,5 +183,4 @@ PY
 
 ## リポジトリ内リンク（最大3つまで）
 - 関連 topics：`01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
-- 関連 labs：`04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
 - 関連 cases：`03_cases/00_index.md`

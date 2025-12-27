@@ -477,7 +477,7 @@ repo-root/
 - 04_labs/01_local/07_replay_差分再現（再送_並列）.md
 - 04_labs/02_virtualization/04_kali_vm_拡張（tools_snapshots）.md
 - 04_labs/02_virtualization/05_windows_vm_検証基盤（edge_ie_mode）.md
-- 04_labs/03_targets/04_intentionally_vuln_apps_導入（DVWA_JuiceShop）.md
+- 04_labs/scenarios/_TEMPLATE/README.md
 - 04_labs/03_targets/05_graphql_targets_検証環境（vuln_graphql）.md
 - 04_labs/03_targets/06_ssrf_targets_検証環境（webhook_metadata）.md
 - 04_labs/03_targets/07_xss_targets_検証環境（CSP差分）.md

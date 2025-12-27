@@ -33,7 +33,14 @@ SaaS を「プロダクト個別」ではなく、信頼（IdP/プロビジョ�
   - “外部共有/外部アプリの作成” が許可されているか（スコープ確認。未確認なら作成しない）。
 - 証跡（最小）：
 ~~~~
-mkdir -p ~/keda_evidence/saas_08 2>/dev/null
+# Windows (PowerShell)
+$dir = Join-Path $HOME "keda_evidence\\saas_08"
+New-Item -ItemType Directory -Force $dir | Out-Null
+Set-Location $dir
+"targets: ...`nadmin_access: ...`nlog_sources: ..." | Set-Content -Encoding utf8 00_context.txt
+
+# macOS/Linux (bash)
+mkdir -p ~/keda_evidence/saas_08
 cd ~/keda_evidence/saas_08
 printf "targets: ...\nadmin_access: ...\nlog_sources: ...\n" > 00_context.txt
 ~~~~
@@ -123,4 +130,3 @@ curl -sS -H "Authorization: Bearer <TOKEN>" "https://<AUDIT_API_ENDPOINT>?$top=5
 - 関連 topics：`01_topics/04_saas/01_idp_連携（SAML OIDC OAuth）と信頼境界.md`
 - 関連 topics：`01_topics/04_saas/02_saas_共有・外部連携・監査ログの勘所.md`
 - 関連 topics：`01_topics/04_saas/12_audit_logs_取得と相関（誰が何をいつ）.md`
-

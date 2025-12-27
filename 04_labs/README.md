@@ -53,4 +53,3 @@ docker compose down -v
 2) フォルダ名をシナリオ名に変更  
 3) README / notes_template / writeup / env を埋める  
 4) `04_labs/00_index.md` に1行で追記
-

@@ -35,7 +35,14 @@ Webの入口（画面/API/管理/連携）を境界（資産/信頼/権限/実�
   - Proxyを起動し、HARを取れる状態にする。
 - 証跡（最小）：
 ~~~~
-mkdir -p ~/keda_evidence/web_recon_02 2>/dev/null
+# Windows (PowerShell)
+$dir = Join-Path $HOME "keda_evidence\\web_recon_02"
+New-Item -ItemType Directory -Force $dir | Out-Null
+Set-Location $dir
+"scope: ...`nbase_url: ...`nseeds: ...`naccounts: ..." | Set-Content -Encoding utf8 00_context.txt
+
+# macOS/Linux (bash)
+mkdir -p ~/keda_evidence/web_recon_02
 cd ~/keda_evidence/web_recon_02
 printf "scope: ...\nbase_url: ...\nseeds: ...\naccounts: ...\n" > 00_context.txt
 ~~~~
@@ -159,6 +166,4 @@ curl -sS -I -L https://<BASE>/login | sed -n '1,60p'
 
 ## リポジトリ内リンク（最大3つまで）
 - 関連 topics：`01_topics/02_web/00_index.md`
-- 関連 labs：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
 - 関連 cases：`03_cases/00_index.md`
-

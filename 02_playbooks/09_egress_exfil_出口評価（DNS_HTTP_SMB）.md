@@ -28,7 +28,14 @@
   - 監視点（DNS/Proxy/Firewall/EDR）がどこにあるか（見えるログを先に確認）。
 - 証跡（最小）：
 ~~~~
-mkdir -p ~/keda_evidence/egress_09 2>/dev/null
+# Windows (PowerShell)
+$dir = Join-Path $HOME "keda_evidence\\egress_09"
+New-Item -ItemType Directory -Force $dir | Out-Null
+Set-Location $dir
+"host: ...`nactive_external_allowed: Yes/No/Unknown`nlog_sources: ..." | Set-Content -Encoding utf8 00_context.txt
+
+# macOS/Linux (bash)
+mkdir -p ~/keda_evidence/egress_09
 cd ~/keda_evidence/egress_09
 printf "host: ...\nactive_external_allowed: Yes/No/Unknown\nlog_sources: ...\n" > 00_context.txt
 ~~~~
@@ -115,4 +122,3 @@ Test-NetConnection -ComputerName <HOST> -Port 445
 - 関連 topics：`01_topics/03_network/28_exfiltration_持ち出し経路（DNS_HTTP_SMB）.md`
 - 関連 playbooks：`02_playbooks/06_network_enum_to_post_列挙→侵入後の導線.md`
 - 関連 playbooks：`02_playbooks/10_web_config_ops_設定・運用境界_初動.md`
-

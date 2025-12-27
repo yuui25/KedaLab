@@ -28,7 +28,14 @@
   - 同じ入力点に、マーカー文字列を含む入力を1回だけ送る（差分を作る）。
 - 証跡（最小）：
 ~~~~
-mkdir -p ~/keda_evidence/input_07 2>/dev/null
+# Windows (PowerShell)
+$dir = Join-Path $HOME "keda_evidence\\input_07"
+New-Item -ItemType Directory -Force $dir | Out-Null
+Set-Location $dir
+"base_url: ...`nentry: ...`nmarker: keda_probe_..." | Set-Content -Encoding utf8 00_context.txt
+
+# macOS/Linux (bash)
+mkdir -p ~/keda_evidence/input_07
 cd ~/keda_evidence/input_07
 printf "base_url: ...\nentry: ...\nmarker: keda_probe_...\n" > 00_context.txt
 ~~~~
@@ -128,4 +135,3 @@ curl -sS "https://<BASE>/search?q=keda_probe_12345" -D - -o /dev/null
 - 関連 topics：`01_topics/02_web/05_input_00_入力→実行境界（テンプレ デシリアライズ等）.md`
 - 関連 playbooks：`02_playbooks/02_web_recon_入口→境界→検証方針.md`
 - 関連 playbooks：`02_playbooks/05_api_権限伝播→検証観点チェック.md`
-

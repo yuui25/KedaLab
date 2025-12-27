@@ -27,7 +27,14 @@ Webの設定/運用を「設定チェック」ではなく、外部に滲む境�
   - 可能なら HAR を1回だけ取る（トップ→ログイン表示まで）。
 - 証跡（最小）：
 ~~~~
-mkdir -p ~/keda_evidence/web_config_10 2>/dev/null
+# Windows (PowerShell)
+$dir = Join-Path $HOME "keda_evidence\\web_config_10"
+New-Item -ItemType Directory -Force $dir | Out-Null
+Set-Location $dir
+"base_url: ...`nurls: ..." | Set-Content -Encoding utf8 00_context.txt
+
+# macOS/Linux (bash)
+mkdir -p ~/keda_evidence/web_config_10
 cd ~/keda_evidence/web_config_10
 printf "base_url: ...\nurls: ...\n" > 00_context.txt
 curl -sS -I "https://<BASE>/" | sed -n '1,60p' > 01_head_root.txt
@@ -122,4 +129,3 @@ curl -sS -i "https://<BASE>/this_path_should_not_exist" | sed -n '1,80p'
 - 関連 topics：`01_topics/02_web/06_config_00_設定・運用境界（CORS ヘッダ Secrets）.md`
 - 関連 playbooks：`02_playbooks/02_web_recon_入口→境界→検証方針.md`
 - 関連 playbooks：`02_playbooks/05_api_権限伝播→検証観点チェック.md`
-

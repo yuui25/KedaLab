@@ -35,7 +35,14 @@
   - 代表点（最初は3つ）を決める：`{root domain, login, api/admin}` の形で十分。
 - 証跡（最小）：
 ~~~~
-mkdir -p ~/keda_evidence/asm_passive_01 2>/dev/null
+# Windows (PowerShell)
+$dir = Join-Path $HOME "keda_evidence\\asm_passive_01"
+New-Item -ItemType Directory -Force $dir | Out-Null
+Set-Location $dir
+"scope: ...`ndate: ...`nseeds: ..." | Set-Content -Encoding utf8 00_scope.txt
+
+# macOS/Linux (bash)
+mkdir -p ~/keda_evidence/asm_passive_01
 cd ~/keda_evidence/asm_passive_01
 printf "scope: ...\ndate: ...\nseeds: ...\n" > 00_scope.txt
 ~~~~
@@ -102,7 +109,7 @@ curl -sS -I https://<SEED_HOST>/ | sed -n '1,40p' > 02_http_headers_seed.txt
   - HTTP外形：`01_topics/01_asm-osint/03_http_観測（ヘッダ・挙動）と意味.md`
   - Cloud露出：`01_topics/01_asm-osint/05_cloud_露出面（CDN_WAF_Storage等）推定.md`
 - 次に回す検証（labs連動）：
-  - Web観測：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
+  - 証跡（HAR/Proxy/メモ）：自分のテンプレに従う
 
 ## 取得する証跡（目的ベースで最小限）
 - 何のため：境界（管理主体/外部依存/入口）を説明するため。
@@ -140,6 +147,4 @@ curl -I -L https://app.example.com/login
 
 ## リポジトリ内リンク（最大3つまで）
 - 関連 topics：`01_topics/01_asm-osint/00_index.md`
-- 関連 labs：`04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
 - 関連 cases：`03_cases/00_index.md`
-

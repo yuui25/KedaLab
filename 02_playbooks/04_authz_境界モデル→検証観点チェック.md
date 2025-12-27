@@ -28,7 +28,14 @@ AuthZ を「IDORがあるか」ではなく、境界（所有/ロール/テナ�
   - 主体A/B とリソース（自分/他人）を、先に“名前”で固定する（例：A_myFileId / A_otherFileId）。
 - 証跡（最小）：
 ~~~~
-mkdir -p ~/keda_evidence/authz_04 2>/dev/null
+# Windows (PowerShell)
+$dir = Join-Path $HOME "keda_evidence\\authz_04"
+New-Item -ItemType Directory -Force $dir | Out-Null
+Set-Location $dir
+"feature: ...`nuserA: ...`nuserB: ...`nresource_ids: ..." | Set-Content -Encoding utf8 00_context.txt
+
+# macOS/Linux (bash)
+mkdir -p ~/keda_evidence/authz_04
 cd ~/keda_evidence/authz_04
 printf "feature: ...\nuserA: ...\nuserB: ...\nresource_ids: ...\n" > 00_context.txt
 ~~~~
@@ -121,4 +128,3 @@ curl -sS -H "Authorization: Bearer <TOKEN_A>" "https://<BASE>/api/<resource>/<id
 - 関連 topics：`01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
 - 関連 playbooks：`02_playbooks/03_authn_観測ポイント（SSO_MFA前提）.md`
 - 関連 playbooks：`02_playbooks/05_api_権限伝播→検証観点チェック.md`
-

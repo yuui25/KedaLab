@@ -9,54 +9,103 @@
 このシナリオは、注文APIの境界（所有者/ロール/テナント）を差分観測で説明し、  
 `kedaLab{...}` を取得するまでの「成立条件」を言語化する練習。
 
-## 観測フロー（要点：参照するtopicsを明記）
-1) Cookie属性の境界を観測する  
-   - `01_topics/02_web/02_authn_01_cookie属性と境界（Secure_HttpOnly_SameSite_Path_Domain）.md`
-2) セッション寿命/失効/固定化の差分を観測する  
-   - `01_topics/02_web/02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`
-3) 認証CSRFとstate設計の有無を観測する  
-   - `01_topics/02_web/02_authn_13_login_csrf_認証CSRFとstate設計.md`
-4) ログアウト設計と無効化の成立点を観測する  
-   - `01_topics/02_web/02_authn_14_logout_設計（RP_IdP_フロントチャネル）.md`
-5) 多端末/同時ログイン制御の差分を観測する  
-   - `01_topics/02_web/02_authn_15_session_concurrency（多端末_同時ログイン制御）.md`
+## 観測フロー（詳細：参照するtopicsを明記）
+### 1) 入口の観測（未ログイン）
+- 目的：ログイン前後の差分を作るための基準点を作る
+- 手順：
+  1. `http://localhost:8080/` にアクセス
+  2. Proxy/HARを開始し、`/login` を表示
+  3. 200/302、レスポンスヘッダを保存
+- 観測ポイント：
+  - `Set-Cookie` の有無
+  - セキュリティヘッダ（必要なら）
+- 参照topics：
+  - `01_topics/02_web/02_authn_01_cookie属性と境界（Secure_HttpOnly_SameSite_Path_Domain）.md`
+
+### 2) ログインとCookie属性の確認
+- 目的：セッション材料と属性を確定する
+- 手順：
+  1. ローカルログイン（alice/alice）
+  2. `Set-Cookie` の属性（Secure/HttpOnly/SameSite/Path/Domain）を記録
+  3. `/me` のレスポンスを取得
+- 観測ポイント：
+  - Cookie属性と有効期限
+  - `x-request-id` の発行
+- 参照topics：
+  - `01_topics/02_web/02_authn_01_cookie属性と境界（Secure_HttpOnly_SameSite_Path_Domain）.md`
+
+### 3) セッション寿命/失効の差分
+- 目的：失効・更新・固定化の成立点を観測する
+- 手順：
+  1. ログイン後に一定時間待機（短時間でよい）
+  2. `/me` を再度呼び、セッション継続を確認
+  3. `/logout` 実行後に `/me` を再度呼び、無効化を確認
+- 観測ポイント：
+  - セッション継続/失効の差分
+- 参照topics：
+  - `01_topics/02_web/02_authn_02_session_lifecycle（更新_失効_固定化_ローテーション）.md`
+  - `01_topics/02_web/02_authn_14_logout_設計（RP_IdP_フロントチャネル）.md`
+
+### 4) 認証CSRFの有無（ログインPOST）
+- 目的：ログインフローにCSRF対策があるかを観測する
+- 手順：
+  1. ログイン画面のフォームを確認
+  2. 送信時のパラメータに CSRF token / state 相当があるか記録
+- 観測ポイント：
+  - hidden input の有無
+- 参照topics：
+  - `01_topics/02_web/02_authn_13_login_csrf_認証CSRFとstate設計.md`
+
+### 5) 同時ログイン制御（最小観測）
+- 目的：多端末の制御を観測する（入門向け）
+- 手順：
+  1. 別ブラウザ（またはシークレット）で同じユーザーでログイン
+  2. 先にログインしたセッションが維持されるか確認
+- 観測ポイント：
+  - 既存セッションの扱い
+- 参照topics：
+  - `01_topics/02_web/02_authn_15_session_concurrency（多端末_同時ログイン制御）.md`
+
+## フラグ取得までの手順（チュートリアルのゴール）
+### 6) 目的を確認する
+- 目的：**他ユーザーの注文データにアクセスできてしまう条件**を観測で確定し、`kedaLab{...}` を取得する
+- 入口：`/ui/orders` と `/api/orders/{order_id}`
+
+### 7) 自分の注文と他人の注文を区別する
+- 手順：
+  1. alice でログイン
+  2. `/ui/orders` を開き、自分に見える注文IDをメモ
+  3. `/api/orders` のレスポンスで自分の注文IDを確認
+- 目的：
+  - 「自分の注文ID」と「他人の注文ID」を区別できる状態を作る
+
+### 8) “他人注文”へのアクセス差分を観測する
+- 手順：
+  1. alice で `/api/orders/{order_id}` を呼ぶ（自分のIDで確認）
+  2. **同じパスで order_id を別のIDに変えて**呼ぶ（入力条件は「IDだけ変更」）
+  3. 返るステータス/レスポンスの差を記録
+- 観測ポイント：
+  - 403 になるべきか / 200で返るか
+  - 返る場合、内容に `flag` が含まれていないか
+
+### 9) 管理者/別テナントでの差分を確認する
+- 手順：
+  1. bob（admin）でログインして同じIDを呼ぶ
+  2. carol（tenant-b）でログインして同じIDを呼ぶ
+- 目的：
+  - ロール境界・テナント境界がどこで効いているかを確定する
+
+### 10) フラグ取得
+- 条件：
+  - **他人の注文IDにアクセスできる状態**が成立している
+  - レスポンスに `kedaLab{...}` が含まれる
+- 取得場所の例：
+  - `/api/orders/{order_id}` の JSON 内 `flag`
 
 ## 成立条件（安全な書き方）
 - “他ユーザーの注文にアクセスできる条件” を差分で特定する  
   例: 所有者境界が効いていない / テナント境界は効いている
 - 入力条件は **型（どのIDをどこで変えるか）** を記述する
-
-## 対象外/今回扱わないtopics（理由を明記）
-- `01_topics/02_web/02_authn_03_token設計（Bearer_JWT_Refresh_Rotation）.md`  
-  - 本シナリオはCookieセッション中心
-- `01_topics/02_web/02_authn_04_sso_oidc_flow観測（state_nonce_code_PKCE）.md`  
-  - OIDC未導入
-- `01_topics/02_web/02_authn_05_sso_saml_flow観測（assertion_audience_recipient）.md`  
-  - SAML未導入
-- `01_topics/02_web/02_authn_06_mfa_成立点と例外パス（step-up_device_trust）.md`  
-  - MFA未導入
-- `01_topics/02_web/02_authn_07_client_storage（localStorage_sessionStorage_memory）.md`  
-  - ストレージ設計は扱わない
-- `01_topics/02_web/02_authn_08_device_binding（端末紐付け_IP_UA_fingerprint）.md`  
-  - 端末紐付け未導入
-- `01_topics/02_web/02_authn_09_password_policy（強度_漏えい照合_禁止語）.md`  
-  - パスワード強度ポリシー未導入
-- `01_topics/02_web/02_authn_10_password_reset_回復経路（token_失効_多要素）.md`  
-  - パスワードリセット未導入
-- `01_topics/02_web/02_authn_11_account_recovery_本人確認（サポート代行_回復コード）.md`  
-  - 回復フロー未導入
-- `01_topics/02_web/02_authn_12_bruteforce_rate-limit_lockout（例外パス）.md`  
-  - レート制限/ロックアウト未導入
-- `01_topics/02_web/02_authn_16_step-up_再認証境界（重要操作_再確認）.md`  
-  - 重要操作の再認証未導入
-- `01_topics/02_web/02_authn_17_refresh_token_rotation_盗用検知（reuse）.md`  
-  - Refreshトークン未導入
-- `01_topics/02_web/02_authn_18_token_binding（DPoP_mTLS）観測.md`  
-  - DPoP/mTLS未導入
-- `01_topics/02_web/02_authn_19_webauthn_passkeys_登録・回復境界.md`  
-  - Passkey未導入
-- `01_topics/02_web/02_authn_20_magic-link_メールリンク認証の成立条件.md`  
-  - Magic Link未導入
 
 ## 取得した証跡（例）
 - HAR（ログイン前/後、対象API）

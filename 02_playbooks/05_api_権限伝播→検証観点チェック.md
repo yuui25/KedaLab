@@ -28,7 +28,14 @@ API を「エンドポイント列挙」ではなく、権限伝播（主体→�
   - 代表APIは「一覧/検索」「参照」「更新（できれば）」の形で1本ずつにする（合計3本まで）。
 - 証跡（最小）：
 ~~~~
-mkdir -p ~/keda_evidence/api_05 2>/dev/null
+# Windows (PowerShell)
+$dir = Join-Path $HOME "keda_evidence\\api_05"
+New-Item -ItemType Directory -Force $dir | Out-Null
+Set-Location $dir
+"base_url: ...`nuserA: ...`nuserB: ...`napis: ..." | Set-Content -Encoding utf8 00_context.txt
+
+# macOS/Linux (bash)
+mkdir -p ~/keda_evidence/api_05
 cd ~/keda_evidence/api_05
 printf "base_url: ...\nuserA: ...\nuserB: ...\napis: ...\n" > 00_context.txt
 ~~~~
@@ -132,4 +139,3 @@ curl -sS -H "Authorization: Bearer <TOKEN_B>" "https://<BASE>/api/<resource>/<id
 - 関連 topics：`01_topics/02_web/04_api_00_権限伝播・入力・バックエンド連携.md`
 - 関連 playbooks：`02_playbooks/04_authz_境界モデル→検証観点チェック.md`
 - 関連 playbooks：`02_playbooks/07_input_to_rce_入力→実行の導線.md`
-

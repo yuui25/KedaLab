@@ -31,7 +31,14 @@ NW列挙（到達性→サービス→認証→権限）を「結果の羅列」
   - “外へ出る” 通信が許可されているか（スコープ確認）
 - 証跡（最小）：
 ~~~~
-mkdir -p ~/keda_evidence/network_06 2>/dev/null
+# Windows (PowerShell)
+$dir = Join-Path $HOME "keda_evidence\\network_06"
+New-Item -ItemType Directory -Force $dir | Out-Null
+Set-Location $dir
+(Get-Date).ToString("s") | Set-Content -Encoding utf8 00_time.txt
+
+# macOS/Linux (bash)
+mkdir -p ~/keda_evidence/network_06
 cd ~/keda_evidence/network_06
 date > 00_time.txt
 ~~~~
@@ -123,4 +130,3 @@ id
 - 関連 topics：`01_topics/03_network/01_enum_到達性→サービス→認証→権限推定.md`
 - 関連 topics：`01_topics/03_network/02_post_侵入後の前提（権限 経路 横展開の入口）.md`
 - 関連 topics：`01_topics/03_network/03_creds_認証情報の所在と扱い（攻撃 検知の両面）.md`
-
