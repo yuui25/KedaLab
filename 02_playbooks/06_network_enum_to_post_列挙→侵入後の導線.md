@@ -32,10 +32,10 @@ NW列挙（到達性→サービス→認証→権限）を「結果の羅列」
 - 全体：30〜45分
 
 ## 具体的に実施する方法（最小セット）
-### 0) 証跡ディレクトリ（`nw_06`）
+### 0) 証跡ディレクトリ（`network_06`）
 ~~~~
 # Windows (PowerShell)
-$dir = Join-Path $HOME "keda_evidence\\nw_06"
+$dir = Join-Path $HOME "keda_evidence\\network_06"
 New-Item -ItemType Directory -Force $dir | Out-Null
 Set-Location $dir
 "range: ...`nnotes: ..." | Set-Content -Encoding utf8 00_context.txt
