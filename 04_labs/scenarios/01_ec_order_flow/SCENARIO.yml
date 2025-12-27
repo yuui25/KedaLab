@@ -1,0 +1,17 @@
+id: ec_order_flow
+title: EC注文フロー（AuthN/AuthZ/API/設定/ログ）
+difficulty: beginner_to_intermediate
+timebox_minutes: 30
+flags:
+  - kedaLab{order_access_boundary}
+topics:
+  - AuthN
+  - AuthZ
+  - API
+  - Config
+  - Logging
+playbooks:
+  - 02_playbooks/03_authn_観測ポイント（SSO_MFA前提）.md
+  - 02_playbooks/04_authz_境界モデル→検証観点チェック.md
+  - 02_playbooks/05_api_権限伝播→検証観点チェック.md
+  - 02_playbooks/10_web_config_ops_設定・運用境界_初動.md

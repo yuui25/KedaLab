@@ -1,96 +1,56 @@
 # 04_labs README
 
-目的: 検証環境を最短で構築・起動し、topics/playbooks を「観測→差分→判断」で回せる状態にする。
+検証環境の入口です。ここでは **起動方法** と **注意点** を明記します。
+
+---
+
+## 重要な注意点
+- 本環境は教育目的です。**許可された環境のみ**で使用してください。
+- 実システムへの適用・悪用は禁止です。
+- 生成した証跡（HAR/ログ/pcap）は機密情報を含む可能性があるため、保管/共有に注意してください。
+
+---
+
+## 最短起動（チュートリアル: EC）
+前提:
+- Docker Desktop が使える
+- ブラウザ + Proxy が使える（HAR/Proxyログを取る）
+
+手順:
+1) Docker Desktop セットアップ  
+   - `04_labs/SETUP_DOCKER_DESKTOP.md`
+2) チュートリアル環境の起動  
+~~~~
+cd 04_labs/scenarios/01_ec_order_flow/env
+docker compose up -d --build
+~~~~
+3) 動作確認  
+   - App: http://localhost:8080/
+4) リセット  
+~~~~
+docker compose down -v
+~~~~
 
 ---
 
 ## 構成（全体像）
 ~~~~
 04_labs/
-├─ 00_index.md
-├─ 01_local/        # 作業端末/Proxy/証跡設計
-├─ 02_virtualization/  # NAT/Host-Only/Bridge
-├─ 03_targets/      # 教材ターゲット
-├─ 04_cloud/        # クラウド(任意)
-└─ 05_automation/   # 巻き戻し/IaC
+├─ README.md
+├─ 00_index.md                  # シナリオ一覧
+├─ SETUP_DOCKER_DESKTOP.md       # Docker導入
+├─ SETUP_VIRTUALBOX.md           # VirtualBox導入
+├─ SETUP_VMWARE.md               # VMware導入
+└─ scenarios/
+   ├─ _TEMPLATE/                 # 新規追加用テンプレ
+   └─ 01_ec_order_flow/          # チュートリアル（EC）
 ~~~~
 
 ---
 
-## 最短起動（ローカル検証）
-前提:
-- Docker が使える
-- ブラウザ + Proxy が使える（Har/Proxyログを取る）
-
-手順:
-1) 作業端末/観測点の準備
-   - `04_labs/01_local/00_index.md`
-   - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
-   - `04_labs/01_local/03_capture_証跡取得（pcap_harl_log）.md`
-2) ターゲット起動（keda_app）
-   ~~~~
-   cd 04_labs/03_targets/keda_app
-   docker compose up -d --build
-   ~~~~
-3) 動作確認
-   - App: http://localhost:8080/
-4) 巻き戻し
-   ~~~~
-   docker compose down -v
-   ~~~~
-
-任意: OIDC を使う場合
-~~~~
-cd 04_labs/03_targets/keda_app
-OIDC_ENABLED=1 docker compose --profile oidc up -d --build
-~~~~
-
----
-
-## 構成（keda_app）
-~~~~mermaid
-flowchart LR
-  AB["Attack Box\nBrowser + Proxy + HAR/pcap"] --> APP["keda-app (FastAPI)"]
-  APP --> DB["sqlite (volume)"]
-  AB --> KC["Keycloak (optional)"]
-  APP --> KC
-~~~~
-
----
-
-## 追加のしかた（今後の拡張ルール）
-原則:
-- 1つの新規教材 = 1つの境界を学べる構成に絞る
-- 観測点（Proxy/HAR/pcap/ログ）を先に決める
-- 巻き戻し（reset/snapshot）ができる前提を必ず書く
-
-追加する場所:
-- 新しい教材アプリ: `04_labs/03_targets/<name>/`
-- 教材の説明: `04_labs/03_targets/<NN>_<name>_*.md`
-- 追加したら `04_labs/03_targets/00_index.md` にリンク
-
----
-
-## サンプルテンプレ（追加用）
-~~~~
-# 0X_<name>_概要.md
-
-## 目的
-- 何の境界を学ぶ教材か
-
-## 構成
-- どのサービス/コンテナで動くか
-
-## 起動手順
-- docker compose up -d --build
-
-## リセット
-- docker compose down -v
-
-## 観測ポイント
-- どの差分を見るか（未ログイン/ログイン/ロール/テナント等）
-
-## 関連リンク
-- topics/playbooks/labs へのリンク
-~~~~
+## 追加方法（最短）
+1) `04_labs/scenarios/_TEMPLATE/` をコピー  
+2) フォルダ名をシナリオ名に変更  
+3) README / notes_template / writeup / env を埋める  
+4) `04_labs/00_index.md` に1行で追記
 

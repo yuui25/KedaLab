@@ -1,0 +1,13 @@
+# SETUP_VIRTUALBOX.md
+
+## 目的
+VirtualBox を導入し、Windows/ADシナリオ等で使える状態にする。
+
+## 手順（最小）
+1) VirtualBox をインストール  
+2) Host-Only ネットワークを作成  
+3) VM が起動できることを確認
+
+## 注意点
+- 企業端末で制限がある場合は管理者に相談してください。
+
