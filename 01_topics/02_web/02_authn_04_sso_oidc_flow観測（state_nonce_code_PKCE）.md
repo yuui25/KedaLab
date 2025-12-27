@@ -13,6 +13,11 @@ OIDC（SSO）のフローを、用語暗記ではなく **通信の成立点（�
 - state/nonce/code/PKCE が **どこで生成・保持・検証されているか** を観測で押さえ、推測で断言しない（yes/no/unknown に落とす）。
 - 「アプリのセッション（Cookie）」と「IdPのセッション」「トークン（ID/Access/Refresh）」を混ぜずに切り分け、次の検証（MFA/クライアント保存/端末紐付け/認可）へ繋げる。
 
+## 用語（最小）
+- 境界：責任/権限/到達性が切り替わる地点
+- 差分観測：1条件だけ変えて比較する観測
+- 成立条件：何が揃うと成立/不成立が決まるか
+
 ## 前提（対象・範囲・想定）
 - 対象：許可された範囲のWebアプリ（Relying Party）と、連携するIdP（Authorization Server / OpenID Provider）。
 - 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
@@ -34,6 +39,13 @@ OIDC（SSO）のフローを、用語暗記ではなく **通信の成立点（�
     - MFAの詳細 → `01_topics/02_web/02_authn_06_mfa_成立点と例外パス（step-up_device_trust）.md`
     - クライアント保存の詳細 → `01_topics/02_web/02_authn_07_client_storage（localStorage_sessionStorage_memory）.md`
     - 端末紐付けの詳細 → `01_topics/02_web/02_authn_08_device_binding（端末紐付け_IP_UA_fingerprint）.md`
+
+## 想定時間
+- 目安：20〜40分（環境/SSO有無で前後）
+
+## ツール選定の根拠（代替）
+- HAR/Proxy：成立点と差分を最小回数で記録できる
+- 代替：ブラウザ開発者ツール/サーバログ/設定画面
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 ### 1) まず「OIDCが始まる入口」と「越境点」を確定する
@@ -163,6 +175,11 @@ curl -i -L "https://rp.example.com/login"
   - Locationヘッダ（authorize URL）、クエリパラメータ（client_id、redirect_uri、response_type、scope、state、nonce、code_challenge等）
 - この例が使えないケース（前提が崩れるケース）：
   - JS必須/SSO必須の場合、curlだけでは成立しない（ブラウザ+HAR/Proxyで観測へ）
+
+## 観測が失敗した場合
+- 変数を1つに絞り、差分が出る条件を再設定する
+- HARが取れない場合は、画面遷移とレスポンスのスクショで代替する
+- ログ/設定が見られるなら、挙動の根拠として添える
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
 - ASVS：

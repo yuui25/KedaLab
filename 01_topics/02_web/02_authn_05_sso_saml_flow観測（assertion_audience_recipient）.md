@@ -13,6 +13,11 @@ SAMLの用語暗記ではなく、**どの通信で本人性が成立し、ど�
 - `SAMLRequest` / `SAMLResponse` を **「存在する/しない」「どこに出る/出ない」** で確定し、次の検証（MFA、属性マッピング、ログアウト境界、クライアント保存）に繋げられる。
 - Assertion内の最重要フィールド（Audience/Recipient/InResponseTo/NotOnOrAfter/Issuer/NameID/Attributes/署名位置）を、証跡（HAR/Proxyログ/デコード結果）付きで整理できる。
 
+## 用語（最小）
+- 境界：責任/権限/到達性が切り替わる地点
+- 差分観測：1条件だけ変えて比較する観測
+- 成立条件：何が揃うと成立/不成立が決まるか
+
 ## 前提（対象・範囲・想定）
 - 対象：許可された範囲のWebアプリ（SP: Service Provider）と、連携するIdP（Identity Provider）。
 - 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
@@ -35,6 +40,13 @@ SAMLの用語暗記ではなく、**どの通信で本人性が成立し、ど�
     - MFAの詳細 → `01_topics/02_web/02_authn_06_mfa_成立点と例外パス（step-up_device_trust）.md`
     - 属性マッピングの詳細 → `01_topics/02_web/03_authz_00_認可（IDOR BOLA BFLA）境界モデル化.md`
     - ログアウト境界の詳細 → `01_topics/02_web/02_authn_14_logout_設計（RP_IdP_フロントチャネル）.md`
+
+## 想定時間
+- 目安：20〜40分（環境/SSO有無で前後）
+
+## ツール選定の根拠（代替）
+- HAR/Proxy：成立点と差分を最小回数で記録できる
+- 代替：ブラウザ開発者ツール/サーバログ/設定画面
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 ### 1) 入口・越境点・戻り点（境界）を確定する
@@ -190,6 +202,11 @@ PY
   - Audience、Recipient、Destination、InResponseTo、NotOnOrAfter、Issuer、NameID、Attributes、署名の位置（Response/Assertion）
 - この例が使えないケース（前提が崩れるケース）：
   - Assertionが暗号化されている場合、デコードしても中身は見えない（暗号化の有無は観測できる）
+
+## 観測が失敗した場合
+- 変数を1つに絞り、差分が出る条件を再設定する
+- HARが取れない場合は、画面遷移とレスポンスのスクショで代替する
+- ログ/設定が見られるなら、挙動の根拠として添える
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
 - ASVS：
