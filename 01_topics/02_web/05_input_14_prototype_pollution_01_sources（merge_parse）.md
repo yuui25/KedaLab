@@ -1,4 +1,31 @@
-# 05_input_14_prototype_pollution_01_sources（merge_parse）
+﻿# 05_input_14_prototype_pollution_01_sources（merge_parse）
+
+## このファイルで扱う概念
+- prototype pollutionの入力経路（merge/parse）と危険キー境界。
+
+## 危険性を一言で
+- 共有プロトタイプが汚染され、広範囲に影響が伝播する。
+
+## 最小限の成立判断（目安）
+- 危険キーの差分で挙動が変わる。
+
+## 観測例（差分のイメージ）
+- A: 通常、B: 共有オブジェクトの値が変わる。
+
+## 観測が取れない場合の代替
+- merge/parse実装で危険キーが遮断されているか確認する。
+
+## 時間制約下の最小観測点
+- 危険キーの遮断有無。
+
+## 対策の優先順位
+1) 危険キーのdenylist
+2) `Object.create(null)`の利用
+3) deep mergeの抑制
+
+## 具体例（危険キーとガード）
+- 危険キー: `__proto__`, `constructor`, `prototype`
+- ガード: `hasOwnProperty`での検証、深いmergeを避ける
 Prototype Pollution の source を分解する。parse と merge と set のどこで危険キーが通るかを差分で確定する
 
 ---
@@ -124,20 +151,6 @@ Prototype Pollution の source を分解する。parse と merge と set のど�
 
 ~~~~
 # 例：query string のネストパースを観測
-curl -i "https://example.com/api?user[name]=test&user[__proto__][isAdmin]=true"
-
-# 例：JSON body の parse を観測
-curl -i -X POST https://example.com/api/profile \
-  -H "Content-Type: application/json" \
-  -d '{"name":"test","__proto__":{"isAdmin":true}}'
-~~~~
-
-- この例で観測していること：
-  - parse 段階で危険キーが通るか、ネストが作れるか
-- 出力のどこを見るか（注目点）：
-  - レスポンスの JSON、エラーメッセージ、ログ、例外スタック
-- この例が使えないケース（前提が崩れるケース）：
-  - 入力バリデーションで早期に拒否される場合、parse 段階まで到達しない
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
 - ASVS：

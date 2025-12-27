@@ -1,4 +1,31 @@
-# 05_input_19_cache_poisoning_01_keying（vary_normalization）
+﻿# 05_input_19_cache_poisoning_01_keying（vary_normalization）
+
+## このファイルで扱う概念
+- キャッシュキーの正規化差分。
+
+## 危険性を一言で
+- 正規化差分で別オブジェクトとして扱われる。
+
+## 最小限の成立判断（目安）
+- keyの差分でヒット/ミスが変わる。
+
+## 観測例（差分のイメージ）
+- A: HIT、B: MISS になる。
+
+## 観測が取れない場合の代替
+- Vary/正規化ロジックを設定で確認する。
+
+## 時間制約下の最小観測点
+- Host/Path/Queryの正規化差分。
+
+## 対策の優先順位
+1) 正規化の統一
+2) Varyの最小化
+3) 監視の強化
+
+## 具体例（正規化差分）
+- `example.com` vs `EXAMPLE.com`
+- `/path` vs `/path/` や `./` `../`
 Cache Poisoning（Keying）：Varyと正規化差でキャッシュキーが崩れると、ユーザ/テナント境界が"キャッシュ側で"破壊される
 
 ---
@@ -119,19 +146,6 @@ Cache Poisoning（Keying）：Varyと正規化差でキャッシュキーが崩�
 
 ~~~~
 # この領域は「入力を増やすほど第三者影響のリスク」が上がる。
-# 目的は Keying（何がキーに入るか）と Normalization（同一視/別扱い）を、観測で固めること。
-# - ベースライン固定
-# - 差分は1軸ずつ
-# - Hit/Missは複数証拠で判定
-# - 可能なら cacheログとoriginログで相関
-~~~~
-
-- この例で観測していること：
-  - Keying（何がキーに入るか）と Normalization（同一視/別扱い）を、観測で固める
-- 出力のどこを見るか（注目点）：
-  - 1回目/2回目の応答時間差（Hit/Miss推定）、Age等のヘッダ、キャッシュログ（hit/miss）
-- この例が使えないケース（前提が崩れるケース）：
-  - キャッシュ機能がない場合、観測できない
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
 - ASVS：

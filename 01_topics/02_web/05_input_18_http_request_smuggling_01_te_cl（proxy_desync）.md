@@ -1,4 +1,30 @@
-# 05_input_18_http_request_smuggling_01_te_cl（proxy_desync）
+﻿# 05_input_18_http_request_smuggling_01_te_cl（proxy_desync）
+
+## このファイルで扱う概念
+- TE.CLの解釈差による境界崩壊。
+
+## 危険性を一言で
+- フロント/バックの解釈差で意図外のリクエストが通る。
+
+## 最小限の成立判断（目安）
+- TE/CLの差分で挙動が再現する。
+
+## 観測例（差分のイメージ）
+- A: 400、B: 200/遅延が出る。
+
+## 観測が取れない場合の代替
+- 解析ログやプロキシ設定を確認する。
+
+## 時間制約下の最小観測点
+- フロント/バックの解釈差の有無。
+
+## 対策の優先順位
+1) TE/CLの統一
+2) プロキシ設定の固定
+3) 異常系の遮断
+
+## 具体例（判定の目安）
+- TE優先のフロント + CL優先のバックで差分が出る
 HTTP Request Smuggling（TE.CL）：Transfer-Encoding を信じるフロントと Content-Length を信じるバックで、リクエスト境界が壊れる
 
 ---
@@ -114,32 +140,6 @@ HTTP Request Smuggling（TE.CL）：Transfer-Encoding を信じるフロント�
 
 ~~~~
 # TE.CL で見るべきポイント（形）
-# - Transfer-Encoding: chunked と Content-Length が同時に存在する
-# - フロントは chunked 終端で「終わり」と見る可能性
-# - バックは Content-Length で「まだ続く」と見る可能性
-# - 結果として、同一コネクション上の次リクエスト境界がズレる
-
-POST /endpoint HTTP/1.1
-Host: example
-Content-Length: <CL_value>
-Transfer-Encoding: chunked
-Connection: keep-alive
-
-<chunked-body ... 0\r\n\r\n>
-<ここに次リクエスト相当が"混ざる/余る"状態を作ると desync の候補になる>
-
-# 観測
-# - 返ってきたレスポンスがどのリクエストに対応しているか
-# - 片方がタイムアウト/遅延するか
-# - 400/502/504 の層がどう変わるか
-~~~~
-
-- この例で観測していること：
-  - request↔response 対応の崩れ（Desyncの本体）、時間差（タイムアウト/遅延の不連続）、エラーの層が変わる（400/502/504 など）
-- 出力のどこを見るか（注目点）：
-  - レスポンス対応関係、遅延の不連続、エラー層、ログ相関
-- この例が使えないケース（前提が崩れるケース）：
-  - HTTP/1.1 のコネクション再利用（keep-alive）が使われない構成の場合、観測できない
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
 - ASVS：

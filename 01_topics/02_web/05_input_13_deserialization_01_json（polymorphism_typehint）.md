@@ -1,4 +1,32 @@
-# 05_input_13_deserialization_01_json（polymorphism_typehint）
+﻿# 05_input_13_deserialization_01_json（polymorphism_typehint）
+
+## このファイルで扱う概念
+- JSONの型情報（polymorphism/type hint）とオブジェクト構築の境界。
+
+## 危険性を一言で
+- 型選択が入力に依存すると、想定外のクラスが生成される。
+
+## 最小限の成立判断（目安）
+- 型指定の有無で挙動が変わり、差分が再現する。
+
+## 観測例（差分のイメージ）
+- A: 想定型、B: 型指定で別挙動になる。
+
+## 観測が取れない場合の代替
+- 型ヒントの受理条件を設定/コードで確認する。
+
+## 時間制約下の最小観測点
+- 型ヒントの入力経路と検証箇所。
+
+## 対策の優先順位
+1) 型ヒントの無効化
+2) allowlistで型固定
+3) 署名/完全性の検証
+
+## 実装例（挙動差の要点）
+- Jackson: Default Typing/`@class`の受理が境界
+- Newtonsoft.Json: `TypeNameHandling`が有効だと型が切り替わる
+- Python: 型ディスパッチがある実装は固定マッピングにする
 
 ## 目的（このファイルで到達する状態）
 - 「JSONはただの文字列」ではなく、実装では **型（class/type）とオブジェクトグラフを復元する** ため、入力が処理経路を切り替える点（境界）を説明できる。
@@ -254,23 +282,6 @@ payload_size / max_depth / max_array_len
 ## コマンド/リクエスト例（例示は最小限・意味の説明が主）
 ~~~~
 # 例：安全なdiscriminator設計（概念）
-# 入力: {"type":"email", "to":"a@b", "body":"..."}
-# 内部: if type=="email" -> NotificationEmail
-#      else if type=="webhook" -> NotificationWebhook
-#      else reject
-
-# 例：危険な設計（概念）
-# 入力が型名を直接指定できる（@type/$type等）
-# -> 外部入力で復元クラスが変わる = 入力→実行経路の切替点
-~~~~
-
-- この例で観測していること：
-  - 安全なdiscriminator設計と危険な設計の違いを示す
-- 出力のどこを見るか（注目点）：
-  - 型が外部入力で直接指定できるか（@type/$type等）
-  - 型解決が動いているか（存在しない型名を与えたときのエラー差分）
-- この例が使えないケース（前提が崩れるケース）：
-  - 型ヒントが存在しない場合（復元先が固定）
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
 - ASVS

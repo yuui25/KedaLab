@@ -1,4 +1,32 @@
-# 05_input_19_cache_poisoning_03_poisoned_object（stored_response）
+﻿# 05_input_19_cache_poisoning_03_poisoned_object（stored_response）
+
+## このファイルで扱う概念
+- Store/Serve/Radiusの条件判定。
+
+## 危険性を一言で
+- 汚染応答が他ユーザに配布される。
+
+## 最小限の成立判断（目安）
+- Store/Serve/Radiusの3条件が揃う。
+
+## 観測例（差分のイメージ）
+- A: 一時的、B: 他ユーザにも配布される。
+
+## 観測が取れない場合の代替
+- キャッシュ層のログで保存/配信を確認する。
+
+## 時間制約下の最小観測点
+- 共有範囲（匿名/ログイン/テナント）。
+
+## 対策の優先順位
+1) Store条件の排除
+2) Serve範囲の限定
+3) Radiusの縮小
+
+## 具体例（判定）
+- Store: 200がキャッシュされる
+- Serve: 別ユーザで同じ応答
+- Radius: 共有範囲が広い
 Poisoned Object（stored response）：キャッシュに"誤レスポンス"が格納され、境界を跨いで配布される状態を観測・相関で確定する
 
 ---
@@ -131,22 +159,6 @@ Poisoned Object（stored response）：キャッシュに"誤レスポンス"が
 
 ~~~~
 # Poisoned Object で最重要なのは「格納された」「再利用された」「誰に配られるか」を証拠で揃えること。
-# 広く配って証明しない（第三者影響のリスクが高い）。
-# 必要な証跡：
-# - hit/miss と時間差（可能なら Age 等）
-# - cacheログ（store/serve、key、object id）
-# - originログ（受け取った入力と request_id）
-~~~~
-
-- この例で観測していること：
-  - Store/Serve/Radiusの3条件（キャッシュに格納された証拠、別のリクエストが"同一オブジェクト"を受け取った証拠、配布範囲を境界で説明できる）を証跡で確定する
-- 出力のどこを見るか（注目点）：
-  - Store（格納）の証拠：ヒット/ミスの遷移、Age等のオブジェクト経過情報、キャッシュ層ログ（storeイベント、cache key、bypass理由、object id）
-  - Serve（再利用）の証拠：同一条件での再現、条件差を付けたときに"同一オブジェクト"が返ってしまう、ETag/Last-Modified が同一のまま配布される
-  - Radius（配布範囲）の証拠：共有キャッシュかどうか、キーの構成、境界ごとの切り分け
-- この例が使えないケース（前提が崩れるケース）：
-  - キャッシュ層ログが取れない場合：ヒット/ミスの遷移、Age等のオブジェクト経過情報、ETag/Last-Modified で推定する
-  - 影響半径が評価できない場合：断定を避け、**観測された状態**として位置づける（推測で所見化しない）
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
 - ASVS：

@@ -1,4 +1,31 @@
-# 05_input_14_prototype_pollution_02_sinks（authz_template_rce）
+﻿# 05_input_14_prototype_pollution_02_sinks（authz_template_rce）
+
+## このファイルで扱う概念
+- prototype pollutionのsinks（参照点）と影響の成立条件。
+
+## 危険性を一言で
+- 汚染値が参照されると認可/テンプレ/実行が崩れる。
+
+## 最小限の成立判断（目安）
+- 汚染値が参照される差分が再現する。
+
+## 観測例（差分のイメージ）
+- A: 標準値、B: 汚染値が反映される。
+
+## 観測が取れない場合の代替
+- 参照点（authz/template/exec）をコードで確認する。
+
+## 時間制約下の最小観測点
+- 共有オブジェクト参照の有無。
+
+## 対策の優先順位
+1) 共有オブジェクトの使用禁止
+2) 参照前の型/キー検証
+3) 影響点の隔離
+
+## 具体例（成立条件）
+- `user.isAdmin`を継承参照している
+- テンプレの`{{config.*}}`がプロトタイプ参照
 Prototype Pollution の sink を分解する。認可（authz）・テンプレ・実行（RCE）へ"効く"条件を、分岐点として確定する
 
 ---
@@ -126,17 +153,6 @@ Prototype Pollution の sink を分解する。認可（authz）・テンプレ�
 
 ~~~~
 # ここでは"攻撃文字列"ではなく、sinkの確認観点だけを書く。
-# - 認可：ガードが参照するプロパティが own か inherited か
-# - テンプレ：context構築が merge か allowlist か
-# - 実行：危険APIの options を入力で変更できる設計か
-~~~~
-
-- この例で観測していること：
-  - sinkの種類と成立条件の確認
-- 出力のどこを見るか（注目点）：
-  - ステータス（403→200、404→200）、レスポンスボディ差分、ログ
-- この例が使えないケース（前提が崩れるケース）：
-  - sourceが成立していない場合、sinkまで到達しない
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
 - ASVS：
