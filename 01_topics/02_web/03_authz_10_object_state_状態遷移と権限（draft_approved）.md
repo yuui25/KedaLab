@@ -6,6 +6,11 @@
 - エンジニアに「状態はクライアント入力で更新させない」「専用コマンド化」「遷移表とテスト」「監査/否認防止」を具体的に伝えられる
 - 06（承認/送金/権限）・05（MA）・02（IDOR）・09（管理面）・07（GraphQL）・08（ファイル）と接続し、Impact評価ができる
 
+## 用語（最小）
+- 境界：責任/権限/到達性が切り替わる地点
+- 差分観測：1条件だけ変えて比較する観測
+- 成立条件：何が揃うと成立/不成立が決まるか
+
 ## 前提（対象・範囲・想定）
 - 対象：状態を持つ業務オブジェクト全般
   - 例：申請（draft→submitted→approved/rejected）、記事（draft→published）、請求（draft→issued→paid）、取引（pending→settled）、サポートチケット（open→resolved→closed）
@@ -27,6 +32,13 @@
   - `01_topics/02_web/03_authz_09_admin_console_運用UIの境界.md`
   - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
   - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+
+## 想定時間
+- 目安：20〜40分（環境/SSO有無で前後）
+
+## ツール選定の根拠（代替）
+- HAR/Proxy：成立点と差分を最小回数で記録できる
+- 代替：ブラウザ開発者ツール/サーバログ/設定画面
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 ### 1) 状態モデルを“列挙”し、stateをサーバ側の真実にする
@@ -50,6 +62,22 @@
   - export/download が状態と無関係に常にできると漏洩（08）
 - 入口別の比較が必要（drift検出）
   - UI → REST → GraphQL → admin → job/webhook（04/09/07）
+
+### 2.1) 行列表の作成手順（最小）
+1. 状態を列挙する（UI表示・APIレスポンス・ログ・schemaから）
+2. 主要操作を固定する（read/edit/submit/approve/cancel/export）
+3. “期待値”を先に置く（仕様・画面文言からOK/NGを仮置き）
+4. 入口別に1操作ずつ差分観測して更新する（UI/REST/GraphQL/admin）
+5. yes/no/unknown を明記し、unknown は前提不足として残す
+
+行列表テンプレ（抜粋）
+~~~~
+| state     | read | edit | submit | approve | export |
+|-----------|------|------|--------|---------|--------|
+| draft     |  OK  |  OK  |  OK    |   NG    |  NG    |
+| submitted |  OK  |  NG  |  NG    |   OK    |  NG    |
+| approved  |  OK  |  NG  |  NG    |   NG    |  OK    |
+~~~~
 
 ### 3) 不正遷移の典型パターン（実務で頻出）
 #### 3.1 飛び級（skip transition）
@@ -215,6 +243,11 @@ PATCH /api/requests/123
   - transition_style、entrypoint_consistency、idempotency、race_handling、derivative_leaks、audit_strength
 - この例が使えないケース（前提が崩れるケース）：
   - 状態が外部システムで決まる（→戻りの状態更新APIと監査・整合性に評価軸を寄せる）
+
+## 観測が失敗した場合
+- 変数を1つに絞り、差分が出る条件を再設定する
+- HARが取れない場合は、画面遷移とレスポンスのスクショで代替する
+- ログ/設定が見られるなら、挙動の根拠として添える
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
 - ASVS：

@@ -9,6 +9,11 @@ GraphQLの認可を「エンドポイントの権限」ではなく、(1)Schema�
 - エンジニアに対して、どこで強制すべきか（resolver/policy/DB/RLS/loader）、何を信頼すべきでないか（クライアント提供ID/tenant）、どう監査すべきか（operation/field/decision）を具体化できる
 - 08（ファイルDL）、09（管理UI/管理API）、10（状態遷移）へ、GraphQL特有の“抜けやすい入口”として接続できる
 
+## 用語（最小）
+- 境界：責任/権限/到達性が切り替わる地点
+- 差分観測：1条件だけ変えて比較する観測
+- 成立条件：何が揃うと成立/不成立が決まるか
+
 ## 前提（対象・範囲・想定）
 - 対象：GraphQL API（単一エンドポイント `/graphql` が多いが、複数endpoint/サブグラフも想定）
 - 想定する環境（例：クラウド/オンプレ、CDN/WAF有無、SSO/MFA有無）：
@@ -32,7 +37,19 @@ GraphQLの認可を「エンドポイントの権限」ではなく、(1)Schema�
   - 扱わない（別ユニットへ接続）：
     - Schema全体の完全網羅（introspectionが無い/運用で隠される場合）。ただし入口固定と差分観測で高リスク部位は評価できる → 別ユニット
 
+## 想定時間
+- 目安：20〜40分（環境/SSO有無で前後）
+
+## ツール選定の根拠（代替）
+- HAR/Proxy：成立点と差分を最小回数で記録できる
+- 代替：ブラウザ開発者ツール/サーバログ/設定画面
+
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
+### 0) 最小前提（用語だけ揃える）
+- Resolver：Query/Mutation/フィールドの実行単位。ここでAuthZを強制するのが基本。
+- Directive：`@auth` のような宣言型ルール。実装により「強制/ヒント」の差がある。
+- DataLoader：複数resolverのDB取得をまとめる仕組み。キャッシュキーにtenant/userが入らないと越境混入する。
+
 ### 1) GraphQL AuthZの地図：Query/Mutation/Subscription と Field-level
 GraphQLの認可は、粒度が複数ある。まず“どの粒度で守っている想定か”を切り分ける。
 - 粒度A：オペレーション単位（Query/Mutationのroot field単位）
@@ -261,12 +278,25 @@ POST /graphql
 - tenant/role差分で返るフィールドが変わるか（最小開示）
 - errors と null の出方が一貫しているか（存在漏洩の抑制）
 ~~~~
+~~~~
+# 実際の観測例（抜粋）
+HTTP/1.1 200 OK
+{
+  "data": { "project": { "id": "P123", "owner": { "email": null } } },
+  "errors": [ { "path": ["project","owner","email"], "message": "forbidden" } ]
+}
+~~~~
 - この例で観測していること：
   - “同一オブジェクト”に対するフィールド開示の境界と、resolver/loaderがtenant/roleを強制しているか
 - 出力のどこを見るか（注目点）：
   - data内の値/null、errors[].path、フィールド単位の差分、tenant/role差分の一貫性
 - この例が使えないケース（前提が崩れるケース）：
   - Persisted Queryでquery本文を送れない（→operationName/IDで固定化された操作を差分観測し、返却フィールドの境界を評価する）
+
+## 観測が失敗した場合
+- 変数を1つに絞り、差分が出る条件を再設定する
+- HARが取れない場合は、画面遷移とレスポンスのスクショで代替する
+- ログ/設定が見られるなら、挙動の根拠として添える
 
 ## ガイドライン対応（ASVS / WSTG / PTES / MITRE ATT&CK：毎回記載）
 - ASVS：
