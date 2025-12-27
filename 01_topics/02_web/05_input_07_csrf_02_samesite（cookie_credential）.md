@@ -1,4 +1,27 @@
-# 05_input_07_csrf_02_samesite（cookie_credential）
+﻿# 05_input_07_csrf_02_samesite（cookie_credential）
+
+## このファイルで扱う概念
+- SameSite設定とCookie認証の境界。
+
+## 危険性を一言で
+- SameSiteの誤設定で外部起点のリクエストが成立する。
+
+## 最小限の成立判断（目安）
+- SameSite属性の変更で A/B 差分が再現する。
+
+## 観測例（差分のイメージ）
+- A: 送信されない、B: Cookieが送られ成功する。
+
+## 観測が取れない場合の代替
+- Set-Cookie属性とリクエスト送信条件をヘッダで確認する。
+
+## 時間制約下の最小観測点
+- SameSite/ Secure/ Domain/ Path の整合性。
+
+## 対策の優先順位
+1) SameSite=Lax/Strictの適用
+2) 重要操作のトークン併用
+3) 参照元チェックの補助
 
 ## 目的（この技術で到達する状態）
 - SameSiteを「付ければCSRF対策」ではなく、以下の“境界”として説明できる
@@ -146,10 +169,15 @@ SameSiteは“クロスサイトかどうか”だけでなく、リクエスト
 
 ~~~~
 # 観測目的：SameSite属性の付与状況を"証跡として"残す（Set-Cookieの記録）
+
 # 例：レスポンスヘッダに Set-Cookie が複数あり、SameSite が付いている/いないを確認する
+
 # Set-Cookie: session=...; Secure; HttpOnly; SameSite=Lax
+
 # Set-Cookie: csrf=...; Secure; SameSite=Strict
+
 # Set-Cookie: legacy=...; SameSite=None; Secure
+
 ~~~~
 
 - この例で観測していること：SameSite属性の付与状況、重要Cookieの棚卸し（セッション/リフレッシュ/CSRF用）、Cookie属性（SameSite/Secure/HttpOnly/Domain/Path）と送信条件（credentials）

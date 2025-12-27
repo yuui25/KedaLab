@@ -1,4 +1,27 @@
-# 05_input_09_ssrf_04_saas_features（webhook_preview_pdf）
+﻿# 05_input_09_ssrf_04_saas_features（webhook_preview_pdf）
+
+## このファイルで扱う概念
+- SaaS機能（webhook/preview/pdf等）のSSRF化。
+
+## 危険性を一言で
+- 信頼機能が内部到達経路として悪用される。
+
+## 最小限の成立判断（目安）
+- 機能経由で宛先差分が再現する。
+
+## 観測例（差分のイメージ）
+- A: 外部宛のみ、B: 内部宛が到達する。
+
+## 観測が取れない場合の代替
+- 実行基盤の送信制約とURL検証の実装を確認する。
+
+## 時間制約下の最小観測点
+- 機能ごとの送信制限有無。
+
+## 対策の優先順位
+1) URLのallowlist
+2) 実行環境の隔離
+3) 通信ログの監視
 
 SaaS機能SSRF（Webhook / Link Preview / PDF生成）：入力URLが"第三者の到達性"を借りる瞬間
 
@@ -147,15 +170,24 @@ SaaS機能SSRF（Webhook / Link Preview / PDF生成）：入力URLが"第三者�
 
 ~~~~
 # SaaS機能SSRFの検証は「出力（PDF/preview）が見えない」ケースが多い。
+
 # したがって、最初に "成立根拠" を残すログ設計を固める。
+
 #
 # 例：outbound_request_log（推奨フィールド）
+
 # - tenant_id, user_id, feature, request_id, job_id
+
 # - raw_url, normalized_url, scheme, host, port
+
 # - resolved_ips, selected_ip, resolver, dns_ttl
+
 # - redirect_chain[{url, resolved_ip, status}]
+
 # - method, status, bytes, duration, error_class
+
 # - cache_hit, cache_key
+
 ~~~~
 
 - この例で観測していること：

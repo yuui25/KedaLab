@@ -1,4 +1,40 @@
-# 05_input_12_file_upload_05_archive_processor（zip_tar_7z）
+﻿# 05_input_12_file_upload_05_archive_processor（zip_tar_7z）
+
+## このファイルで扱う概念
+- アーカイブ展開のパス/形式/サイズ境界。
+
+## 危険性を一言で
+- 展開処理がパス逸脱やリソース枯渇を起こす。
+
+## 最小限の成立判断（目安）
+- 展開結果の差分が再現する。
+
+## 観測例（差分のイメージ）
+- A: 展開失敗、B: 予期しないパスに展開される。
+
+## 観測が取れない場合の代替
+- 展開ライブラリ/CLIの設定と制限を確認する。
+
+## 時間制約下の最小観測点
+- 展開先とサイズ制限の確認。
+
+## 対策の優先順位
+1) 展開先の固定
+2) サイズ/階層制限
+3) 展開の隔離
+
+## 展開実装の例（ライブラリ vs CLI）
+- ライブラリ（安全側になりやすい例）
+  - 展開先の固定、正規化後パスの検証、最大サイズ/階層の制限が実装しやすい
+- CLI（運用で危険側になりやすい例）
+  - コマンドのオプション注入やパス解釈差分が起きやすい
+  - 実行ユーザ権限と作業ディレクトリが影響範囲になる
+
+```pseudo
+for each entry in archive:
+  out = normalize(join(baseDir, entry.path))
+  if not out.startsWith(baseDir): reject
+```
 
 ## 目的（このファイルで到達する状態）
 - アーカイブ機能を見たときに、次を説明できる：
@@ -259,6 +295,7 @@ cli_command (sanitized) / exit_code
 ## コマンド/リクエスト例（例示は最小限・意味の説明が主）
 ~~~~
 # 擬似コード：安全な展開の骨格（概念）
+
 base = make_new_dir(uuid)
 for entry in list_entries(archive):
   if entry.is_symlink or entry.is_hardlink or entry.is_special:

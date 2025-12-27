@@ -1,4 +1,27 @@
-# 05_input_06_xss_03_DOM_境界モデル
+﻿# 05_input_06_xss_03_DOM_境界モデル
+
+## このファイルで扱う概念
+- DOM XSS：クライアント側で入力がDOM/APIに渡り実行される。
+
+## 危険性を一言で
+- サーバを経由せずに実行されるため、ログで見えにくい。
+
+## 最小限の成立判断（目安）
+- source→sink の経路で A/B 差分が再現する。
+
+## 観測例（差分のイメージ）
+- A: DOMが文字列として更新、B: HTMLとして解釈される。
+
+## 観測が取れない場合の代替
+- JSのsource/sink候補と実装差分（innerHTML等）をコードで確認する。
+
+## 時間制約下の最小観測点
+- sourceの特定と、sinkが実行系APIかの判断。
+
+## 対策の優先順位
+1) 危険なDOM APIの回避
+2) サニタイズ/テンプレの安全化
+3) CSPとTrusted Types
 
 ## 目的（この技術で到達する状態）
 - DOM XSSを「payloadが通る/通らない」ではなく、次の“境界モデル”で説明できる
@@ -41,6 +64,18 @@
 - 安全sink（原則）
   - `textContent` / `innerText` / 属性の安全なセット（スキーム制限・URL正規化を伴う）
   - OWASPは「安全なsinkを使う」ことをDOM XSS対策の中心に置く
+
+### 4) 典型的な source→sink の組み合わせ（例）
+- `location.hash` → `innerHTML`：URLだけで再現しやすい
+- `postMessage` → `insertAdjacentHTML`：origin検証がないと危険
+- `localStorage` → `outerHTML`：second-order化しやすい
+- `fetch()`結果 → `innerHTML`：APIが安全でもフロントで崩れる
+- `document.cookie` → `eval`/`Function()`：XSSが成立すると即実行
+
+### 5) ブラウザ差分の注意（観測差）
+- URLの正規化や`javascript:`の扱いはブラウザで微差がある
+- SVG/MathMLの解釈可否がブラウザで異なり、再現条件が変わる
+- `setTimeout(string)`/`eval`の挙動はCSPの適用で変わる（ブラウザごとの差分はCSP実装差に起因）
 
 ---
 
@@ -181,9 +216,13 @@
 
 ~~~~
 # 目的：DOM XSSはサーバ応答に出ない場合があるため、ブラウザ上でsource/sinkを観測する
+
 # 1) 対象ページを開く
+
 # 2) DevToolsで sink フック（本ファイルのスニペット）を入れる
+
 # 3) URL hash や画面操作で値を変え、innerHTML代入の有無とスタックを取る
+
 ~~~~
 
 - この例で観測していること：source/sinkのデータフロー、DOM操作の観測、URL hash / postMessage のように"サーバに残りにくいsource"の特定

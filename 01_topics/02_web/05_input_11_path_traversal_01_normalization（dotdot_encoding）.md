@@ -1,4 +1,27 @@
-# 05_input_11_path_traversal_01_normalization（dotdot_encoding）
+﻿# 05_input_11_path_traversal_01_normalization（dotdot_encoding）
+
+## このファイルで扱う概念
+- 正規化パイプラインと `..`/エンコードの境界。
+
+## 危険性を一言で
+- 期待外のパスに到達し、機密ファイルが読まれる。
+
+## 最小限の成立判断（目安）
+- 正規化前後で A/B 差分が再現する。
+
+## 観測例（差分のイメージ）
+- A: 404、B: 200や内容差分が出る。
+
+## 観測が取れない場合の代替
+- 正規化処理の実装とOS差分を確認する。
+
+## 時間制約下の最小観測点
+- 正規化後パスの確認。
+
+## 対策の優先順位
+1) 正規化後の基準パス固定
+2) allowlistで許可
+3) 権限最小化
 
 正規化（dotdot / encoding）の破綻で起きる Path Traversal：検証前の「見かけの安全」が崩れる
 
@@ -139,15 +162,25 @@
 
 ~~~~
 # 観測ログの最小フィールド例（設計用）
+
 # - request_id
+
 # - input_channel: path|query|body|header|cookie
+
 # - raw_input
+
 # - decoded_input
+
 # - normalized_input
+
 # - base_dir
+
 # - resolved_path
+
 # - decision: allow|deny
+
 # - rule_id
+
 ~~~~
 
 - この例で観測していること：

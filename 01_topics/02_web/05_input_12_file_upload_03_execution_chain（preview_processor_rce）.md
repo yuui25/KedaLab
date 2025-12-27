@@ -1,4 +1,27 @@
-# 05_input_12_file_upload_03_execution_chain（preview_processor_rce）
+﻿# 05_input_12_file_upload_03_execution_chain（preview_processor_rce）
+
+## このファイルで扱う概念
+- プレビュー/変換処理の実行境界。
+
+## 危険性を一言で
+- 変換処理でコード実行や情報露出が起こる。
+
+## 最小限の成立判断（目安）
+- 変換結果や処理ログで差分が再現する。
+
+## 観測例（差分のイメージ）
+- A: 正常変換、B: エラーや異常な結果が出る。
+
+## 観測が取れない場合の代替
+- 処理経路（ライブラリ/CLI）と設定を確認する。
+
+## 時間制約下の最小観測点
+- 変換に使う実装と権限の確認。
+
+## 対策の優先順位
+1) 変換処理の隔離
+2) 実行権限の最小化
+3) 入力の制約
 
 ## 目的（このファイルで到達する状態）
 - アップロード後の“処理チェーン”を、以下の形で説明できる。
@@ -196,6 +219,7 @@
 
 ~~~~
 # ログ最小フィールド（推奨）
+
 request_id
 user_id / tenant_id
 file_id / object_key
@@ -339,11 +363,14 @@ error_class / error_message (sanitized)
 ## コマンド/リクエスト例（例示は最小限・意味の説明が主）
 ~~~~
 # 例：観測したいのは「プレビュー生成が非同期かどうか」「別APIがあるか」
+
 # 1) upload
+
 POST /api/files (multipart)
 -> 返却: file_id, status, preview_status?
 
 # 2) preview status (存在すれば)
+
 GET /api/files/{file_id}/preview
 -> 返却: processing|ready と preview_url
 ~~~~

@@ -1,4 +1,27 @@
-# 05_input_09_ssrf_02_url_tricks（redirect_dns_idn_ip）
+﻿# 05_input_09_ssrf_02_url_tricks（redirect_dns_idn_ip）
+
+## このファイルで扱う概念
+- URL解釈の差分（redirect/DNS/IDN/IP表記）。
+
+## 危険性を一言で
+- パーサ差分で意図しない宛先に到達する。
+
+## 最小限の成立判断（目安）
+- 正規化前後で A/B の宛先差分が再現する。
+
+## 観測例（差分のイメージ）
+- A: 外部宛、B: 内部宛に到達する。
+
+## 観測が取れない場合の代替
+- URL正規化のロジックとDNS解決結果を記録する。
+
+## 時間制約下の最小観測点
+- 解決先ホストと最終宛先の一致確認。
+
+## 対策の優先順位
+1) 正規化後のallowlist
+2) redirectの禁止/制限
+3) IP表記の禁止
 
 ## 目的（この技術で到達する状態）
 - SSRFの防御・診断を「URLを正規表現で弾く」から卒業し、**Validator と Fetcher の差分**という実務の本体に落とす。
@@ -104,12 +127,19 @@
 
 ~~~~
 # このファイルの要点は「ペイロード集」ではなく、
+
 # (1) Validator と Fetcher の差分
+
 # (2) 正規化後の判定
+
 # (3) DNS解決→IP比較（v4/v6）
+
 # (4) redirectホップごとの再検証
+
 # (5) IDNの統一（A-label/U-label/TR46）
+
 # を設計として固定すること。
+
 ~~~~
 
 - この例で観測していること：URLトリックを"ペイロード暗記"ではなく、次の4分類で説明・検証・修正提案できる、redirect（追従と最終宛先）、DNS（解決タイミング／再解決／ピン留め）、IDN（Unicode/ Punycode / 正規化）、IP表現（v4/v6混在、数値表記、IPv4-mapped等）、Validator と Fetcher の差分、正規化後の判定、DNS解決→IP比較（v4/v6）、redirectホップごとの再検証、IDNの統一（A-label/U-label/TR46）

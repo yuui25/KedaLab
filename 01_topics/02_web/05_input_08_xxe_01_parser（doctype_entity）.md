@@ -1,4 +1,27 @@
-# 05_input_08_xxe_01_parser（doctype_entity）
+﻿# 05_input_08_xxe_01_parser（doctype_entity）
+
+## このファイルで扱う概念
+- XMLパーサのDOCTYPE/Entity処理と解釈境界。
+
+## 危険性を一言で
+- 外部実体の解決で、内部情報や内部ネットワークに到達する。
+
+## 最小限の成立判断（目安）
+- DOCTYPE有無で A/B 差分が再現する。
+
+## 観測例（差分のイメージ）
+- A: 通常処理、B: 解析エラーや応答差分が出る。
+
+## 観測が取れない場合の代替
+- パーサ設定（DOCTYPE/Entity無効化）を設定ファイルで確認する。
+
+## 時間制約下の最小観測点
+- DOCTYPE許可の有無と、外部解決の可否。
+
+## 対策の優先順位
+1) DOCTYPE/Entityを無効化
+2) 代替フォーマットの採用
+3) 解析環境の隔離
 
 ## 目的（この技術で到達する状態）
 - XXEを「XMLに悪い文字が入る」ではなく、**パーサが持つ仕様機能（DTD/ENTITY/外部参照/展開）が“実行”として働く境界**だと説明できる。
@@ -24,6 +47,36 @@
   - `01_topics/02_web/05_input_09_ssrf_01_reachability（internal_localhost_metadata）.md`
   - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
   - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+
+## 主要パーサの設定例（最小・要点）
+### Java (JAXP)
+```java
+DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();
+f.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+f.setFeature("http://xml.org/sax/features/external-general-entities", false);
+f.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+f.setXIncludeAware(false);
+```
+
+### .NET (XmlReader)
+```csharp
+var settings = new XmlReaderSettings {
+  DtdProcessing = DtdProcessing.Prohibit,
+  XmlResolver = null
+};
+```
+
+### libxml2 (C/CLI)
+```c
+// 例: 外部アクセス禁止（NOENTは使わない）
+xmlReadFile(path, NULL, XML_PARSE_NONET);
+```
+
+### Node.js（代表例）
+```js
+// 例: DTD/ENTITYを受け付けない設定を持つパーサを選ぶ
+// fast-xml-parser: { processEntities: false }
+```
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 - 観測対象（プロトコル/データ構造/やり取りの単位）：
@@ -97,11 +150,15 @@
 
 ~~~~
 # 目的：DOCTYPEが受理されるか（DTDが生きているか）を"差分"で確認する
+
 # - 成功/失敗ではなく、エラー種別・応答差分・ログ差分を証拠化する
 
 # 例：XML入力を送れる箇所に対し、DOCTYPEを含むXMLを与えて挙動を見る（ラボ推奨）
+
 # <!DOCTYPE r [ <!ENTITY x "test"> ]>
+
 # <r>&x;</r>
+
 ~~~~
 
 - この例で観測していること：DOCTYPE/DTD を受理するか、外部実体の「解決」と「展開」を分離して考える、実体展開DoS（Billion Laughs等）の兆候、例外パスの探索（設定漏れを見つける）

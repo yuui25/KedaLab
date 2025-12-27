@@ -1,4 +1,27 @@
-# 05_input_12_file_upload_02_storage_path（bucket_acl_traversal）
+﻿# 05_input_12_file_upload_02_storage_path（bucket_acl_traversal）
+
+## このファイルで扱う概念
+- 保存パス/ACL/バケット設定の境界。
+
+## 危険性を一言で
+- 保存場所の誤りで不正アクセスが可能になる。
+
+## 最小限の成立判断（目安）
+- 保存先やACLの差分が再現する。
+
+## 観測例（差分のイメージ）
+- A: 非公開、B: 公開/他領域に保存される。
+
+## 観測が取れない場合の代替
+- ストレージ設定とACLの構成を確認する。
+
+## 時間制約下の最小観測点
+- 保存先と公開範囲の確認。
+
+## 対策の優先順位
+1) 保存先の固定
+2) ACLの最小化
+3) 署名URLの制御
 
 file_upload_保存先・キー設計（bucket/ACL/到達性/パス）：アップロード後に「誰がどこから読める/書ける」を壊さない境界モデル
 
@@ -150,11 +173,15 @@ file_upload_保存先・キー設計（bucket/ACL/到達性/パス）：アッ�
 
 ~~~~
 # 例：安全寄りのキー設計（擬似コード）
+
 # - 表示名(display_name)と保存キー(storage_key)を分離
+
 # - storage_keyはサーバ生成のuuidを基本にし、tenantでprefix固定
+
 storage_key = f"{tenant_id}/{uuidv4()}"
 
 # 例：ダウンロードはアプリ経由（認可ゲート）
+
 GET /api/files/{file_id}/download
 -> サーバで owner/tenant を確認
 -> 必要なら短期の署名URLを発行して302/JSONで返す（直リンク固定にしない）

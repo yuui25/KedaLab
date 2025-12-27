@@ -1,4 +1,37 @@
-# 05_input_12_file_upload_04_image_processor（imagemagick_exif_svg）
+﻿# 05_input_12_file_upload_04_image_processor（imagemagick_exif_svg）
+
+## このファイルで扱う概念
+- 画像処理系のメタデータ/形式変換の境界。
+
+## 危険性を一言で
+- 画像処理が意図しない解釈や実行を引き起こす。
+
+## 最小限の成立判断（目安）
+- 処理結果の差分やエラーが再現する。
+
+## 観測例（差分のイメージ）
+- A: 正常出力、B: 異常/空/別形式になる。
+
+## 観測が取れない場合の代替
+- 画像処理設定（policy等）を確認する。
+
+## 時間制約下の最小観測点
+- 使用ライブラリとpolicy設定の確認。
+
+## 対策の優先順位
+1) policyで危険機能を無効化
+2) 形式/サイズ制限
+3) 処理の隔離
+
+## ImageMagick の policy.xml 例（最小）
+```xml
+<policymap>
+  <policy domain="coder" rights="none" pattern="PS,EPS,PDF,XPS" />
+  <policy domain="coder" rights="none" pattern="MVG,MSL" />
+  <policy domain="path" rights="none" pattern="@*" />
+</policymap>
+```
+※ 実際は運用環境の要件に合わせて許可する形式のみを明示する。
 
 画像処理（ImageMagick/EXIF/SVG）― アップロード→変換→配信の「入力→実行」境界モデル
 
@@ -151,18 +184,28 @@
 
 ~~~~
 # 以下は「攻撃の完成」ではなく、**成立根拠（差分）を観測するための最小セット**
+
 #
 # 1) ImageMagick 利用の当たりを付ける（変換・ポリシー・リソース）
+
 # - 同一画像を「小→中→大」「単一→多フレーム」で投入し、処理時間と失敗点を見る
+
 # - 失敗点が画素数/フレーム数で切れるなら policy/resource limit の存在を疑う
+
 #
 # 2) EXIF の処理有無を確定する（抽出/除去）
+
 # - 同一JPGにEXIFを含めたもの／含めないものを用意し、アップ後のダウンロードでEXIFが残るかを見る
+
 # - EXIFが消える：サーバ側で strip/再エンコードしている可能性（= パーサ/変換が走っている）
+
 #
 # 3) SVG の扱いを確定する（配信 or ラスタライズ）
+
 # - SVGをアップして、配信がSVGのままか、PNG等に変換されるか
+
 # - SVGがそのまま配信される場合：Content-Type と Content-Disposition を確認
+
 ~~~~
 
 - この例で観測していること：

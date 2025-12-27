@@ -1,4 +1,27 @@
-# 05_input_07_csrf_01_token（synchronizer_double_submit）
+﻿# 05_input_07_csrf_01_token（synchronizer_double_submit）
+
+## このファイルで扱う概念
+- CSRFトークン方式（Synchronizer/Double Submit）の成立条件と限界。
+
+## 危険性を一言で
+- 本人操作に見える状態で、意図しないリクエストが成立する。
+
+## 最小限の成立判断（目安）
+- トークンの有無や一致条件で A/B 差分が再現する。
+
+## 観測例（差分のイメージ）
+- A: トークン不一致で失敗、B: 一致で成功する。
+
+## 観測が取れない場合の代替
+- トークンの生成/保存/検証箇所をログ・コードで確認する。
+
+## 時間制約下の最小観測点
+- トークンの発行、送信、検証の3点が揃っているか。
+
+## 対策の優先順位
+1) サーバ側検証の厳格化
+2) Double Submitの一致検証
+3) 重要操作の再認証
 
 ## 目的（この技術で到達する状態）
 - CSRFを「フォームにhiddenを入れる」ではなく、**信頼境界の再確立**として扱える
@@ -69,6 +92,26 @@
   - サーバが「CookieがあるならOK」「どちらか片方でOK」等の誤実装（= 2箇所一致になっていない）
 - 実務上の注意
   - Double Submit は“設計の理解不足”で誤実装が起きやすい。診断では「一致条件」「バインド」「例外パス」を必ず確認する
+
+### Double Submit の具体的実装例（最小）
+- 生成：サーバがランダム値を発行し、Cookieとレスポンスに同じ値を返す
+- 送信：フロントはCookie値を読み、header/bodyに同値を載せる
+- 検証：サーバは `Cookie` と `header/body` の完全一致を必須とする
+
+```http
+Set-Cookie: csrf_token=<RANDOM>; SameSite=Lax; Secure
+
+POST /api/update
+Cookie: csrf_token=<RANDOM>
+X-CSRF-Token: <RANDOM>
+```
+
+```pseudo
+if cookie.csrf_token == header.x_csrf_token then
+  allow
+else
+  reject
+```
 
 ---
 
@@ -172,13 +215,16 @@ OWASPはCSRFトークンに「セッション毎に一意」「秘密」「予�
 
 ~~~~
 # 観測目的：状態変更リクエストに CSRF トークンが「どこに」「毎回」入っているかを見る
+
 # 例（概念）：
+
 POST /account/email
 Cookie: session=...
 Header: X-CSRF-Token: <token>          # または body に csrf フィールド
 Body: email=new@example.com
 
 # 検証（概念）：
+
 - token を欠落させる → 401/403 で拒否され、変更が反映されない
 - token を改変する → 同様に拒否される
 - 別セッションの token を混ぜる → 拒否される（バインド確認）

@@ -1,4 +1,27 @@
-# 05_input_09_ssrf_01_reachability（internal_localhost_metadata）
+﻿# 05_input_09_ssrf_01_reachability（internal_localhost_metadata）
+
+## このファイルで扱う概念
+- 内部/localhost/metadataへの到達性評価。
+
+## 危険性を一言で
+- 内部サービスに到達すると、権限や情報が外部へ露出する。
+
+## 最小限の成立判断（目安）
+- 到達先で A/B の応答差分が再現する。
+
+## 観測例（差分のイメージ）
+- A: タイムアウト、B: 200/403が返る。
+
+## 観測が取れない場合の代替
+- 解析ログ/ネットワーク制御（FW/SG）設定を確認する。
+
+## 時間制約下の最小観測点
+- localhost/metadata の到達可否。
+
+## 対策の優先順位
+1) 宛先allowlist
+2) metadata保護
+3) egress制限
 
 ## 目的（この技術で到達する状態）
 - SSRFを「URLにアクセスされる」一般論で終わらせず、**到達性（Reachability）**を中心に、
@@ -20,6 +43,15 @@
   - `01_topics/02_web/05_input_09_ssrf_02_url_tricks（redirect_dns_idn_ip）.md`
   - `04_labs/01_local/02_proxy_計測・改変ポイント設計.md`
   - `04_labs/01_local/03_capture_証跡取得（pcap/har/log）.md`
+
+## クラウドメタデータの具体例（到達性の判定材料）
+- AWS IMDSv2
+  - `http://169.254.169.254/latest/api/token`（`X-aws-ec2-metadata-token-ttl-seconds` 必須）
+  - `http://169.254.169.254/latest/meta-data/`（`X-aws-ec2-metadata-token` 必須）
+- GCP Metadata
+  - `http://metadata.google.internal/computeMetadata/v1/`（`Metadata-Flavor: Google` 必須）
+- Azure IMDS
+  - `http://169.254.169.254/metadata/instance?api-version=2021-02-01`（`Metadata: true` 必須）
 
 ## 観測ポイント（何を見ているか：プロトコル/データ/境界）
 - 観測対象（プロトコル/データ構造/やり取りの単位）：
@@ -145,11 +177,17 @@ OWASPのSSRF防止チートシートは「防御観点に焦点を当て、攻�
 ## コマンド/リクエスト例（例示は最小限：観測設計だけ）
 ~~~~
 # 目的：SSRFの深さは「到達性クラスを相関付きで確定できるか」で決まる。
+
 # ここでは具体ペイロードの提示ではなく、
+
 # (1) request_id/job_id を確保
+
 # (2) DNS/HTTP/プロキシログの時刻窓で相関
+
 # (3) localhost / internal / metadata のどれに到達したかを状態として結論付ける
+
 # を“必ず”やる。
+
 ~~~~
 
 ---

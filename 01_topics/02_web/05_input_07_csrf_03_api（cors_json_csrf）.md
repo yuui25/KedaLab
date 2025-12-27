@@ -1,4 +1,27 @@
-# 05_input_07_csrf_03_api（cors_json_csrf）
+﻿# 05_input_07_csrf_03_api（cors_json_csrf）
+
+## このファイルで扱う概念
+- API CSRFとCORS誤解（JSON/credentialの境界）。
+
+## 危険性を一言で
+- APIがブラウザの自動送信を前提に突破される。
+
+## 最小限の成立判断（目安）
+- credential送信条件で A/B 差分が再現する。
+
+## 観測例（差分のイメージ）
+- A: 失敗、B: Cookie付きで成功する。
+
+## 観測が取れない場合の代替
+- CORS設定と認可方式（Bearer/CSRF）の整合を確認する。
+
+## 時間制約下の最小観測点
+- `credentials` と `Access-Control-Allow-Credentials` の有無。
+
+## 対策の優先順位
+1) 認可をトークンベースに統一
+2) CORSポリシーの最小化
+3) 重要操作のCSRF対策
 
 ## 目的（この技術で到達する状態）
 - 「APIはCORSがあるからCSRF不要」という誤解を排除し、次の境界で判断できる
@@ -184,9 +207,13 @@
 
 ~~~~
 # 観測目的：CORSは"送信を止めない"ので、状態変更が受理される条件（トークン/Fetch Metadata）を確認する
+
 # 1) 状態変更APIに、CSRFトークンが必須か（欠落/不一致で拒否されるか）
+
 # 2) リクエストに Sec-Fetch-Site 等が来ているか、サーバが cross-site を拒否しているか
+
 # 3) CORSヘッダが credentials を許可していないか（読取境界の評価）
+
 ~~~~
 
 - この例で観測していること：送信境界、資格情報境界、受理境界、読取境界、APIの認証方式（Cookie/Bearer）、CORSヘッダの観測
