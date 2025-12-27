@@ -1,4 +1,4 @@
-# 03_authn_観測ポイント（SSO_MFA前提）
+﻿# 03_authn_観測ポイント（SSO_MFA前提）
 AuthN/SSO/MFA/セッションの成立点を観測で確定し、例外・寿命・次の深掘り（AuthZ/API/SaaS/creds）を分岐で決める。
 
 ## 目的（このプレイブックで到達する状態）
@@ -51,12 +51,24 @@ AuthN/SSO/MFA/セッションの成立点を観測で確定し、例外・寿命
 - 証跡（最小）：
 ~~~~
 # Windows (PowerShell)
+
+## 補足（運用メモ）
+- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
+- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
+- 所要時間：目安。初回は1.5倍程度を想定
+- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 $dir = Join-Path $HOME "keda_evidence\\authn_03"
 New-Item -ItemType Directory -Force $dir | Out-Null
 Set-Location $dir
 "base_url: ...`nuserA: ...`nuserB: ...`nflow: login->home" | Set-Content -Encoding utf8 00_context.txt
 
 # macOS/Linux (bash)
+
+## 補足（運用メモ）
+- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
+- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
+- 所要時間：目安。初回は1.5倍程度を想定
+- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 mkdir -p ~/keda_evidence/authn_03
 cd ~/keda_evidence/authn_03
 printf "base_url: ...\nuserA: ...\nuserB: ...\nflow: login->home\n" > 00_context.txt
@@ -196,6 +208,12 @@ SAMLResponse/RelayState/ACS が見える -> SAML
 ## コマンド/リクエスト例（例示は最小限）
 ~~~~
 # JWTのclaim観測（署名検証なし）
+
+## 補足（運用メモ）
+- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
+- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
+- 所要時間：目安。初回は1.5倍程度を想定
+- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 python - <<'PY'
 import jwt,sys
 token=sys.stdin.read().strip()

@@ -1,4 +1,4 @@
-# 08_saas_信頼→共有→監査ログ_初動
+﻿# 08_saas_信頼→共有→監査ログ_初動
 SaaS を「プロダクト個別」ではなく、信頼（IdP/プロビジョニング）→共有（外部/リンク/ゲスト）→監査ログ（追えるか）で状態化し、次の一手を分岐で決める。
 
 ## 目的（このプレイブックで到達する状態）
@@ -44,12 +44,24 @@ SaaS を「プロダクト個別」ではなく、信頼（IdP/プロビジョ�
 - 証跡（最小）：
 ~~~~
 # Windows (PowerShell)
+
+## 補足（運用メモ）
+- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
+- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
+- 所要時間：目安。初回は1.5倍程度を想定
+- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 $dir = Join-Path $HOME "keda_evidence\\saas_08"
 New-Item -ItemType Directory -Force $dir | Out-Null
 Set-Location $dir
 "targets: ...`nadmin_access: ...`nlog_sources: ..." | Set-Content -Encoding utf8 00_context.txt
 
 # macOS/Linux (bash)
+
+## 補足（運用メモ）
+- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
+- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
+- 所要時間：目安。初回は1.5倍程度を想定
+- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 mkdir -p ~/keda_evidence/saas_08
 cd ~/keda_evidence/saas_08
 printf "targets: ...\nadmin_access: ...\nlog_sources: ...\n" > 00_context.txt
@@ -141,6 +153,12 @@ printf "targets: ...\nadmin_access: ...\nlog_sources: ...\n" > 00_context.txt
 ## コマンド/リクエスト例（例示は最小限）
 ~~~~
 # 例：監査ログAPIがある場合の“疎通”レベル（プロダクトごとに置き換える）
+
+## 補足（運用メモ）
+- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
+- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
+- 所要時間：目安。初回は1.5倍程度を想定
+- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 curl -sS -H "Authorization: Bearer <TOKEN>" "https://<AUDIT_API_ENDPOINT>?$top=5"
 ~~~~
 - 何を観測する例か：監査ログが取れるか（取得可否/粒度の当たり）。

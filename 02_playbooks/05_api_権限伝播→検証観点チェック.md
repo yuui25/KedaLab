@@ -1,4 +1,4 @@
-# 05_api_権限伝播→検証観点チェック
+﻿# 05_api_権限伝播→検証観点チェック
 API を「エンドポイント列挙」ではなく、権限伝播（主体→サービス→内部連携）と境界変数（owner/tenant/role/scope）で捉え、差分観測→分岐で次の一手を決める。
 
 ## 目的（このプレイブックで到達する状態）
@@ -39,12 +39,24 @@ API を「エンドポイント列挙」ではなく、権限伝播（主体→�
 - 証跡（最小）：
 ~~~~
 # Windows (PowerShell)
+
+## 補足（運用メモ）
+- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
+- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
+- 所要時間：目安。初回は1.5倍程度を想定
+- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 $dir = Join-Path $HOME "keda_evidence\\api_05"
 New-Item -ItemType Directory -Force $dir | Out-Null
 Set-Location $dir
 "base_url: ...`nuserA: ...`nuserB: ...`napis: ..." | Set-Content -Encoding utf8 00_context.txt
 
 # macOS/Linux (bash)
+
+## 補足（運用メモ）
+- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
+- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
+- 所要時間：目安。初回は1.5倍程度を想定
+- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 mkdir -p ~/keda_evidence/api_05
 cd ~/keda_evidence/api_05
 printf "base_url: ...\nuserA: ...\nuserB: ...\napis: ...\n" > 00_context.txt
@@ -147,6 +159,12 @@ printf "base_url: ...\nuserA: ...\nuserB: ...\napis: ...\n" > 00_context.txt
 ## コマンド/リクエスト例（例示は最小限）
 ~~~~
 # 例：同じAPIを主体差で比較する（read-only）
+
+## 補足（運用メモ）
+- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
+- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
+- 所要時間：目安。初回は1.5倍程度を想定
+- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 curl -sS -H "Authorization: Bearer <TOKEN_A>" "https://<BASE>/api/<resource>/<id>" -D - -o /dev/null
 curl -sS -H "Authorization: Bearer <TOKEN_B>" "https://<BASE>/api/<resource>/<id>" -D - -o /dev/null
 ~~~~

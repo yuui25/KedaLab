@@ -1,4 +1,4 @@
-# 06_network_enum_to_post_列挙→侵入後の導線
+﻿# 06_network_enum_to_post_列挙→侵入後の導線
 NW列挙（到達性→サービス→認証→権限）を「結果の羅列」ではなく、観測→分岐→Post初動（経路/権限/材料）へ最短で繋ぐ。
 
 ## 目的（このプレイブックで到達する状態）
@@ -42,12 +42,24 @@ NW列挙（到達性→サービス→認証→権限）を「結果の羅列」
 - 証跡（最小）：
 ~~~~
 # Windows (PowerShell)
+
+## 補足（運用メモ）
+- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
+- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
+- 所要時間：目安。初回は1.5倍程度を想定
+- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 $dir = Join-Path $HOME "keda_evidence\\network_06"
 New-Item -ItemType Directory -Force $dir | Out-Null
 Set-Location $dir
 (Get-Date).ToString("s") | Set-Content -Encoding utf8 00_time.txt
 
 # macOS/Linux (bash)
+
+## 補足（運用メモ）
+- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
+- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
+- 所要時間：目安。初回は1.5倍程度を想定
+- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 mkdir -p ~/keda_evidence/network_06
 cd ~/keda_evidence/network_06
 date > 00_time.txt
@@ -115,11 +127,23 @@ date > 00_time.txt
 ## コマンド例（例示は最小限 / OS別）
 ~~~~
 # Windows（地点と射程）
+
+## 補足（運用メモ）
+- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
+- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
+- 所要時間：目安。初回は1.5倍程度を想定
+- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 ipconfig /all
 route print
 whoami /all
 
 # Linux（地点と射程）
+
+## 補足（運用メモ）
+- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
+- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
+- 所要時間：目安。初回は1.5倍程度を想定
+- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 ip a
 ip r
 id

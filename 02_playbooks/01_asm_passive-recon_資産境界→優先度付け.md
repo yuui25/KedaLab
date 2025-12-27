@@ -1,4 +1,4 @@
-# 01_asm_passive-recon_資産境界→優先度付け
+﻿# 01_asm_passive-recon_資産境界→優先度付け
 パッシブ中心の外形観測で「資産/信頼/権限境界」を確定し、深掘りの優先度と次の導線を決める。
 
 ## 目的（このプレイブックで到達する状態）
@@ -46,12 +46,24 @@
 - 証跡（最小）：
 ~~~~
 # Windows (PowerShell)
+
+## 補足（運用メモ）
+- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
+- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
+- 所要時間：目安。初回は1.5倍程度を想定
+- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 $dir = Join-Path $HOME "keda_evidence\\asm_passive_01"
 New-Item -ItemType Directory -Force $dir | Out-Null
 Set-Location $dir
 "scope: ...`ndate: ...`nseeds: ..." | Set-Content -Encoding utf8 00_scope.txt
 
 # macOS/Linux (bash)
+
+## 補足（運用メモ）
+- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
+- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
+- 所要時間：目安。初回は1.5倍程度を想定
+- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 mkdir -p ~/keda_evidence/asm_passive_01
 cd ~/keda_evidence/asm_passive_01
 printf "scope: ...\ndate: ...\nseeds: ...\n" > 00_scope.txt

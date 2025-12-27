@@ -1,4 +1,4 @@
-# 07_input_to_rce_入力→実行の導線
+﻿# 07_input_to_rce_入力→実行の導線
 入力を「ペイロード試行」ではなく、入力→解釈→実行/参照の境界（成立条件）を差分観測で確定し、次の一手を分岐で決める。
 
 ## 目的（このプレイブックで到達する状態）
@@ -39,12 +39,24 @@
 - 証跡（最小）：
 ~~~~
 # Windows (PowerShell)
+
+## 補足（運用メモ）
+- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
+- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
+- 所要時間：目安。初回は1.5倍程度を想定
+- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 $dir = Join-Path $HOME "keda_evidence\\input_07"
 New-Item -ItemType Directory -Force $dir | Out-Null
 Set-Location $dir
 "base_url: ...`nentry: ...`nmarker: keda_probe_..." | Set-Content -Encoding utf8 00_context.txt
 
 # macOS/Linux (bash)
+
+## 補足（運用メモ）
+- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
+- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
+- 所要時間：目安。初回は1.5倍程度を想定
+- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 mkdir -p ~/keda_evidence/input_07
 cd ~/keda_evidence/input_07
 printf "base_url: ...\nentry: ...\nmarker: keda_probe_...\n" > 00_context.txt
@@ -141,6 +153,12 @@ printf "base_url: ...\nentry: ...\nmarker: keda_probe_...\n" > 00_context.txt
 ## コマンド/リクエスト例（例示は最小限）
 ~~~~
 # 例：マーカー差分を作る（値はすべてプレースホルダ）
+
+## 補足（運用メモ）
+- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
+- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
+- 所要時間：目安。初回は1.5倍程度を想定
+- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 curl -sS "https://<BASE>/search?q=normal" -D - -o /dev/null
 curl -sS "https://<BASE>/search?q=keda_probe_12345" -D - -o /dev/null
 ~~~~

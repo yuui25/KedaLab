@@ -1,4 +1,4 @@
-# 09_egress_exfil_出口評価（DNS_HTTP_SMB）
+﻿# 09_egress_exfil_出口評価（DNS_HTTP_SMB）
 “データ持ち出し” ではなく、出口（DNS/HTTP(S)/SMB）の成立条件（到達性・監視・制限）を観測で確定し、封じ方/優先度を分岐で決める。
 
 ## 目的（このプレイブックで到達する状態）
@@ -39,12 +39,24 @@
 - 証跡（最小）：
 ~~~~
 # Windows (PowerShell)
+
+## 補足（運用メモ）
+- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
+- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
+- 所要時間：目安。初回は1.5倍程度を想定
+- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 $dir = Join-Path $HOME "keda_evidence\\egress_09"
 New-Item -ItemType Directory -Force $dir | Out-Null
 Set-Location $dir
 "host: ...`nactive_external_allowed: Yes/No/Unknown`nlog_sources: ..." | Set-Content -Encoding utf8 00_context.txt
 
 # macOS/Linux (bash)
+
+## 補足（運用メモ）
+- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
+- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
+- 所要時間：目安。初回は1.5倍程度を想定
+- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 mkdir -p ~/keda_evidence/egress_09
 cd ~/keda_evidence/egress_09
 printf "host: ...\nactive_external_allowed: Yes/No/Unknown\nlog_sources: ...\n" > 00_context.txt
@@ -124,12 +136,30 @@ printf "host: ...\nactive_external_allowed: Yes/No/Unknown\nlog_sources: ...\n" 
 ## コマンド例（例示は最小限）
 ~~~~
 # DNS設定（例）
+
+## 補足（運用メモ）
+- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
+- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
+- 所要時間：目安。初回は1.5倍程度を想定
+- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 ipconfig /all
 
 # HTTP(S)の挙動（例：proxyの有無は環境依存）
+
+## 補足（運用メモ）
+- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
+- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
+- 所要時間：目安。初回は1.5倍程度を想定
+- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 curl -sS -I https://example.com/ | sed -n '1,20p'
 
 # SMB到達性（例：Windows）
+
+## 補足（運用メモ）
+- 前提知識チェック例：境界＝管理主体や責任が切り替わる地点（例：DNS委譲が外部になる）
+- 証跡ディレクトリ命名：`{category}_{NN}` を推奨（例：`asm_passive_01`）
+- 所要時間：目安。初回は1.5倍程度を想定
+- 報告例（最小）：観測/影響/根拠/再現手順を1行ずつ記載
 Test-NetConnection -ComputerName <HOST> -Port 445
 ~~~~
 - 何を観測する例か：DNS/HTTP/SMB の “出口の成立” の手掛かり。
