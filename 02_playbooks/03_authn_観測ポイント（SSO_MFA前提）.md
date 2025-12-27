@@ -7,10 +7,17 @@ AuthN/SSO/MFA/セッションの成立点を観測で確定し、例外・寿命
 - MFA/再認証（step-up）の適用条件と例外を、観測で列挙できる。
 - 次に進むべきトピック（AuthZ/API/SaaS/creds）を迷わず選べる。
 
+## 前提知識チェックリスト（先に確認）
+- 境界：本人性が成立する地点（アプリ/IdP）
+- 差分観測：同一操作の条件差（同端末/別端末、短時間/時間経過）
+- 成立条件：何が揃うとログインが成立するか
+
 ## 前提（対象・範囲・制約）
 - 対象：許可範囲のログイン導線（UI/API/モバイル）、SSO導線（IdP）、MFA導線。
 - 制約：認証試行は最小回数（連打しない）。ロックアウトや監視を意識して“代表点のみ”。
 - 前提ツール（最小限）：ブラウザ+Proxy(HAR)、（任意）JWTデコード、スクショ。
+  - 理由：HARで成立点、JWTで寿命/権限材料を確認できるため。
+  - 代替：トークン解析はブラウザ拡張やオンラインデコーダでも可（実環境では扱い注意）。
 - 参照すべきtopics（最初に読む/途中で参照）：
   - 総論：`01_topics/02_web/02_authn_00_認証・セッション・トークン.md`
   - Cookie：`01_topics/02_web/02_authn_01_cookie属性と境界（Secure_HttpOnly_SameSite_Path_Domain）.md`
@@ -30,9 +37,12 @@ AuthN/SSO/MFA/セッションの成立点を観測で確定し、例外・寿命
 - MFA：必須/条件付き/例外（信頼済み端末/ネットワーク/remember）を列挙。
 - 完了条件：上記が Yes/No/Unknown で埋まり、次に深掘りする方向が決まる。
 
+## 所要時間の目安
+- 全体：40〜60分
+
 ## 手順（分岐中心：迷うポイントだけ）
 
-### Step 0：最初の5分（必ずやる）
+### Step 0：最初の5分（必ずやる / 目安: 5分）
 - 目的：以降の観測を“比較可能”にする。
 - 観測ポイント：
   - テスト主体を2つ準備：ユーザA（一般）/ユーザB（別ロール or 別テナント）。無理なら Unknown として進む。
@@ -53,8 +63,10 @@ printf "base_url: ...\nuserA: ...\nuserB: ...\nflow: login->home\n" > 00_context
 ~~~~
 - 次の分岐：
   - 代表フローが決まった → Step 1へ
+- 実際の観測例：
+  - `flow: login -> home -> /me`
 
-### Step 1：フロー観測（入口→リダイレクト→成立点）を1回だけ取る
+### Step 1：フロー観測（入口→リダイレクト→成立点）を1回だけ取る（目安: 10分）
 - 目的：認証が“どこで”成立するかを確定する（UI感覚ではなく観測）。
 - 観測ポイント（HARで見る）：
   - ドメイン遷移：`app → idp → app` の有無（どのドメインを跨ぐか）
@@ -66,8 +78,10 @@ printf "base_url: ...\nuserA: ...\nuserB: ...\nflow: login->home\n" > 00_context
 - 次の分岐：
   - 外部IdPへ遷移する → Step 2B（SSO）
   - アプリ内で完結する → Step 2A（ローカル）
+- 実際の観測例：
+  - `Set-Cookie: session=...` がログイン直後に増える
 
-### Step 2A：ローカル認証（Cookie/セッション境界が本体）
+### Step 2A：ローカル認証（Cookie/セッション境界が本体 / 目安: 8分）
 - 目的：セッション材料と寿命を観測で確定し、固定化/更新/失効の次検証へ繋げる。
 - 観測ポイント：
   - Cookie属性：Secure/HttpOnly/SameSite/Path/Domain、Expires/Max-Age
@@ -76,8 +90,10 @@ printf "base_url: ...\nuserA: ...\nuserB: ...\nflow: login->home\n" > 00_context
 - 次の分岐：
   - Cookieが長寿命/更新が曖昧 → Step 4（寿命/失効観測を優先）
   - ロール差で見える機能が変わる → `02_playbooks/04_authz_境界モデル→検証観点チェック.md` へ
+- 実際の観測例：
+  - `Set-Cookie` に `Max-Age=86400` が付与される
 
-### Step 2B：SSO（OIDC/SAML の成立点が本体）
+### Step 2B：SSO（OIDC/SAML の成立点が本体 / 目安: 10分）
 - 目的：SSOで何を信頼し、何を検証しているか（iss/aud/署名/PKCE等）を観測で確定する。
 - 観測ポイント（どちらかを見分ける）：
   - OIDCっぽい：`/authorize` `code=` `state=` `nonce=` `pkce(code_challenge)` が見える
@@ -86,8 +102,17 @@ printf "base_url: ...\nuserA: ...\nuserB: ...\nflow: login->home\n" > 00_context
   - OIDC → Step 3A
   - SAML → Step 3B
   - 判別できない（ゲートウェイ等で隠れる） → Step 3C（アプリ側セッション材料から逆算）
+- 実際の観測例：
+  - `SAMLResponse` がPOSTボディに含まれる
 
-### Step 3A：OIDC観測（state/nonce/code/PKCE）
+#### OIDC / SAML 判定の簡易フロー
+~~~~
+authorize/code/state/nonce が見える -> OIDC
+SAMLResponse/RelayState/ACS が見える -> SAML
+どちらも見えない -> Step 3C（アプリ側から逆算）
+~~~~
+
+### Step 3A：OIDC観測（state/nonce/code/PKCE / 目安: 10分）
 - 目的：OIDCの“結合材料”と“検証責務”を確定し、次の検証方針（AuthZ/Token/CA）を作る。
 - 観測ポイント：
   - `state` が毎回変わるか（再利用されないか）
@@ -98,8 +123,10 @@ printf "base_url: ...\nuserA: ...\nuserB: ...\nflow: login->home\n" > 00_context
   - Token/Refresh/長期化が見える → `01_topics/02_web/02_authn_03_token設計（Bearer_JWT_Refresh_Rotation）.md` へ
   - 権限がclaimで決まる気配 → `02_playbooks/04_authz_境界モデル→検証観点チェック.md` へ
   - IdPポリシー/例外が鍵 → `01_topics/04_saas/04_azuread_条件付きアクセス（CA）と例外パス.md` などへ
+- 実際の観測例：
+  - `code_challenge` があり、`code_verifier` が後段で送られる
 
-### Step 3B：SAML観測（assertion/audience/recipient/署名）
+### Step 3B：SAML観測（assertion/audience/recipient/署名 / 目安: 10分）
 - 目的：SAMLの“誰が発行し誰が検証するか”を観測で確定し、属性→権限の接続へ渡す。
 - 観測ポイント（SAMLResponseを見られる範囲で）：
   - Audience/Recipient/ACS の一致（対象サービス固定か）
@@ -108,8 +135,10 @@ printf "base_url: ...\nuserA: ...\nuserB: ...\nflow: login->home\n" > 00_context
 - 次の分岐：
   - 属性が権限に直結しそう → `02_playbooks/04_authz_境界モデル→検証観点チェック.md`
   - ローカルログイン/回復経路が残る疑い → `01_topics/04_saas/14_sso_bypass_パス（ローカルログイン残存）.md`
+- 実際の観測例：
+  - `Audience` が `https://app.example.com/saml` で固定
 
-### Step 3C：SSOが見えづらい（アプリ側セッション材料から確定）
+### Step 3C：SSOが見えづらい（アプリ側セッション材料から確定 / 目安: 5分）
 - 目的：IdPが見えない環境でも、アプリが何を“本人性材料”として扱っているかを確定する。
 - 観測ポイント：
   - アプリ側Cookie/Tokenの種類と寿命（ログイン直後の差分）
@@ -117,8 +146,10 @@ printf "base_url: ...\nuserA: ...\nuserB: ...\nflow: login->home\n" > 00_context
 - 次の分岐：
   - 材料がCookie中心 → Step 4（寿命/失効）
   - 材料がBearer中心 → `02_playbooks/05_api_権限伝播→検証観点チェック.md`（API側で検証）
+- 実際の観測例：
+  - ログアウトで `session` Cookie が削除される
 
-### Step 4：MFA/再認証/寿命（“例外パス”を列挙する）
+### Step 4：MFA/再認証/寿命（“例外パス”を列挙する / 目安: 10分）
 - 目的：MFAが「いつ」「どこで」要求されるか、例外（remember/端末信頼/ネットワーク）を状態として確定する。
 - 観測ポイント（安全に差分）：
   - 同一端末/同一ブラウザでの再ログイン：MFAは毎回か、rememberがあるか
@@ -128,8 +159,10 @@ printf "base_url: ...\nuserA: ...\nuserB: ...\nflow: login->home\n" > 00_context
   - step-upが鍵 → `01_topics/02_web/02_authn_16_step-up_再認証境界（重要操作_再確認）.md`
   - refresh rotation/盗用検知が鍵 → `01_topics/02_web/02_authn_17_refresh_token_rotation_盗用検知（reuse）.md`
   - “外部例外（CA/ポリシー）”が鍵 → SaaS側ポリシーへ
+- 実際の観測例：
+  - 同一端末はMFAスキップ、別端末は必須
 
-### Step 5：攻め筋の確定（次の深掘りを最大3つに絞る）
+### Step 5：攻め筋の確定（次の深掘りを最大3つに絞る / 目安: 5分）
 - 優先度の付け方：
   1) 認証が壊れると被害が最大化（SSO/管理者/回復経路）
   2) セッションが長寿命/失効が弱い（継続的な不正利用が可能）
@@ -142,6 +175,18 @@ printf "base_url: ...\nuserA: ...\nuserB: ...\nflow: login->home\n" > 00_context
 - 次に回す検証（playbook）：
   - AuthZ：`02_playbooks/04_authz_境界モデル→検証観点チェック.md`
   - API：`02_playbooks/05_api_権限伝播→検証観点チェック.md`
+- 実際の観測例：
+  - `refresh_token` が長寿命 → セッション寿命 topic を優先
+
+## よくある失敗と対処法
+- ログイン試行を連打する → 代表フロー1回に絞る
+- Tokenの保存場所が不明 → HARとストレージを分けて確認
+- SSO種別の断定が早い → まずは見えるパラメータで判断
+
+## バグバウンティでの注意点
+- ロックアウトが発生しやすいので試行回数は最小
+- 認証情報の扱い（スクショ/HAR）に注意
+- レポートは「成立点の根拠（HAR/パラメータ）」を明記
 
 ## 取得する証跡（目的ベースで最小限）
 - 何のため：認証成立点と例外を説明し、再現性を持たせるため。
