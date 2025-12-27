@@ -1,4 +1,13 @@
-# 13_session_replay_再利用と検知（ua_ip_binding）
+﻿# 13_session_replay_再利用と検知（ua_ip_binding）
+
+## 基本概念の要約
+- セッション再利用の境界と検知
+
+## 実装例（疑似コード）
+```pseudo
+if ua_or_ip_changed:
+  require_reauth()
+```
 UA/IP binding を"境界"として成立させる
 
 ---
@@ -247,24 +256,186 @@ UA/IP binding を"境界"として成立させる
 
 ~~~~
 # 目的：
+
+## 基本概念の要約
+- セッション再利用の境界と検知
+
+## 実装例（疑似コード）
+```pseudo
+if ua_or_ip_changed:
+  require_reauth()
+```
 # - UA/IP "一致判定"ではなく、正規化＋差分検知＋段階制御に落とす
+
+## 基本概念の要約
+- セッション再利用の境界と検知
+
+## 実装例（疑似コード）
+```pseudo
+if ua_or_ip_changed:
+  require_reauth()
+```
 # - 判定結果（risk/decision/reason）を監査ログに残し、相関IDで追えるようにする
 
+## 基本概念の要約
+- セッション再利用の境界と検知
+
+## 実装例（疑似コード）
+```pseudo
+if ua_or_ip_changed:
+  require_reauth()
+```
+
 # サーバ側で持つイメージ（擬似データ）
+
+## 基本概念の要約
+- セッション再利用の境界と検知
+
+## 実装例（疑似コード）
+```pseudo
+if ua_or_ip_changed:
+  require_reauth()
+```
 # session_id:
+
+## 基本概念の要約
+- セッション再利用の境界と検知
+
+## 実装例（疑似コード）
+```pseudo
+if ua_or_ip_changed:
+  require_reauth()
+```
 #   user_id: ...
+
+## 基本概念の要約
+- セッション再利用の境界と検知
+
+## 実装例（疑似コード）
+```pseudo
+if ua_or_ip_changed:
+  require_reauth()
+```
 #   tenant_id: ...
+
+## 基本概念の要約
+- セッション再利用の境界と検知
+
+## 実装例（疑似コード）
+```pseudo
+if ua_or_ip_changed:
+  require_reauth()
+```
 #   baseline:
+
+## 基本概念の要約
+- セッション再利用の境界と検知
+
+## 実装例（疑似コード）
+```pseudo
+if ua_or_ip_changed:
+  require_reauth()
+```
 #     ip_prefix: ...
+
+## 基本概念の要約
+- セッション再利用の境界と検知
+
+## 実装例（疑似コード）
+```pseudo
+if ua_or_ip_changed:
+  require_reauth()
+```
 #     ua_family: ...
+
+## 基本概念の要約
+- セッション再利用の境界と検知
+
+## 実装例（疑似コード）
+```pseudo
+if ua_or_ip_changed:
+  require_reauth()
+```
 #     accept_language: ...
+
+## 基本概念の要約
+- セッション再利用の境界と検知
+
+## 実装例（疑似コード）
+```pseudo
+if ua_or_ip_changed:
+  require_reauth()
+```
 #     created_at: ...
+
+## 基本概念の要約
+- セッション再利用の境界と検知
+
+## 実装例（疑似コード）
+```pseudo
+if ua_or_ip_changed:
+  require_reauth()
+```
 #   last_seen:
+
+## 基本概念の要約
+- セッション再利用の境界と検知
+
+## 実装例（疑似コード）
+```pseudo
+if ua_or_ip_changed:
+  require_reauth()
+```
 #     ip_prefix: ...
+
+## 基本概念の要約
+- セッション再利用の境界と検知
+
+## 実装例（疑似コード）
+```pseudo
+if ua_or_ip_changed:
+  require_reauth()
+```
 #     ua_family: ...
+
+## 基本概念の要約
+- セッション再利用の境界と検知
+
+## 実装例（疑似コード）
+```pseudo
+if ua_or_ip_changed:
+  require_reauth()
+```
 #     seen_at: ...
+
+## 基本概念の要約
+- セッション再利用の境界と検知
+
+## 実装例（疑似コード）
+```pseudo
+if ua_or_ip_changed:
+  require_reauth()
+```
 #   risk_state: low|medium|high
+
+## 基本概念の要約
+- セッション再利用の境界と検知
+
+## 実装例（疑似コード）
+```pseudo
+if ua_or_ip_changed:
+  require_reauth()
+```
 #   response_policy: allow|step_up|required_reauth|revoke
+
+## 基本概念の要約
+- セッション再利用の境界と検知
+
+## 実装例（疑似コード）
+```pseudo
+if ua_or_ip_changed:
+  require_reauth()
+```
 ~~~~
 
 - この例で観測していること：

@@ -1,4 +1,12 @@
-# 08_clickjacking_境界（XFO_CSP-frame-ancestors）
+﻿# 08_clickjacking_境界（XFO_CSP-frame-ancestors）
+
+## 基本概念の要約
+- クリック誘導で重要操作が実行される境界
+
+## 実装例（最小PoC）
+```html
+<iframe src="https://example.com/important" style="opacity:0.01"></iframe>
+```
 "読める/送れる"ではなく「ユーザのクリックを踏ませる」で境界が崩れる領域
 
 ## 目的（この技術で到達する状態）

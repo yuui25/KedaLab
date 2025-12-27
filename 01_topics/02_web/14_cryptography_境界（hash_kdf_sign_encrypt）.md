@@ -1,4 +1,10 @@
-# 14_cryptography_境界（hash_kdf_sign_encrypt）
+﻿# 14_cryptography_境界（hash_kdf_sign_encrypt）
+
+## 基本概念の要約
+- hash: 一方向変換
+- kdf: 鍵導出
+- sign: 改ざん検知
+- encrypt: 秘匿
 「何を守りたいか」からプリミティブを選び、鍵・検証・失効・ログまでを"運用できる境界"に落とす
 
 ---
@@ -410,15 +416,69 @@
 
 ~~~~
 # 目的：
+
+## 基本概念の要約
+- hash: 一方向変換
+- kdf: 鍵導出
+- sign: 改ざん検知
+- encrypt: 秘匿
 # - 「暗号を使っている」ではなく「境界として成立している」を確認する
+
+## 基本概念の要約
+- hash: 一方向変換
+- kdf: 鍵導出
+- sign: 改ざん検知
+- encrypt: 秘匿
 # - どのプリミティブで何を守り、どこで検証し、鍵をどう回すかまでを仕様化する
 
+## 基本概念の要約
+- hash: 一方向変換
+- kdf: 鍵導出
+- sign: 改ざん検知
+- encrypt: 秘匿
+
 # 典型の"仕様として固定すべき項目"（例）
+
+## 基本概念の要約
+- hash: 一方向変換
+- kdf: 鍵導出
+- sign: 改ざん検知
+- encrypt: 秘匿
 # - password: KDF=Argon2id/bcrypt/scrypt/PBKDF2, salt unique, params stored, upgrade plan
+
+## 基本概念の要約
+- hash: 一方向変換
+- kdf: 鍵導出
+- sign: 改ざん検知
+- encrypt: 秘匿
 # - token(JWS): alg fixed, key allowlist, iss/aud/exp required, clock-skew policy
+
+## 基本概念の要約
+- hash: 一方向変換
+- kdf: 鍵導出
+- sign: 改ざん検知
+- encrypt: 秘匿
 # - webhook(HMAC): body+timestamp signed, replay protection, secret rotation
+
+## 基本概念の要約
+- hash: 一方向変換
+- kdf: 鍵導出
+- sign: 改ざん検知
+- encrypt: 秘匿
 # - encrypt(AEAD): nonce/IV policy, key separation, envelope encryption, rotation approach
+
+## 基本概念の要約
+- hash: 一方向変換
+- kdf: 鍵導出
+- sign: 改ざん検知
+- encrypt: 秘匿
 # - logging: secrets redaction, token hashing (jti/hashed), audit decision+reason+trace_id
+
+## 基本概念の要約
+- hash: 一方向変換
+- kdf: 鍵導出
+- sign: 改ざん検知
+- encrypt: 秘匿
 ~~~~
 
 - この例で観測していること：

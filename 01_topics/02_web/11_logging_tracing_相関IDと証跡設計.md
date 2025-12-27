@@ -1,4 +1,14 @@
-# 11_logging_tracing_相関IDと証跡設計
+﻿# 11_logging_tracing_相関IDと証跡設計
+
+## 基本概念の要約
+- 相関IDを全hopで引き回す境界
+
+## 実装例（疑似コード）
+```pseudo
+id = req.header["X-Request-Id"] ?? new_id()
+log(id, req)
+resp.header["X-Request-Id"] = id
+```
 「どの層で何が起きたか」を"同じID"で追い、監査可能な証跡として残すための設計単位
 
 ## 目的（この技術で到達する状態）
@@ -294,16 +304,116 @@
 
 ~~~~
 # 目標：
+
+## 基本概念の要約
+- 相関IDを全hopで引き回す境界
+
+## 実装例（疑似コード）
+```pseudo
+id = req.header["X-Request-Id"] ?? new_id()
+log(id, req)
+resp.header["X-Request-Id"] = id
+```
 # - 1つのユーザ操作が、複数サービス/ジョブに跨っても trace_id で追える
+
+## 基本概念の要約
+- 相関IDを全hopで引き回す境界
+
+## 実装例（疑似コード）
+```pseudo
+id = req.header["X-Request-Id"] ?? new_id()
+log(id, req)
+resp.header["X-Request-Id"] = id
+```
 # - 重要操作は、auditログで actor/tenant/action/object/decision が追える
+
+## 基本概念の要約
+- 相関IDを全hopで引き回す境界
+
+## 実装例（疑似コード）
+```pseudo
+id = req.header["X-Request-Id"] ?? new_id()
+log(id, req)
+resp.header["X-Request-Id"] = id
+```
 # - ログに token/PII を混入させず、注入で壊れない（構造ログ＋正規化）
 
+## 基本概念の要約
+- 相関IDを全hopで引き回す境界
+
+## 実装例（疑似コード）
+```pseudo
+id = req.header["X-Request-Id"] ?? new_id()
+log(id, req)
+resp.header["X-Request-Id"] = id
+```
+
 # 推奨の"ログ1行に必ず入れる"最小セット（例）
+
+## 基本概念の要約
+- 相関IDを全hopで引き回す境界
+
+## 実装例（疑似コード）
+```pseudo
+id = req.header["X-Request-Id"] ?? new_id()
+log(id, req)
+resp.header["X-Request-Id"] = id
+```
 # - ts, level, service, env
+
+## 基本概念の要約
+- 相関IDを全hopで引き回す境界
+
+## 実装例（疑似コード）
+```pseudo
+id = req.header["X-Request-Id"] ?? new_id()
+log(id, req)
+resp.header["X-Request-Id"] = id
+```
 # - trace_id, span_id, request_id
+
+## 基本概念の要約
+- 相関IDを全hopで引き回す境界
+
+## 実装例（疑似コード）
+```pseudo
+id = req.header["X-Request-Id"] ?? new_id()
+log(id, req)
+resp.header["X-Request-Id"] = id
+```
 # - principal(user/service/job), tenant_id
+
+## 基本概念の要約
+- 相関IDを全hopで引き回す境界
+
+## 実装例（疑似コード）
+```pseudo
+id = req.header["X-Request-Id"] ?? new_id()
+log(id, req)
+resp.header["X-Request-Id"] = id
+```
 # - http.method, http.path, http.status, latency_ms
+
+## 基本概念の要約
+- 相関IDを全hopで引き回す境界
+
+## 実装例（疑似コード）
+```pseudo
+id = req.header["X-Request-Id"] ?? new_id()
+log(id, req)
+resp.header["X-Request-Id"] = id
+```
 # - decision(allow/deny) は重要操作/認可判定点で必ず
+
+## 基本概念の要約
+- 相関IDを全hopで引き回す境界
+
+## 実装例（疑似コード）
+```pseudo
+id = req.header["X-Request-Id"] ?? new_id()
+log(id, req)
+resp.header["X-Request-Id"] = id
+```
 ~~~~
 
 - この例で観測していること：
