@@ -1,4 +1,4 @@
-# 24_subdomain_takeover_成立条件推定（DNS_CNAME_プロバイダ）
+﻿# 24_subdomain_takeover_成立条件推定（DNS_CNAME_プロバイダ）
 Subdomain Takeover 成立条件推定（DNS/CNAME/プロバイダ）
 “成立条件（未割当・解除済み・参照先不整合）を説明できる”
 
@@ -170,12 +170,21 @@ Subdomain Takeover 成立条件推定（DNS/CNAME/プロバイダ）
 ~~~~
 # 最小の観測例（DNS/HTTP：例示のみ）
 
+## 出力例（最小）
+- `NoSuchBucket` 等の典型応答
+
 # DNS（CNAME/A/NS など）
+
+## 出力例（最小）
+- `NoSuchBucket` 等の典型応答
 dig +short CNAME sub.example.com
 dig +short A sub.example.com
 dig +short NS dev.example.com
 
 # HTTP（最小：ヘッダ/ステータスのみ）
+
+## 出力例（最小）
+- `NoSuchBucket` 等の典型応答
 curl -sS -I https://sub.example.com
 ~~~~
 
@@ -209,13 +218,13 @@ curl -sS -I https://sub.example.com
   - 参照：https://attack.mitre.org/tactics/TA0043/
 
 ## 参考（必要最小限）
-- OWASP ASVS  
+- OWASP ASVS
   https://github.com/OWASP/ASVS
-- OWASP WSTG  
+- OWASP WSTG
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES  
+- PTES
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Reconnaissance  
+- MITRE ATT&CK：Reconnaissance
   https://attack.mitre.org/tactics/TA0043/
 - DNSレコード（CNAME/ALIAS/NS委任）の意味と “外部委譲” の捉え方
 - Certificate Transparency / TLS観測の基礎（正当運用の裏取りに使う）

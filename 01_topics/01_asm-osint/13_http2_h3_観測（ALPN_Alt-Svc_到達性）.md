@@ -1,4 +1,4 @@
-# 13_http2_h3_観測（ALPN_Alt-Svc_到達性）
+﻿# 13_http2_h3_観測（ALPN_Alt-Svc_到達性）
 HTTP/2・HTTP/3 観測（ALPN/Alt-Svc/到達性）
 “プロトコル差で境界が分かれる可能性”を観測で確定し、以降のWeb/NW検証の優先度と再現性を上げる
 
@@ -136,14 +136,26 @@ HTTP/2・HTTP/3 観測（ALPN/Alt-Svc/到達性）
 ~~~~
 # 目的：ALPN（h2合意）と Alt-Svc（h3広告）を、代表点だけで確定する
 
+## 出力例（最小）
+- `Alt-Svc: h3=":443"` があればH3候補
+
 # (1) ALPN確認：h2を要求し、合意結果（ALPN protocol）を見る
+
+## 出力例（最小）
+- `Alt-Svc: h3=":443"` があればH3候補
 openssl s_client -connect example.com:443 -servername example.com -alpn h2 </dev/null 2>/dev/null \
   | sed -n 's/^ALPN protocol: //p'
 
 # (2) HTTP/2でヘッダ観測：Alt-Svc の有無と、外周系ヘッダを確認する
+
+## 出力例（最小）
+- `Alt-Svc: h3=":443"` があればH3候補
 curl -skI --http2 https://example.com/ | sed -n '1,30p'
 
 # (3) HTTP/3で到達性確認（curlがhttp3対応の場合のみ）：成功/失敗と Alt-Svc の整合を見る
+
+## 出力例（最小）
+- `Alt-Svc: h3=":443"` があればH3候補
 curl -skI --http3 https://example.com/ | sed -n '1,30p'
 ~~~~
 
@@ -180,17 +192,17 @@ curl -skI --http3 https://example.com/ | sed -n '1,30p'
   - 参照：https://attack.mitre.org/tactics/TA0043/
 
 ## 参考（必要最小限）
-- OWASP ASVS  
+- OWASP ASVS
   https://github.com/OWASP/ASVS
-- OWASP WSTG  
+- OWASP WSTG
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES  
+- PTES
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Reconnaissance  
+- MITRE ATT&CK：Reconnaissance
   https://attack.mitre.org/tactics/TA0043/
-- HTTP/2 Specification  
+- HTTP/2 Specification
   https://httpwg.org/specs/rfc7540.html
-- HTTP/3 Specification  
+- HTTP/3 Specification
   https://www.rfc-editor.org/rfc/rfc9114.html
 
 ## リポジトリ内リンク（最大3つまで）

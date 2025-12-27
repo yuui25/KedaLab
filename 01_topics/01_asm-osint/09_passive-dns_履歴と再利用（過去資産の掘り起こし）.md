@@ -1,4 +1,4 @@
-# 09_passive-dns_履歴と再利用（過去資産の掘り起こし）
+﻿# 09_passive-dns_履歴と再利用（過去資産の掘り起こし）
 Passive DNS 履歴と再利用（過去資産の掘り起こし）
 “残存資産・委託境界・移行の痕跡”を観測で確定し、検証優先度へ変換する
 
@@ -137,17 +137,35 @@ Passive DNS 履歴と再利用（過去資産の掘り起こし）
 
 ~~~~
 # 目的：passive DNSで“過去のFQDN→値”を集め、last_seenが新しい候補から現状確認へ回す
+
+## 出力例（最小）
+- `A=198.51.100.10 (過去)` の再利用痕跡
 # 例は「データ取得→正規化→現状DNS確認」の流れを示す。実際の取得は利用する提供元/APIに合わせる。
 
+## 出力例（最小）
+- `A=198.51.100.10 (過去)` の再利用痕跡
+
 # (1) 取得（例：提供元APIからJSONを取得する。キー等は省略）
+
+## 出力例（最小）
+- `A=198.51.100.10 (過去)` の再利用痕跡
 curl -s "https://passivedns.example/api/v1/domain/example.com" > passivedns_raw.json
 
 # (2) 正規化（必要フィールドだけ抽出してCSV化：後で差分が取りやすい形にする）
+
+## 出力例（最小）
+- `A=198.51.100.10 (過去)` の再利用痕跡
 # ※jq等の道具は任意。ここでは“正規化する”ことが目的。
+
+## 出力例（最小）
+- `A=198.51.100.10 (過去)` の再利用痕跡
 jq -r '.records[] | [.fqdn,.rrtype,.value,.first_seen,.last_seen,.source] | @csv' passivedns_raw.json \
   > passivedns_normalized.csv
 
 # (3) 現状確認（履歴で出たFQDNが、今も解決するかを最小で確認する）
+
+## 出力例（最小）
+- `A=198.51.100.10 (過去)` の再利用痕跡
 cut -d, -f1 passivedns_normalized.csv | tr -d '"' | sort -u > hist_fqdns.txt
 dnsx -l hist_fqdns.txt -a -aaaa -cname -silent > hist_resolved_now.txt
 ~~~~
@@ -179,15 +197,15 @@ dnsx -l hist_fqdns.txt -a -aaaa -cname -silent > hist_resolved_now.txt
   - 攻撃者の目的（この技術が支える意図）：攻撃者が「忘れられた入口」を探す論理を、診断側の“優先度付け”に転用する。Reconnaissance / Discovery として、攻め筋の確率を上げるための境界特定・依存推定。
 
 ## 参考（必要最小限）
-- OWASP ASVS  
+- OWASP ASVS
   https://github.com/OWASP/ASVS
-- OWASP WSTG  
+- OWASP WSTG
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES  
+- PTES
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Reconnaissance  
+- MITRE ATT&CK：Reconnaissance
   https://attack.mitre.org/tactics/TA0043/
-- MITRE ATT&CK：Discovery  
+- MITRE ATT&CK：Discovery
   https://attack.mitre.org/tactics/TA0007/
 
 ## リポジトリ内リンク（最大3つまで）

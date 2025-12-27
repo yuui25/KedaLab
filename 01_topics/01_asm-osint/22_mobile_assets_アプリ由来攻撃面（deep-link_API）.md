@@ -1,4 +1,4 @@
-# 22_mobile_assets_アプリ由来攻撃面（deep-link_API）
+﻿# 22_mobile_assets_アプリ由来攻撃面（deep-link_API）
 Mobile Assets アプリ由来攻撃面（deep-link/API）
 “deep link / API / 環境差分（prod/stg/dev）を ASM/OSINT の範囲で抽出し、Web側から見えない攻撃面を補完できる”
 
@@ -163,13 +163,34 @@ Mobile Assets アプリ由来攻撃面（deep-link/API）
 ~~~~
 # 最小の観測例（deep link / API の整理：例示のみ）
 
+## 出力例（最小）
+- `myapp://` の許可範囲
+
 # deeplink（例）
+
+## 出力例（最小）
+- `myapp://` の許可範囲
 # myapp://auth/callback?code=<...>&state=<...>
+
+## 出力例（最小）
+- `myapp://` の許可範囲
 # https://app.example.com/open?screen=reset
 
+## 出力例（最小）
+- `myapp://` の許可範囲
+
 # api（例）
+
+## 出力例（最小）
+- `myapp://` の許可範囲
 # https://api.example.com/v1/
+
+## 出力例（最小）
+- `myapp://` の許可範囲
 # https://stg-api.example.com/graphql
+
+## 出力例（最小）
+- `myapp://` の許可範囲
 ~~~~
 
 - この例で観測していること：
@@ -202,13 +223,13 @@ Mobile Assets アプリ由来攻撃面（deep-link/API）
   - 参照：https://attack.mitre.org/tactics/TA0043/
 
 ## 参考（必要最小限）
-- OWASP ASVS  
+- OWASP ASVS
   https://github.com/OWASP/ASVS
-- OWASP WSTG  
+- OWASP WSTG
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES  
+- PTES
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Reconnaissance  
+- MITRE ATT&CK：Reconnaissance
   https://attack.mitre.org/tactics/TA0043/
 - deep link（custom scheme / universal link / app link）の概念
 - モバイルアプリから抽出しがちな設定断片（API host, OIDC, analytics, feature flags）

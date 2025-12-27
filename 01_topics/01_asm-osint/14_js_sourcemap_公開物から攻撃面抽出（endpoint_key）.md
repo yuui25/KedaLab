@@ -1,4 +1,4 @@
-# 14_js_sourcemap_公開物から攻撃面抽出（endpoint_key）
+﻿# 14_js_sourcemap_公開物から攻撃面抽出（endpoint_key）
 JS Sourcemap 公開物から攻撃面抽出（endpoint/key）
 “攻撃面（endpoint）と運用境界（env差分/内部ホスト）”を抽出し、次の検証（Web/API/Config）へ優先度付きで渡す
 
@@ -169,17 +169,32 @@ JS Sourcemap 公開物から攻撃面抽出（endpoint/key）
 ~~~~
 # 目的：JSから sourceMappingURL を見つけ、.map の到達性と情報量（sourcesContent有無）を確定する
 
+## 出力例（最小）
+- `sources` に内部パスが残る
+
 # (1) JS末尾の sourceMappingURL を確認（代表のbundle/chunkに対して）
+
+## 出力例（最小）
+- `sources` に内部パスが残る
 curl -sk https://example.com/assets/app.js | tail -n 5
 
 # (2) .map を取得してステータス確認（403/404/200）
+
+## 出力例（最小）
+- `sources` に内部パスが残る
 curl -sk -D - -o /dev/null https://example.com/assets/app.js.map | sed -n '1,20p'
 
 # (3) .map の情報量確認（sourcesContent があるか）
+
+## 出力例（最小）
+- `sources` に内部パスが残る
 curl -sk https://example.com/assets/app.js.map \
   | python -c "import sys,json; d=json.load(sys.stdin); print('sources=',len(d.get('sources',[])),'sourcesContent=',len(d.get('sourcesContent',[]) or []))"
 
 # (4) endpoint候補の粗抽出（本文がある場合のみ。過剰にやらない）
+
+## 出力例（最小）
+- `sources` に内部パスが残る
 curl -sk https://example.com/assets/app.js.map \
   | python -c "import sys,json,re; d=json.load(sys.stdin); sc=d.get('sourcesContent') or []; s='\n'.join([x for x in sc if isinstance(x,str)]); \
 print('\n'.join(sorted(set(re.findall(r'https?://[^\\s\"\\']+|/api/[^\\s\"\\']+|/graphql\\b|/admin\\b', s))) ) )" \
@@ -221,15 +236,15 @@ print('\n'.join(sorted(set(re.findall(r'https?://[^\\s\"\\']+|/api/[^\\s\"\\']+|
   - 参照：https://attack.mitre.org/tactics/TA0043/
 
 ## 参考（必要最小限）
-- OWASP ASVS  
+- OWASP ASVS
   https://github.com/OWASP/ASVS
-- OWASP WSTG  
+- OWASP WSTG
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES  
+- PTES
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Reconnaissance  
+- MITRE ATT&CK：Reconnaissance
   https://attack.mitre.org/tactics/TA0043/
-- Source Map Revision 3 Proposal  
+- Source Map Revision 3 Proposal
   https://sourcemaps.info/spec.html
 
 ## リポジトリ内リンク（最大3つまで）

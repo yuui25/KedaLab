@@ -1,4 +1,4 @@
-# 18_storage_discovery（S3_GCS_AzureBlob）境界推定
+﻿# 18_storage_discovery（S3_GCS_AzureBlob）境界推定
 Storage Discovery（S3/GCS/AzureBlob）境界推定
 “storage（バケット/アカウント/コンテナ）に関する資産境界・信頼境界・攻撃面（endpoint）の拡張”
 
@@ -163,11 +163,29 @@ Storage Discovery（S3/GCS/AzureBlob）境界推定
 
 ~~~~
 # 最小の記録例（HTTP観測の扱い）
+
+## 出力例（最小）
+- `AccessDenied` と `NoSuchBucket` の差分
 # - URL（観測済みのもののみ）
+
+## 出力例（最小）
+- `AccessDenied` と `NoSuchBucket` の差分
 # - 時刻
+
+## 出力例（最小）
+- `AccessDenied` と `NoSuchBucket` の差分
 # - ステータス（例：200 / 403 / 404）
+
+## 出力例（最小）
+- `AccessDenied` と `NoSuchBucket` の差分
 # - 応答ヘッダの特徴（Server, x-amz-*, x-goog-*, x-ms-* など）
+
+## 出力例（最小）
+- `AccessDenied` と `NoSuchBucket` の差分
 # - サイズ（過大DL回避のため）
+
+## 出力例（最小）
+- `AccessDenied` と `NoSuchBucket` の差分
 ~~~~
 
 - この例で観測していること：
@@ -199,13 +217,13 @@ Storage Discovery（S3/GCS/AzureBlob）境界推定
   - 参照：https://attack.mitre.org/tactics/TA0043/
 
 ## 参考（必要最小限）
-- OWASP ASVS  
+- OWASP ASVS
   https://github.com/OWASP/ASVS
-- OWASP WSTG  
+- OWASP WSTG
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES  
+- PTES
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Reconnaissance  
+- MITRE ATT&CK：Reconnaissance
   https://attack.mitre.org/tactics/TA0043/
 - 各クラウドのストレージURL形式（S3/GCS/Azure Blob）
 - 署名URL（Signed URL / SAS）と期限・権限モデルの概念

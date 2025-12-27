@@ -1,4 +1,4 @@
-# 03_http_観測（ヘッダ・挙動）と意味
+﻿# 03_http_観測（ヘッダ・挙動）と意味
 HTTP 観測（ヘッダ・挙動）と意味
 “境界・外部依存・成立条件”を観測で確定し、ASM/OSINT→Web/NWの深掘りへ繋げる
 
@@ -133,16 +133,28 @@ HTTP 観測（ヘッダ・挙動）と意味
 
 ~~~~
 # 例：未ログインでの外形観測（ヘッダとステータスを取る）
+
+## 出力例（最小）
+- `Server: cloudflare` / `Cache-Control: public` の差分で境界を推定
 curl -i https://example.com/
 
 # 例：リダイレクトを追う（認証境界の入口を読む）
+
+## 出力例（最小）
+- `Server: cloudflare` / `Cache-Control: public` の差分で境界を推定
 curl -i -L https://example.com/
 
 # 例：条件差（User-Agent）で挙動が変わるかを見る（最小の差分）
+
+## 出力例（最小）
+- `Server: cloudflare` / `Cache-Control: public` の差分で境界を推定
 curl -i -A "Mozilla/5.0" https://example.com/
 curl -i -A "curl/8" https://example.com/
 
 # 例：CORSの手掛かり（Origin差分）を観測（最小の差分）
+
+## 出力例（最小）
+- `Server: cloudflare` / `Cache-Control: public` の差分で境界を推定
 curl -i -H "Origin: https://example.com" https://api.example.com/endpoint
 ~~~~
 
@@ -192,15 +204,15 @@ curl -i -H "Origin: https://example.com" https://api.example.com/endpoint
   - 攻撃者の目的（この技術が支える意図）：最小の観測で入口・依存・境界を把握し、探索コストを最適化する。Reconnaissance / Discovery として、攻め筋の確率を上げるための境界特定・依存推定。
 
 ## 参考（必要最小限）
-- OWASP ASVS  
+- OWASP ASVS
   https://github.com/OWASP/ASVS
-- OWASP WSTG  
+- OWASP WSTG
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES  
+- PTES
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Reconnaissance  
+- MITRE ATT&CK：Reconnaissance
   https://attack.mitre.org/tactics/TA0043/
-- MITRE ATT&CK：Discovery  
+- MITRE ATT&CK：Discovery
   https://attack.mitre.org/tactics/TA0007/
 
 ## リポジトリ内リンク（最大3つまで）

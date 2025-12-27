@@ -1,4 +1,4 @@
-# 25_dnssec_観測と意味（委譲_検証_誤設定）
+﻿# 25_dnssec_観測と意味（委譲_検証_誤設定）
 DNSSEC 観測と意味（委譲/検証/誤設定）
 “DNSSEC 成熟度（有効/無効/破綻の疑い）を整理できる”
 
@@ -165,17 +165,35 @@ DNSSEC を ASM/OSINT の範囲で観測し、委譲（DS）〜検証（DNSKEY/RR
 ~~~~
 # 最小の観測例（DNSSEC関連の問合せ：例示のみ）
 
+## 出力例（最小）
+- `ad` フラグ有無で検証状態を推定
+
 # DS（親側委譲の有無を見る）
+
+## 出力例（最小）
+- `ad` フラグ有無で検証状態を推定
 dig +dnssec +short DS example.com
 
 # DNSKEY（子側の鍵）
+
+## 出力例（最小）
+- `ad` フラグ有無で検証状態を推定
 dig +dnssec +short DNSKEY example.com
 
 # 署名付き応答（A等にRRSIGが付くか）
+
+## 出力例（最小）
+- `ad` フラグ有無で検証状態を推定
 dig +dnssec example.com A
 
 # 検証を意識（ADフラグ等は環境依存）
+
+## 出力例（最小）
+- `ad` フラグ有無で検証状態を推定
 # 例：検証するリゾルバ（手元/公共）を使う場合は「どのリゾルバで見たか」を証跡に残す
+
+## 出力例（最小）
+- `ad` フラグ有無で検証状態を推定
 ~~~~
 
 - この例で観測していること：
@@ -210,13 +228,13 @@ dig +dnssec example.com A
   - 参照：https://attack.mitre.org/tactics/TA0043/
 
 ## 参考（必要最小限）
-- OWASP ASVS  
+- OWASP ASVS
   https://github.com/OWASP/ASVS
-- OWASP WSTG  
+- OWASP WSTG
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES  
+- PTES
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Reconnaissance  
+- MITRE ATT&CK：Reconnaissance
   https://attack.mitre.org/tactics/TA0043/
 - DNSSEC（DS/DNSKEY/RRSIG）の役割と “委譲チェーン” の概念
 - 検証失敗（bogus）と SERVFAIL の関係（断定はせず、兆候として扱う）

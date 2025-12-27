@@ -1,4 +1,4 @@
-# 05_cloud_露出面（CDN_WAF_Storage等）推定
+﻿# 05_cloud_露出面（CDN_WAF_Storage等）推定
 Cloud 露出面（CDN/WAF/Storage等）推定
 “信頼境界・到達性・優先度”を観測で確定し、次の検証の打ち手を確定する
 
@@ -135,11 +135,26 @@ Cloud 露出面（CDN/WAF/Storage等）推定
 
 ~~~~
 # 目的：クラウド名当てではなく、境界（信頼/到達性/権限）を決める
+
+## 出力例（最小）
+- `Via` / `X-Cache` の有無で経路差分を確認
 #
 # 観測 → 状態 → 次の一手（例）
+
+## 出力例（最小）
+- `Via` / `X-Cache` の有無で経路差分を確認
 # - DNSの委譲先が外部っぽい → 信頼境界がある → 連携/設定（Config/SaaS）へ寄せる
+
+## 出力例（最小）
+- `Via` / `X-Cache` の有無で経路差分を確認
 # - HTTPでWAF的な拒否点が見える → 到達性が手前で決まる → 入口・権限（Web Recon/AuthZ/API）へ寄せる
+
+## 出力例（最小）
+- `Via` / `X-Cache` の有無で経路差分を確認
 # - JSにstorageや共有の匂い → 資産境界が外部へ → 共有・外部公開（SaaS/Config）へ寄せる
+
+## 出力例（最小）
+- `Via` / `X-Cache` の有無で経路差分を確認
 ~~~~
 
 - この例で観測していること：
@@ -169,15 +184,15 @@ Cloud 露出面（CDN/WAF/Storage等）推定
   - 攻撃者の目的（この技術が支える意図）：外部依存と到達性を把握し、攻め筋の確率を上げる（列挙より意思決定が主役）。Reconnaissance / Discovery として、攻め筋の確率を上げるための境界特定・依存推定。
 
 ## 参考（必要最小限）
-- OWASP ASVS  
+- OWASP ASVS
   https://github.com/OWASP/ASVS
-- OWASP WSTG  
+- OWASP WSTG
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES  
+- PTES
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Reconnaissance  
+- MITRE ATT&CK：Reconnaissance
   https://attack.mitre.org/tactics/TA0043/
-- MITRE ATT&CK：Discovery  
+- MITRE ATT&CK：Discovery
   https://attack.mitre.org/tactics/TA0007/
 
 ## リポジトリ内リンク（最大3つまで）

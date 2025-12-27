@@ -1,4 +1,4 @@
-# 16_github_code-search_漏えい（key_token_endpoint）
+﻿# 16_github_code-search_漏えい（key_token_endpoint）
 GitHub Code Search 漏えい（key/token/endpoint）
 “鍵・トークン・内部エンドポイント・設定断片”を漏れなく収集し、次工程へ渡せる状態にする
 
@@ -169,18 +169,36 @@ GitHub 上に露出している「鍵・トークン・内部エンドポイン�
 
 ~~~~
 # 最小の検索クエリ例（“広く浅く”）
+
+## 出力例（最小）
+- `<TOKEN>` のプレフィックス/命名規則を抽出
 # ※クエリは最小限の例。対象名（Org/ドメイン/プロダクト名）を差し替えて使う。
 
+## 出力例（最小）
+- `<TOKEN>` のプレフィックス/命名規則を抽出
+
 # 入口：.env / config / secret 断片
+
+## 出力例（最小）
+- `<TOKEN>` のプレフィックス/命名規則を抽出
 org:<ORG> (filename:.env OR filename:config.yml OR filename:settings.py) (SECRET OR TOKEN OR KEY)
 
 # 入口：URL（endpoint断片）
+
+## 出力例（最小）
+- `<TOKEN>` のプレフィックス/命名規則を抽出
 org:<ORG> ("https://" OR "http://") (staging OR dev OR admin OR internal)
 
 # 入口：クラウド/ストレージの断片（境界推定へ接続）
+
+## 出力例（最小）
+- `<TOKEN>` のプレフィックス/命名規則を抽出
 org:<ORG> (s3.amazonaws.com OR ".blob.core.windows.net" OR "storage.googleapis.com")
 
 # 入口：Swagger / OpenAPI / GraphQL（面抽出へ接続）
+
+## 出力例（最小）
+- `<TOKEN>` のプレフィックス/命名規則を抽出
 org:<ORG> (openapi OR swagger OR "swagger.json" OR "openapi.json" OR graphql OR graphiql)
 ~~~~
 
@@ -213,15 +231,15 @@ org:<ORG> (openapi OR swagger OR "swagger.json" OR "openapi.json" OR graphql OR 
   - 参照：https://attack.mitre.org/tactics/TA0043/
 
 ## 参考（必要最小限）
-- OWASP ASVS  
+- OWASP ASVS
   https://github.com/OWASP/ASVS
-- OWASP WSTG  
+- OWASP WSTG
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES  
+- PTES
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Reconnaissance  
+- MITRE ATT&CK：Reconnaissance
   https://attack.mitre.org/tactics/TA0043/
-- GitHub 検索（code/commits/issues/PR/discussions/gists）の公式仕様とクエリ演算子  
+- GitHub 検索（code/commits/issues/PR/discussions/gists）の公式仕様とクエリ演算子
   https://docs.github.com/en/search-github/searching-on-github
 - secret scanning / gitleaks / trufflehog 等（組織内での防御的スキャンとして）
 

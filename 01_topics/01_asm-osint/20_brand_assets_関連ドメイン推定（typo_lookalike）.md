@@ -1,4 +1,4 @@
-# 20_brand_assets_関連ドメイン推定（typo_lookalike）
+﻿# 20_brand_assets_関連ドメイン推定（typo_lookalike）
 Brand Assets 関連ドメイン推定（typo/lookalike）
 “類似ドメイン群（候補）を、生成根拠（どの変形ルールか）つきで整理できる”
 
@@ -165,15 +165,42 @@ Brand Assets 関連ドメイン推定（typo/lookalike）
 ~~~~
 # 最小の作業例（候補生成と観測の枠組み：例示のみ）
 
+## 出力例（最小）
+- 主要名のtypo/類似TLDを列挙
+
 # 候補生成（例：変形ルールをラベル化して残す）
+
+## 出力例（最小）
+- 主要名のtypo/類似TLDを列挙
 # - typo: example -> exmaple / examlpe / exampel
+
+## 出力例（最小）
+- 主要名のtypo/類似TLDを列挙
 # - combo: example + login / support / billing
+
+## 出力例（最小）
+- 主要名のtypo/類似TLDを列挙
 # - tld: example.{com,net,org,co,jp}
 
+## 出力例（最小）
+- 主要名のtypo/類似TLDを列挙
+
 # 観測（例：DNS中心で低アクティブ）
+
+## 出力例（最小）
+- 主要名のtypo/類似TLDを列挙
 # - MX/TXT の有無（メール悪用耐性の示唆）
+
+## 出力例（最小）
+- 主要名のtypo/類似TLDを列挙
 # - NS（運用者/ホスティングのヒント）
+
+## 出力例（最小）
+- 主要名のtypo/類似TLDを列挙
 # - CTで証明書発行があるか（運用の実在性）
+
+## 出力例（最小）
+- 主要名のtypo/類似TLDを列挙
 ~~~~
 
 - この例で観測していること：
@@ -206,13 +233,13 @@ Brand Assets 関連ドメイン推定（typo/lookalike）
   - 参照：https://attack.mitre.org/tactics/TA0043/
 
 ## 参考（必要最小限）
-- OWASP ASVS  
+- OWASP ASVS
   https://github.com/OWASP/ASVS
-- OWASP WSTG  
+- OWASP WSTG
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES  
+- PTES
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Reconnaissance  
+- MITRE ATT&CK：Reconnaissance
   https://attack.mitre.org/tactics/TA0043/
 - typo-squatting / combo-squatting / homograph（IDN）の概念
 - Certificate Transparency（証明書発行履歴を使った公開情報観測）

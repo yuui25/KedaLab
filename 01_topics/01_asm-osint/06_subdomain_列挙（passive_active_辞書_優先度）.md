@@ -1,4 +1,4 @@
-# 06_subdomain_列挙（passive_active_辞書_優先度）
+﻿# 06_subdomain_列挙（passive_active_辞書_優先度）
 Subdomain 列挙（passive/active/辞書/優先度）
 “資産境界・信頼境界・優先度”を観測で確定し、次の検証（TLS/HTTP/Cloud/Web Recon）へ繋げる
 
@@ -130,13 +130,25 @@ Subdomain 列挙（passive/active/辞書/優先度）
 
 ~~~~
 # 目的：passiveで「候補」を集める（= まだ実在は確定しない）
+
+## 出力例（最小）
+- `dev.example.com` / `stg.example.com` が優先調査対象
 subfinder -d example.com -silent > candidates.txt
 
 # 目的：DNS解決で「実在（解決可）」を確定する（yes/no）
+
+## 出力例（最小）
+- `dev.example.com` / `stg.example.com` が優先調査対象
 dnsx -l candidates.txt -a -aaaa -cname -silent > resolved.txt
 
 # 目的：HTTP疎通で「入口（到達面）」を確定する（深掘り対象を絞る）
+
+## 出力例（最小）
+- `dev.example.com` / `stg.example.com` が優先調査対象
 # - ステータスや最終URLを保存し、リダイレクト収束（同一先）も把握する
+
+## 出力例（最小）
+- `dev.example.com` / `stg.example.com` が優先調査対象
 httpx -l resolved.txt -silent -status-code -follow-redirects -final-url > alive.txt
 ~~~~
 
@@ -168,15 +180,15 @@ httpx -l resolved.txt -silent -status-code -follow-redirects -final-url > alive.
   - 攻撃者の目的（この技術が支える意図）：公開インフラの“入口候補”を増やし、到達性・認証面・運用差分が出る場所を優先的に見つける。Reconnaissance / Discovery として、攻め筋の確率を上げるための境界特定・依存推定。
 
 ## 参考（必要最小限）
-- OWASP ASVS  
+- OWASP ASVS
   https://github.com/OWASP/ASVS
-- OWASP WSTG  
+- OWASP WSTG
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES  
+- PTES
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Reconnaissance  
+- MITRE ATT&CK：Reconnaissance
   https://attack.mitre.org/tactics/TA0043/
-- MITRE ATT&CK：Discovery  
+- MITRE ATT&CK：Discovery
   https://attack.mitre.org/tactics/TA0007/
 
 ## リポジトリ内リンク（最大3つまで）

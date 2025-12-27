@@ -1,4 +1,4 @@
-# 07_whois_rdap_所有者・関連企業推定（組織境界）
+﻿# 07_whois_rdap_所有者・関連企業推定（組織境界）
 WHOIS/RDAP 所有者・関連企業推定（組織境界）
 “組織境界・委託運用・優先度付け”を観測で確定し、次の調査（ASN/BGP、PassiveDNS、CT、第三者依存）へ繋げる
 
@@ -150,12 +150,21 @@ WHOIS/RDAP 所有者・関連企業推定（組織境界）
 
 ~~~~
 # ドメインWHOIS（出力は揺れる。必要行だけ抜く）
+
+## 出力例（最小）
+- `Registrant` / `OrgName` の一致で関連性を判断
 whois example.com | sed -n '1,80p'
 
 # RDAP（構造化。TLD/レジストリによりエンドポイントが異なるので、まずは結果が返る範囲で）
+
+## 出力例（最小）
+- `Registrant` / `OrgName` の一致で関連性を判断
 curl -s "https://rdap.org/domain/example.com" | head
 
 # IP/AS側は次ステップ（ASN/BGP）で深掘りするが、入口としてRDAPを確認
+
+## 出力例（最小）
+- `Registrant` / `OrgName` の一致で関連性を判断
 curl -s "https://rdap.org/ip/203.0.113.0" | head
 ~~~~
 
@@ -187,15 +196,15 @@ curl -s "https://rdap.org/ip/203.0.113.0" | head
   - 攻撃者の目的（この技術が支える意図）：防御側の診断として「境界がどこで増えているか」を説明可能にすること。Reconnaissance / Discovery として、攻め筋の確率を上げるための境界特定・依存推定。
 
 ## 参考（必要最小限）
-- OWASP ASVS  
+- OWASP ASVS
   https://github.com/OWASP/ASVS
-- OWASP WSTG  
+- OWASP WSTG
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES  
+- PTES
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Reconnaissance  
+- MITRE ATT&CK：Reconnaissance
   https://attack.mitre.org/tactics/TA0043/
-- MITRE ATT&CK：Discovery  
+- MITRE ATT&CK：Discovery
   https://attack.mitre.org/tactics/TA0007/
 
 ## リポジトリ内リンク（最大3つまで）

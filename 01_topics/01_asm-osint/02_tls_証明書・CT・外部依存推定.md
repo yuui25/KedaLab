@@ -1,4 +1,4 @@
-# 02_tls_証明書・CT・外部依存推定
+﻿# 02_tls_証明書・CT・外部依存推定
 TLS 証明書・CT・外部依存推定
 “終端・SAN・Issuer・CT履歴”を観測で確定し、外部依存と境界を推定する
 
@@ -124,15 +124,50 @@ TLS 証明書・CT・外部依存推定
 
 ~~~~
 # 例：TLS終端の証明書を取得（SNIを意識して観測する）
+
+## 用語ミニ辞典
+- SAN: 証明書の対象一覧
+- CTログ: 発行履歴の公開台帳
+
+## 出力例（最小）
+- `SAN=api.example.com,*.example.com`
 # ※目的：SAN/Issuer/有効期限/チェーンを“観測”する
+
+## 用語ミニ辞典
+- SAN: 証明書の対象一覧
+- CTログ: 発行履歴の公開台帳
+
+## 出力例（最小）
+- `SAN=api.example.com,*.example.com`
 echo | openssl s_client -connect example.com:443 -servername example.com 2>/dev/null | openssl x509 -noout -text
 
 # 例：SANだけ抜く（比較のための最小化）
+
+## 用語ミニ辞典
+- SAN: 証明書の対象一覧
+- CTログ: 発行履歴の公開台帳
+
+## 出力例（最小）
+- `SAN=api.example.com,*.example.com`
 echo | openssl s_client -connect example.com:443 -servername example.com 2>/dev/null \
   | openssl x509 -noout -ext subjectAltName
 
 # 例：TLSの許容範囲（バージョン/ALPN等）は環境差の材料として控える（必要時）
+
+## 用語ミニ辞典
+- SAN: 証明書の対象一覧
+- CTログ: 発行履歴の公開台帳
+
+## 出力例（最小）
+- `SAN=api.example.com,*.example.com`
 # （ここは“強度評価”が目的ではなく、終端や運用差の手掛かりとして扱う）
+
+## 用語ミニ辞典
+- SAN: 証明書の対象一覧
+- CTログ: 発行履歴の公開台帳
+
+## 出力例（最小）
+- `SAN=api.example.com,*.example.com`
 ~~~~
 
 - この例で観測していること：
@@ -176,17 +211,17 @@ echo | openssl s_client -connect example.com:443 -servername example.com 2>/dev/
   - 攻撃者の目的（この技術が支える意図）：外形と依存関係を把握し、境界が複雑な領域へ探索コストを集中する。Reconnaissance / Discovery として、攻め筋の確率を上げるための境界特定・依存推定。
 
 ## 参考（必要最小限）
-- OWASP ASVS  
+- OWASP ASVS
   https://github.com/OWASP/ASVS
-- OWASP WSTG  
+- OWASP WSTG
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES  
+- PTES
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Reconnaissance  
+- MITRE ATT&CK：Reconnaissance
   https://attack.mitre.org/tactics/TA0043/
-- MITRE ATT&CK：Discovery  
+- MITRE ATT&CK：Discovery
   https://attack.mitre.org/tactics/TA0007/
-- Certificate Transparency（CT）  
+- Certificate Transparency（CT）
   https://www.certificate-transparency.org/
 
 ## リポジトリ内リンク（最大3つまで）

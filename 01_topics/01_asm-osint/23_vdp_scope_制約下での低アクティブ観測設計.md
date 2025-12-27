@@ -1,4 +1,4 @@
-# 23_vdp_scope_制約下での低アクティブ観測設計
+﻿# 23_vdp_scope_制約下での低アクティブ観測設計
 VDP Scope 制約下での低アクティブ観測設計
 “scope（対象/非対象/禁止行為）を行為単位に分解し、迷わず実行できる”
 
@@ -161,11 +161,29 @@ VDP（Vulnerability Disclosure Program）や契約上の制約下で、過度な
 
 ~~~~
 # 最小の運用ルール例（制約下の自己ルール：例示のみ）
+
+## 出力例（最小）
+- 低アクティブで差分観測のみ実施
 # - 既知URLのみ（ディレクトリ総当たり/クローリングしない）
+
+## 出力例（最小）
+- 低アクティブで差分観測のみ実施
 # - 1ホストあたり最大3リクエスト、サイズは小さいものを優先
+
+## 出力例（最小）
+- 低アクティブで差分観測のみ実施
 # - 認証試行は連打しない（1回の観測で十分な範囲に限定）
+
+## 出力例（最小）
+- 低アクティブで差分観測のみ実施
 # - 状態変更（送信/作成/削除/更新）は行わない
+
+## 出力例（最小）
+- 低アクティブで差分観測のみ実施
 # - P0兆候が出たら即停止し、証跡を整えて報告へ
+
+## 出力例（最小）
+- 低アクティブで差分観測のみ実施
 ~~~~
 
 - この例で観測していること：
@@ -197,13 +215,13 @@ VDP（Vulnerability Disclosure Program）や契約上の制約下で、過度な
   - 参照：https://attack.mitre.org/tactics/TA0043/
 
 ## 参考（必要最小限）
-- OWASP ASVS  
+- OWASP ASVS
   https://github.com/OWASP/ASVS
-- OWASP WSTG  
+- OWASP WSTG
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES  
+- PTES
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Reconnaissance  
+- MITRE ATT&CK：Reconnaissance
   https://attack.mitre.org/tactics/TA0043/
 - 代表的なVDPの制約パターン（自動スキャン禁止、DoS禁止、ソーシャル禁止 等）
 - “証跡中心” の報告設計（再現性・影響最小・確度ラベル）

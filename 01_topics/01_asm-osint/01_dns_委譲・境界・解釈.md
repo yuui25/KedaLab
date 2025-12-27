@@ -1,4 +1,4 @@
-# 01_dns_委譲・境界・解釈
+﻿# 01_dns_委譲・境界・解釈
 DNS 委譲・境界・解釈
 “ゾーン・権威・外部依存・視点差”を観測で確定し、ASM/OSINTの次の一手を自走で決める
 
@@ -130,17 +130,45 @@ DNS 委譲・境界・解釈
 
 ~~~~
 # ゾーン境界の入口：NS/SOAを確認（どこが権威か、誰が管理しているか）
+
+## 用語ミニ辞典
+- 委譲: 権威を子ゾーンへ渡す
+- 権威DNS: 正式回答者
+
+## 出力例（最小）
+- `NS ns1.example.net` と `SOA` の不一致が境界ずれの兆候
 dig NS example.com
 dig SOA example.com
 
 # 委譲経路を固定して確認（どの段階の回答かを明確にする）
+
+## 用語ミニ辞典
+- 委譲: 権威を子ゾーンへ渡す
+- 権威DNS: 正式回答者
+
+## 出力例（最小）
+- `NS ns1.example.net` と `SOA` の不一致が境界ずれの兆候
 dig +trace www.example.com
 
 # 特定の権威DNSへ直接問い合わせ（再帰リゾルバの視点差を避ける）
+
+## 用語ミニ辞典
+- 委譲: 権威を子ゾーンへ渡す
+- 権威DNS: 正式回答者
+
+## 出力例（最小）
+- `NS ns1.example.net` と `SOA` の不一致が境界ずれの兆候
 dig @ns1.example-dns.net A www.example.com
 dig @ns1.example-dns.net CNAME www.example.com
 
 # 外部依存の匂い：CNAME/CAA/TXT を確認（委託先や運用の痕跡）
+
+## 用語ミニ辞典
+- 委譲: 権威を子ゾーンへ渡す
+- 権威DNS: 正式回答者
+
+## 出力例（最小）
+- `NS ns1.example.net` と `SOA` の不一致が境界ずれの兆候
 dig CNAME app.example.com
 dig CAA example.com
 dig TXT example.com
@@ -179,17 +207,17 @@ dig TXT example.com
   - 攻撃者の目的（この技術が支える意図）：対象の外形・依存・境界を把握し、最小コストで“攻め筋の確率”を上げる。Reconnaissance / Discovery として、攻め筋の確率を上げるための境界特定・依存推定。
 
 ## 参考（必要最小限）
-- OWASP ASVS  
+- OWASP ASVS
   https://github.com/OWASP/ASVS
-- OWASP WSTG  
+- OWASP WSTG
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES  
+- PTES
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Reconnaissance  
+- MITRE ATT&CK：Reconnaissance
   https://attack.mitre.org/tactics/TA0043/
-- MITRE ATT&CK：Discovery  
+- MITRE ATT&CK：Discovery
   https://attack.mitre.org/tactics/TA0007/
-- RFC 1035（DNSの仕様）  
+- RFC 1035（DNSの仕様）
   https://datatracker.ietf.org/doc/html/rfc1035
 
 ## リポジトリ内リンク（最大3つまで）

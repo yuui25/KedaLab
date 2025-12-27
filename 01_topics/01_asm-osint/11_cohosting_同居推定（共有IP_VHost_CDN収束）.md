@@ -1,4 +1,4 @@
-# 11_cohosting_同居推定（共有IP_VHost_CDN収束）
+﻿# 11_cohosting_同居推定（共有IP_VHost_CDN収束）
 Cohosting 同居推定（共有IP/VHost/CDN収束）
 “資産境界・信頼境界・優先度”を観測で確定し、次の深掘りを効率化する
 
@@ -142,14 +142,29 @@ Cohosting 同居推定（共有IP/VHost/CDN収束）
 ~~~~
 # 目的：同一IPに収束するFQDN群をまとめ、代表点で“束（DNS/TLS/HTTP）”を取る
 
+## 出力例（最小）
+- 同一IPでHostを変えると応答が変わる
+
 # (1) FQDN→IPを集める（既にresolved.txt等がある前提でもよい）
+
+## 出力例（最小）
+- 同一IPでHostを変えると応答が変わる
 dnsx -l candidates.txt -a -aaaa -cname -silent > resolved.txt
 
 # (2) 代表点のHTTP指紋（ステータス/最終URL/主要ヘッダ）を取る
+
+## 出力例（最小）
+- 同一IPでHostを変えると応答が変わる
 httpx -l resolved.txt -silent -status-code -follow-redirects -final-url -title > http_fingerprint.txt
 
 # (3) 代表点のTLS（Issuer/SAN）を取る（“同じ証明書運用か”の材料）
+
+## 出力例（最小）
+- 同一IPでHostを変えると応答が変わる
 # ※対象ホストを少数に絞って実行する（全量で回さない）
+
+## 出力例（最小）
+- 同一IPでHostを変えると応答が変わる
 echo | openssl s_client -connect login.example.com:443 -servername login.example.com 2>/dev/null \
   | openssl x509 -noout -issuer -dates -ext subjectAltName
 ~~~~
@@ -181,15 +196,15 @@ echo | openssl s_client -connect login.example.com:443 -servername login.example
   - 攻撃者の目的（この技術が支える意図）：攻撃者が“探索面を広げる”のと同じ論理を、診断側は“範囲を絞り、境界を説明する”ために使う。Reconnaissance / Discovery として、攻め筋の確率を上げるための境界特定・依存推定。
 
 ## 参考（必要最小限）
-- OWASP ASVS  
+- OWASP ASVS
   https://github.com/OWASP/ASVS
-- OWASP WSTG  
+- OWASP WSTG
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES  
+- PTES
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Reconnaissance  
+- MITRE ATT&CK：Reconnaissance
   https://attack.mitre.org/tactics/TA0043/
-- MITRE ATT&CK：Discovery  
+- MITRE ATT&CK：Discovery
   https://attack.mitre.org/tactics/TA0007/
 
 ## リポジトリ内リンク（最大3つまで）

@@ -1,4 +1,4 @@
-# 10_ctlog_証明書拡張観測（SAN_ワイルドカード_中間CA）
+﻿# 10_ctlog_証明書拡張観測（SAN_ワイルドカード_中間CA）
 CT Log 証明書拡張観測（SAN/ワイルドカード/中間CA）
 “DNSに見えない入口・過去資産・運用境界”を観測で確定し、優先度付けできる
 
@@ -162,21 +162,39 @@ CT Log 証明書拡張観測（SAN/ワイルドカード/中間CA）
 
 ~~~~
 # 目的：CTからSAN由来のFQDN候補を作り、現状DNS/HTTPへ渡す（“入口追加”の最短ルート）
+
+## 出力例（最小）
+- ワイルドカード増加は資産拡大の兆候
 # 注意：CT取得は提供元により形式が異なる。ここでは「取得→候補化→現状確認」の形を示す。
 
+## 出力例（最小）
+- ワイルドカード増加は資産拡大の兆候
+
 # (1) 例：crt.sh からJSON取得（大量取得は避け、対象ドメインを絞る）
+
+## 出力例（最小）
+- ワイルドカード増加は資産拡大の兆候
 curl -s "https://crt.sh/?q=%25.example.com&output=json" > ct_raw.json
 
 # (2) 候補化：name_value（SAN相当）を抜き出して正規化（重複除去）
+
+## 出力例（最小）
+- ワイルドカード増加は資産拡大の兆候
 jq -r '.[].name_value' ct_raw.json \
   | tr '\n' '\n' \
   | sed 's/\*\.//g' \
   | sort -u > ct_san_candidates.txt
 
 # (3) 現状DNS確認：解決できる候補だけ次へ回す（yes/no）
+
+## 出力例（最小）
+- ワイルドカード増加は資産拡大の兆候
 dnsx -l ct_san_candidates.txt -a -aaaa -cname -silent > ct_now_resolved.txt
 
 # (4) 代表ホストの“実配信証明書”を取り、Issuer/SANをCTと突合する（差分観測）
+
+## 出力例（最小）
+- ワイルドカード増加は資産拡大の兆候
 echo | openssl s_client -connect login.example.com:443 -servername login.example.com 2>/dev/null \
   | openssl x509 -noout -issuer -subject -dates -ext subjectAltName
 ~~~~
@@ -209,17 +227,17 @@ echo | openssl s_client -connect login.example.com:443 -servername login.example
   - 攻撃者の目的（この技術が支える意図）：診断として「公開入口（FQDN）の追加」「委託境界（CA/中間CA/発行主体）の推定」「時系列（過去→現在）」を説明可能にすること。Reconnaissance / Discovery として、攻め筋の確率を上げるための境界特定・依存推定。
 
 ## 参考（必要最小限）
-- OWASP ASVS  
+- OWASP ASVS
   https://github.com/OWASP/ASVS
-- OWASP WSTG  
+- OWASP WSTG
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES  
+- PTES
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Reconnaissance  
+- MITRE ATT&CK：Reconnaissance
   https://attack.mitre.org/tactics/TA0043/
-- MITRE ATT&CK：Discovery  
+- MITRE ATT&CK：Discovery
   https://attack.mitre.org/tactics/TA0007/
-- Certificate Transparency（CT）  
+- Certificate Transparency（CT）
   https://www.certificate-transparency.org/
 
 ## リポジトリ内リンク（最大3つまで）

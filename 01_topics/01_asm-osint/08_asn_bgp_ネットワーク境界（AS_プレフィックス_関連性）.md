@@ -1,4 +1,4 @@
-# 08_asn_bgp_ネットワーク境界（AS_プレフィックス_関連性）
+﻿# 08_asn_bgp_ネットワーク境界（AS_プレフィックス_関連性）
 ASN/BGP ネットワーク境界（AS/プレフィックス/関連性）
 “ネットワーク境界・運用クラスター・第三者境界”を観測で確定し、次の調査（PassiveDNS/CT/Cloud推定/スキャン範囲）へ繋げる
 
@@ -161,15 +161,33 @@ ASN/BGP ネットワーク境界（AS/プレフィックス/関連性）
 ~~~~
 # 目的：IPの“公告元（Origin AS）”と“外形（プレフィックス）”を引き、ネットワーク境界を説明可能にする
 
+## 出力例（最小）
+- `AS65000 203.0.113.0/24` の割当で境界を推定
+
 # 1) まずIPのWHOIS/RDAPで、割り当て主体やAS情報の手がかりを取る（出力は証跡として保存）
+
+## 出力例（最小）
+- `AS65000 203.0.113.0/24` の割当で境界を推定
 whois 203.0.113.10 | sed -n '1,120p'
 
 # 2) Origin ASから、そのASが公告しているプレフィックス（候補）を引く（= 外形の把握）
+
+## 出力例（最小）
+- `AS65000 203.0.113.0/24` の割当で境界を推定
 # RADBのroute/route6オブジェクトは“公告の実態”と完全一致しないことがあるため、あくまで候補外形として使う
+
+## 出力例（最小）
+- `AS65000 203.0.113.0/24` の割当で境界を推定
 whois -h whois.radb.net -- "-i origin AS64500" | sed -n '1,120p'
 
 # 3) FQDN→IPの一覧（hosts）と突合し、ASクラスター（同一/分散）を作る（道具は何でもよい）
+
+## 出力例（最小）
+- `AS65000 203.0.113.0/24` の割当で境界を推定
 # 例：手元でCSVにまとめる、スプレッドシートでピボットする、など
+
+## 出力例（最小）
+- `AS65000 203.0.113.0/24` の割当で境界を推定
 ~~~~
 
 - この例で観測していること：
@@ -199,15 +217,15 @@ whois -h whois.radb.net -- "-i origin AS64500" | sed -n '1,120p'
   - 攻撃者の目的（この技術が支える意図）：攻撃者が“探索範囲を決める”のと同じ論理で、診断側も「次の一手」を決められる状態にする。Reconnaissance / Discovery として、攻め筋の確率を上げるための境界特定・依存推定。
 
 ## 参考（必要最小限）
-- OWASP ASVS  
+- OWASP ASVS
   https://github.com/OWASP/ASVS
-- OWASP WSTG  
+- OWASP WSTG
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES  
+- PTES
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Reconnaissance  
+- MITRE ATT&CK：Reconnaissance
   https://attack.mitre.org/tactics/TA0043/
-- MITRE ATT&CK：Discovery  
+- MITRE ATT&CK：Discovery
   https://attack.mitre.org/tactics/TA0007/
 
 ## リポジトリ内リンク（最大3つまで）

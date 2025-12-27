@@ -1,4 +1,4 @@
-# 15_api_spec_公開（OpenAPI_GraphQLスキーマ）から面抽出
+﻿# 15_api_spec_公開（OpenAPI_GraphQLスキーマ）から面抽出
 API仕様公開（OpenAPI/GraphQLスキーマ）から攻撃面抽出（endpoint_key_schema）
 “エンドポイント/操作の一覧を機械的に漏れなく抽出し、検証対象の最小集合（優先度付き）を作る”
 
@@ -156,12 +156,21 @@ API仕様公開（OpenAPI/GraphQLスキーマ）から攻撃面抽出（endpoint
 
 ~~~~
 # OpenAPI JSON 取得（例）
+
+## 出力例（最小）
+- OpenAPI `paths` から管理系の候補を抽出
 curl -sS https://target.example/openapi.json -o openapi.json
 
 # paths の列挙（例）
+
+## 出力例（最小）
+- OpenAPI `paths` から管理系の候補を抽出
 jq -r '.paths | keys[]' openapi.json | sort -u
 
 # GraphQL の最小確認例（introspection が許可されているかの観測）
+
+## 出力例（最小）
+- OpenAPI `paths` から管理系の候補を抽出
 curl -sS https://target.example/graphql \
   -H 'Content-Type: application/json' \
   -d '{"query":"{__schema{queryType{name} mutationType{name}}}"}'
@@ -197,17 +206,17 @@ curl -sS https://target.example/graphql \
   - 参照：https://attack.mitre.org/tactics/TA0043/
 
 ## 参考（必要最小限）
-- OWASP ASVS  
+- OWASP ASVS
   https://github.com/OWASP/ASVS
-- OWASP WSTG  
+- OWASP WSTG
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES  
+- PTES
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Reconnaissance  
+- MITRE ATT&CK：Reconnaissance
   https://attack.mitre.org/tactics/TA0043/
-- OpenAPI Specification（v3）  
+- OpenAPI Specification（v3）
   https://spec.openapis.org/oas/v3.0.3
-- GraphQL Specification / Introspection  
+- GraphQL Specification / Introspection
   https://graphql.org/learn/introspection/
 
 ## リポジトリ内リンク（最大3つまで）

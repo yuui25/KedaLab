@@ -1,4 +1,4 @@
-# 12_waf-cdn_挙動観測（ブロック_チャレンジ_例外）
+﻿# 12_waf-cdn_挙動観測（ブロック_チャレンジ_例外）
 WAF/CDN 挙動観測（ブロック/チャレンジ/例外）
 “成立点・例外パス・境界”を観測で確定し、次の深掘り（HTTP/TLS/Cloud/Web Recon）を迷わず選ぶ
 
@@ -158,7 +158,13 @@ WAF/CDN 挙動観測（ブロック/チャレンジ/例外）
 ~~~~
 # 目的：代表点の“応答の型（A〜E）”と“成立点”を素早く揃え、クラスター化の材料を作る
 
+## 出力例（最小）
+- `403` と `challenge` の差分で境界を推定
+
 # 代表点（例）：トップ/ログイン/API/存在しないパス
+
+## 出力例（最小）
+- `403` と `challenge` の差分で境界を推定
 curl -sk -D - -o /dev/null "https://example.com/" \
   | sed -n '1,40p'
 
@@ -172,7 +178,13 @@ curl -sk -D - -o /dev/null "https://example.com/this-path-should-not-exist" \
   | sed -n '1,40p'
 
 # 観測メモ（例）：
+
+## 出力例（最小）
+- `403` と `challenge` の差分で境界を推定
 # - status / Location / Set-Cookie / 代表的なエッジ系ヘッダ（要約）を控え、型（A〜E）に分類する
+
+## 出力例（最小）
+- `403` と `challenge` の差分で境界を推定
 ~~~~
 
 - この例で観測していること：
@@ -203,15 +215,15 @@ curl -sk -D - -o /dev/null "https://example.com/this-path-should-not-exist" \
   - 攻撃者の目的（この技術が支える意図）：攻撃者が“探索を調整する”のと同じ論理で、診断側は「どの入口を先に見るべきか」「どの経路で証跡を取るべきか」を決める。Reconnaissance / Discovery として、攻め筋の確率を上げるための境界特定・依存推定。
 
 ## 参考（必要最小限）
-- OWASP ASVS  
+- OWASP ASVS
   https://github.com/OWASP/ASVS
-- OWASP WSTG  
+- OWASP WSTG
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES  
+- PTES
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Reconnaissance  
+- MITRE ATT&CK：Reconnaissance
   https://attack.mitre.org/tactics/TA0043/
-- MITRE ATT&CK：Discovery  
+- MITRE ATT&CK：Discovery
   https://attack.mitre.org/tactics/TA0007/
 
 ## リポジトリ内リンク（最大3つまで）

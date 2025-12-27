@@ -1,4 +1,4 @@
-# 19_email_infra（SPF_DKIM_DMARC）と攻撃面
+﻿# 19_email_infra（SPF_DKIM_DMARC）と攻撃面
 Email Infra（SPF/DKIM/DMARC）と攻撃面
 “なりすまし耐性（送信ドメイン認証）の現状を、設定値ベースで説明できる”
 
@@ -164,16 +164,31 @@ Email Infra（SPF/DKIM/DMARC）と攻撃面
 ~~~~
 # 最小の観測例（DNSでの証跡化）
 
+## 出力例（最小）
+- `DMARC p=reject/quarantine/none` の違い
+
 # MX
+
+## 出力例（最小）
+- `DMARC p=reject/quarantine/none` の違い
 dig +short MX example.com
 
 # SPF（TXT）
+
+## 出力例（最小）
+- `DMARC p=reject/quarantine/none` の違い
 dig +short TXT example.com
 
 # DMARC（TXT）
+
+## 出力例（最小）
+- `DMARC p=reject/quarantine/none` の違い
 dig +short TXT _dmarc.example.com
 
 # MTA-STS / TLS-RPT（任意）
+
+## 出力例（最小）
+- `DMARC p=reject/quarantine/none` の違い
 dig +short TXT _mta-sts.example.com
 dig +short TXT _smtp._tls.example.com
 ~~~~
@@ -210,13 +225,13 @@ dig +short TXT _smtp._tls.example.com
   - 参照：https://attack.mitre.org/tactics/TA0043/
 
 ## 参考（必要最小限）
-- OWASP ASVS  
+- OWASP ASVS
   https://github.com/OWASP/ASVS
-- OWASP WSTG  
+- OWASP WSTG
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES  
+- PTES
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Reconnaissance  
+- MITRE ATT&CK：Reconnaissance
   https://attack.mitre.org/tactics/TA0043/
 - SPF / DKIM / DMARC の概要（整合・ポリシー・サブドメインの考え方）
 - MTA-STS / TLS-RPT / BIMI（成熟度指標として）

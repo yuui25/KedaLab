@@ -1,4 +1,4 @@
-# 17_ci-cd_artifact_公開物（ログ_ビルド成果物）
+﻿# 17_ci-cd_artifact_公開物（ログ_ビルド成果物）
 CI/CD Artifact 公開物（ログ/ビルド成果物）
 “漏えい（key/token/credential/内部URL/設定断片）の発見と、影響範囲（本番/開発/顧客環境）の推定”
 
@@ -157,11 +157,29 @@ CI/CD の公開物（ビルドログ、テストログ、成果物アーティ�
 
 ~~~~
 # 例：公開レポート/ArtifactsのURLを見つけた場合の“証跡化”観点
+
+## 出力例（最小）
+- `BUILD_URL` / `ENV` の残存が手がかり
 # - URL
+
+## 出力例（最小）
+- `BUILD_URL` / `ENV` の残存が手がかり
 # - 作成日時（表示される範囲）
+
+## 出力例（最小）
+- `BUILD_URL` / `ENV` の残存が手がかり
 # - サイズ（過大ダウンロードを避ける）
+
+## 出力例（最小）
+- `BUILD_URL` / `ENV` の残存が手がかり
 # - 種別（log / report / zip / container / package）
+
+## 出力例（最小）
+- `BUILD_URL` / `ENV` の残存が手がかり
 # - 含まれる断片（endpoint/config/secret のどれか）
+
+## 出力例（最小）
+- `BUILD_URL` / `ENV` の残存が手がかり
 ~~~~
 
 - この例で観測していること：
@@ -193,13 +211,13 @@ CI/CD の公開物（ビルドログ、テストログ、成果物アーティ�
   - 参照：https://attack.mitre.org/tactics/TA0043/
 
 ## 参考（必要最小限）
-- OWASP ASVS  
+- OWASP ASVS
   https://github.com/OWASP/ASVS
-- OWASP WSTG  
+- OWASP WSTG
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES  
+- PTES
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Reconnaissance  
+- MITRE ATT&CK：Reconnaissance
   https://attack.mitre.org/tactics/TA0043/
 - CI/CD各製品の “Artifacts/Logs/Packages/Pages” 公開設定の公式ドキュメント
 - ソフトウェアサプライチェーン（SLSA、SBOM、署名）の基礎（公開物の意味づけ）

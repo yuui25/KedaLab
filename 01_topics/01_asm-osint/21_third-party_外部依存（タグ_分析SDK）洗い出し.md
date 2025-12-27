@@ -1,4 +1,4 @@
-# 21_third-party_外部依存（タグ_分析SDK）洗い出し
+﻿# 21_third-party_外部依存（タグ_分析SDK）洗い出し
 Third-party 外部依存（タグ/分析SDK）洗い出し
 “信頼境界（trust boundary）：どの第三者ドメインへ通信・データ送信しているかを特定できる”
 
@@ -163,12 +163,30 @@ Webサイト/アプリが依存している third-party（タグ、分析SDK、�
 ~~~~
 # 最小の観測例（HTML/JS/CSPから依存を拾う：例示のみ）
 
+## 出力例（最小）
+- `gtm`/`analytics` の外部ドメイン
+
 # HTMLで第三者script/iframeを拾う（例：タグを眺める）
+
+## 出力例（最小）
+- `gtm`/`analytics` の外部ドメイン
 # <script src="https://third.example/sdk.js"></script>
+
+## 出力例（最小）
+- `gtm`/`analytics` の外部ドメイン
 # <iframe src="https://pay.example/checkout"></iframe>
 
+## 出力例（最小）
+- `gtm`/`analytics` の外部ドメイン
+
 # CSPで許可先を拾う（例：script-src/connect-src）
+
+## 出力例（最小）
+- `gtm`/`analytics` の外部ドメイン
 # Content-Security-Policy: script-src 'self' https://*.third.example; connect-src 'self' https://api.third.example
+
+## 出力例（最小）
+- `gtm`/`analytics` の外部ドメイン
 ~~~~
 
 - この例で観測していること：
@@ -202,13 +220,13 @@ Webサイト/アプリが依存している third-party（タグ、分析SDK、�
   - 参照：https://attack.mitre.org/tactics/TA0043/
 
 ## 参考（必要最小限）
-- OWASP ASVS  
+- OWASP ASVS
   https://github.com/OWASP/ASVS
-- OWASP WSTG  
+- OWASP WSTG
   https://owasp.org/www-project-web-security-testing-guide/
-- PTES  
+- PTES
   https://pentest-standard.readthedocs.io/
-- MITRE ATT&CK：Reconnaissance  
+- MITRE ATT&CK：Reconnaissance
   https://attack.mitre.org/tactics/TA0043/
 - Content Security Policy（CSP）と third-party 許可先の読み方
 - Subresource Integrity（SRI）と外部スクリプト改ざん耐性の概念
