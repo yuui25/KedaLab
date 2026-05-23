@@ -280,6 +280,6 @@ hashcat -m 5600 /usr/share/responder/logs/SMB-NTLMv2-SSP-[TARGET_IP].txt [WORDLI
 ## 関連技術
 
 - 前：SMB Signing 確認・ホスト列挙 → `../../01_Reconnaissance/SMB_Enumeration.md`
-- 後：キャプチャしたハッシュをリレー → `ntlmrelayx.md`
+- 後：キャプチャしたハッシュをリレー → `./ntlmrelayx.md`
 - 後：キャプチャしたハッシュをクラック → `../../05_Tools_Reference/Hashcat.md`
-- 後：Coerce 系による認証強制（PetitPotam / PrinterBug / DFSCoerce） → `Coerce.md`
+- 後：Coerce 系による認証強制（PetitPotam / PrinterBug / DFSCoerce） → `./Coerce.md`

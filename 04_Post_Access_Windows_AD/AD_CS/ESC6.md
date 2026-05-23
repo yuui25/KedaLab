@@ -152,7 +152,7 @@ impacket-secretsdump \
 
 ## 関連技術
 
-- 前：AD CS の列挙と ESC 番号の特定（CA セクションの `User Specified SAN` 確認が必要） → `Overview.md`
-- 前：ESC1（テンプレートレベルの ENROLLEE_SUPPLIES_SUBJECT 版） → `ESC1.md`
+- 前：AD CS の列挙と ESC 番号の特定（CA セクションの `User Specified SAN` 確認が必要） → `./Overview.md`
+- 前：ESC1（テンプレートレベルの ENROLLEE_SUPPLIES_SUBJECT 版） → `./ESC1.md`
 - 後：証明書取得後 → PKINIT → DCSync → `../Credential_Dumping.md`
 - ツール詳細 → `../../05_Tools_Reference/Certipy.md`

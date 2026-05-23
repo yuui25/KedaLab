@@ -201,8 +201,8 @@ del C:\Windows\Temp\[DRIVER_NAME].sys
 
 ## 関連技術
 
-- 前：EDR がユーザー空間の AMSI バイパス・Potato 系をブロックし、代替手段が必要 → `Enumeration_Checklist.md`（AMSI バイパスセクション）
-- 前：SeLoadDriverPrivilege の確認 → `Enumeration_Checklist.md`（Step 1: `whoami /all`）
-- 前：UAC 昇格で管理者権限を取得 → `Enumeration_Checklist.md`（Step 1.3: UAC バイパス）
-- 後：カーネルコールバック削除後に EDR が無効化されたら通常の LSASS ダンプ等を実行 → `Privilege_Tokens.md`（SeDebug セクション）
-- 後：取得した NTLM ハッシュで Pass-The-Hash → `Credential_Dumping.md`
+- 前：EDR がユーザー空間の AMSI バイパス・Potato 系をブロックし、代替手段が必要 → `./Enumeration_Checklist.md`（AMSI バイパスセクション）
+- 前：SeLoadDriverPrivilege の確認 → `./Enumeration_Checklist.md`（Step 1: `whoami /all`）
+- 前：UAC 昇格で管理者権限を取得 → `./Enumeration_Checklist.md`（Step 1.3: UAC バイパス）
+- 後：カーネルコールバック削除後に EDR が無効化されたら通常の LSASS ダンプ等を実行 → `./Privilege_Tokens.md`（SeDebug セクション）
+- 後：取得した NTLM ハッシュで Pass-The-Hash → `./Credential_Dumping.md`

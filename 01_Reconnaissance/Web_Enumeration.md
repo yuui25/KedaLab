@@ -359,7 +359,7 @@ python cookie_classify.py request.txt --show-thirdparty
 - 前：このファイル「Webアプリのフレームワーク・アプリ名の特定」（Cookie 名からの CMS 識別）
 - 後：`../02_Initial_Access/Web_Vulnerabilities/XSS.md`（HttpOnly 欠落の悪用）
 - 後：`../02_Initial_Access/Web_Vulnerabilities/JS_Obfuscation.md`（Base64 / JWT 形式の Cookie 値の多重デコード）
-- 後：`Web_Response_Triage.md`（Cookie 属性・セキュリティヘッダー・機微情報の一括スキャン）
+- 後：`./Web_Response_Triage.md`（Cookie 属性・セキュリティヘッダー・機微情報の一括スキャン）
 
 > 原理（なぜ third-party Cookie の除外が重要か・Cookie Prefix の仕様） → `../06_Concepts/Web_Pentest_Tooling.md`
 
@@ -367,10 +367,10 @@ python cookie_classify.py request.txt --show-thirdparty
 
 ### 関連技術
 
-- 前：`Network_Scanning.md`（Webポートの発見）
-- 前：`DNS_Enumeration.md`（ドメイン渡しでサブドメイン・vhost を列挙してから Web へ）
-- 後：`TLS_Audit.md`（HTTPS で動作している場合のプロトコル/暗号/証明書監査・SAN からの vhost 抽出）
-- 後：`Exposed_Files.md`（バックアップ・設定ファイル・`.git/`・ディレクトリリスティング等の誤公開検出）
+- 前：`./Network_Scanning.md`（Webポートの発見）
+- 前：`./DNS_Enumeration.md`（ドメイン渡しでサブドメイン・vhost を列挙してから Web へ）
+- 後：`./TLS_Audit.md`（HTTPS で動作している場合のプロトコル/暗号/証明書監査・SAN からの vhost 抽出）
+- 後：`./Exposed_Files.md`（バックアップ・設定ファイル・`.git/`・ディレクトリリスティング等の誤公開検出）
 - 後：`../02_Initial_Access/Default_Credentials.md`（管理画面・ログインフォーム・特定製品のデフォルト認証情報試行）
 - 後：`../02_Initial_Access/Account_Lockout_Recon.md`（ログインフォームに対する辞書攻撃前のロックアウトポリシー事前確認）
 - 後：`../02_Initial_Access/Web_Vulnerabilities/IDOR.md`（連番IDを発見した場合）

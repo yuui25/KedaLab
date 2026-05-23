@@ -377,7 +377,7 @@ rm [作成したファイル名]
 
 ### 関連技術
 - 前：sudo -l でスクリプトパスを発見 → このファイルの観点・着眼点（パターン全体）
-- 後：bash -p での root シェル取得 → `Enumeration_Checklist.md`（侵入後列挙）
+- 後：bash -p での root シェル取得 → `./Enumeration_Checklist.md`（侵入後列挙）
 - YAML.load が任意コード実行できる原理 → `../06_Concepts/YAML_Deserialization.md`
 - `.bundle/config` 等からの認証情報取得（横移動に必要） → `../02_Initial_Access/Credential_Discovery.md`
 
@@ -536,7 +536,7 @@ id
 ### 関連技術
 
 - 前：`sudo -l` でスクリプトパスを発見・スクリプト本体は書き込み不可 → このファイルの観点・着眼点（パターン全体）
-- 前：システムメールに「新しいシステムチェックスクリプトが導入された」等の言及 → `Enumeration_Checklist.md`（システムメールの確認）
+- 前：システムメールに「新しいシステムチェックスクリプトが導入された」等の言及 → `./Enumeration_Checklist.md`（システムメールの確認）
 - 後：root シェル取得後の確認事項 → このファイル末尾「昇格成功後に確認すること（横展開観点）」
 - 関連：パターン3（スクリプト本体が書き込み可能 / PATH ハイジャック）との比較 → 上のパターン3
 - 関連：sudo の `secure_path` の動作原理 → `sudoers(5)` man page
@@ -560,7 +560,7 @@ id
 ---
 
 ## 関連技術
-- 前：侵入後の列挙チェックリスト → `Enumeration_Checklist.md`
-- 後：その他の昇格手法 → `Capabilities.md`, `SUID_SGID.md`
+- 前：侵入後の列挙チェックリスト → `./Enumeration_Checklist.md`
+- 後：その他の昇格手法 → `./Capabilities.md`, `./SUID_SGID.md`
 - 関連：パストラバーサルでコンテナIDを特定 → `../02_Initial_Access/Web_Vulnerabilities/Path_Traversal.md`
 - 関連：Docker 分離の原理（なぜ効くか） → `../06_Concepts/Docker_Isolation.md`

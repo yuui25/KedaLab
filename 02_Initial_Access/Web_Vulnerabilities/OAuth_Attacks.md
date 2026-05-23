@@ -406,7 +406,7 @@ curl -s https://[VICTIM_DOMAIN]/static/js/main.*.js | grep -iE "client[_-]?secre
 
 - 前：Web 列挙で OAuth エンドポイントを発見 → `../../01_Reconnaissance/Web_Enumeration.md`
 - 前：レスポンス一次トリアージで id_token / access_token を検出 → `../../01_Reconnaissance/Web_Response_Triage.md`
-- 後：id_token 詳細検証バイパス（alg / kid / jku / jwk 攻撃）→ `JWT_Attacks.md`
-- 後：認証バイパス成立後の API 列挙・権限昇格 → `IDOR.md` / `Command_Injection.md`
-- 関連：Implicit Flow の token 漏洩経路として XSS が起点になる場合 → `XSS.md`
-- 関連：redirect_uri バイパスで Open Redirect を連鎖する場合 → `Open_Redirect.md`（パターン 4）
+- 後：id_token 詳細検証バイパス（alg / kid / jku / jwk 攻撃）→ `./JWT_Attacks.md`
+- 後：認証バイパス成立後の API 列挙・権限昇格 → `./IDOR.md` / `./Command_Injection.md`
+- 関連：Implicit Flow の token 漏洩経路として XSS が起点になる場合 → `./XSS.md`
+- 関連：redirect_uri バイパスで Open Redirect を連鎖する場合 → `./Open_Redirect.md`（パターン 4）

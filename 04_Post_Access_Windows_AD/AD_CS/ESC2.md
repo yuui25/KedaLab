@@ -156,8 +156,8 @@ certipy req \
 
 ## 関連技術
 
-- 前：AD CS の列挙と ESC 番号の特定 → `Overview.md`
-- 後（経路A）：直接 PKINIT → NT ハッシュ取得の詳細手順 → `ESC1.md`
-- 後（経路B）：Enrollment Agent 証明書を使った代理申請 → `ESC3.md`
+- 前：AD CS の列挙と ESC 番号の特定 → `./Overview.md`
+- 後（経路A）：直接 PKINIT → NT ハッシュ取得の詳細手順 → `./ESC1.md`
+- 後（経路B）：Enrollment Agent 証明書を使った代理申請 → `./ESC3.md`
 - 後：証明書取得後 → PKINIT → DCSync → `../Credential_Dumping.md`
 - ツール詳細 → `../../05_Tools_Reference/Certipy.md`

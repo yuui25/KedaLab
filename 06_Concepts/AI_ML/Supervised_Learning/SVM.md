@@ -57,8 +57,8 @@
 
 ### 関連技術
 
-- ロジスティック回帰（線形分類の代替、確率出力あり） → `Linear_Regression.md`
-- カーネルSVMと類似した非線形分類 → `Decision_Trees.md`（ランダムフォレスト）
+- ロジスティック回帰（線形分類の代替、確率出力あり） → `./Linear_Regression.md`
+- カーネルSVMと類似した非線形分類 → `./Decision_Trees.md`（ランダムフォレスト）
 - 高次元特徴量の削減 → `../Unsupervised_Learning/PCA.md`
 
 > 原理（マージン最大化の最適化問題・ラグランジュ双対・カーネルトリックの数学的導出） → `../../06_Concepts/SVM_Theory.md`

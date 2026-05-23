@@ -478,14 +478,14 @@ netexec smb [IP] -u users.txt -p '[PASSWORD]' --continue-on-success
 ---
 
 ## 関連技術
-- 前：PCAPからFTP認証情報 → SSHで同じ認証情報を試す（`Protocol_Exploitation.md` FTP セクション）
+- 前：PCAPからFTP認証情報 → SSHで同じ認証情報を試す（`./Protocol_Exploitation.md` FTP セクション）
 - 前：LDAP認証情報でLDAPにアクセス → `../01_Reconnaissance/LDAP_Enumeration.md`
-- 前：バイナリから認証情報 → `Binary_Analysis.md`
+- 前：バイナリから認証情報 → `./Binary_Analysis.md`
 - 前：Webアプリのファイル読み取りでDBを取得 → `Web_Vulnerabilities/Path_Traversal.md`
 - 前：`.env` / `.git/` / `.htpasswd` / Spring actuator/env / heapdump 等の誤公開から認証情報を取得した直後 → `../01_Reconnaissance/Exposed_Files.md`
 - 前：GPP cpassword の取得手順 → `../01_Reconnaissance/SMB_Enumeration.md`（GPP セクション）
 - 後：Grafana ハッシュのクラック → `../05_Tools_Reference/Hashcat.md`
 - 後：取得したパスワードを使ったsudo悪用（YAML.load） → `../03_Post_Access_Linux/Sudo_Misconfig.md`（パターン5）
-- 後：取得した認証情報を製品管理画面のデフォルト試行と組合せて他システムへ展開 → `Default_Credentials.md`
-- 後：取得済みパスワードの使い回し確認スプレー前にロックアウトポリシーを取得し試行設計を組む → `Account_Lockout_Recon.md`
+- 後：取得した認証情報を製品管理画面のデフォルト試行と組合せて他システムへ展開 → `./Default_Credentials.md`
+- 後：取得済みパスワードの使い回し確認スプレー前にロックアウトポリシーを取得し試行設計を組む → `./Account_Lockout_Recon.md`
 - 参照：GPP cpassword の動作原理（AES 鍵公開・MS14-025） → `../06_Concepts/GPP_Credential.md`

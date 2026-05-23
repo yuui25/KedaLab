@@ -198,8 +198,8 @@ certipy ca \
 
 ## 関連技術
 
-- 前：AD CS の列挙と ESC 番号の特定 → `Overview.md`
-- 前：ESC2（Any Purpose 証明書が Enrollment Agent 代替になる） → `ESC2.md`
+- 前：AD CS の列挙と ESC 番号の特定 → `./Overview.md`
+- 前：ESC2（Any Purpose 証明書が Enrollment Agent 代替になる） → `./ESC2.md`
 - 後：PKINIT → NT ハッシュ取得 → DCSync → `../Credential_Dumping.md`
 - 後：横展開（DCSync 取得後） → `../Kerberos_Attacks/Pass_The_Ticket.md`
 - ツール詳細 → `../../05_Tools_Reference/Certipy.md`

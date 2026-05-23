@@ -210,7 +210,7 @@ certipy ca \
 
 ## 関連技術
 
-- 前：AD CS の列挙と ESC 番号の特定 → `Overview.md`
-- 前：ESC7（ManageCertificates 権限の悪用・付与） → `ESC7.md`
+- 前：AD CS の列挙と ESC 番号の特定 → `./Overview.md`
+- 前：ESC7（ManageCertificates 権限の悪用・付与） → `./ESC7.md`
 - 後：証明書取得後の DCSync → `../Credential_Dumping.md`
 - ツール詳細 → `../../05_Tools_Reference/Certipy.md`

@@ -189,7 +189,7 @@ certipy ca \
 
 ## 関連技術
 
-- 前：AD CS の列挙と ESC 番号の特定 → `Overview.md`
-- 前：ESC5（PKI オブジェクトへの Write ACL 悪用。OID オブジェクトへの Write 権限がある場合）→ `ESC5.md`
+- 前：AD CS の列挙と ESC 番号の特定 → `./Overview.md`
+- 前：ESC5（PKI オブジェクトへの Write ACL 悪用。OID オブジェクトへの Write 権限がある場合）→ `./ESC5.md`
 - 後：証明書取得後の横展開 → `../Kerberos_Attacks/Pass_The_Ticket.md`
 - ツール詳細 → `../../05_Tools_Reference/Certipy.md`

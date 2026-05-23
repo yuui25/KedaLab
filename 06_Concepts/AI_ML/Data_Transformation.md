@@ -161,6 +161,6 @@ X_test  = scaler.transform(X_test)  # fit はしない
 
 ## 関連技術
 
-- データ品質への攻撃（ポイズニング） → `Data_Attacks.md`
-- データ漏洩（Data Leakage）の防止 → `Overview.md`
+- データ品質への攻撃（ポイズニング） → `./Data_Attacks.md`
+- データ漏洩（Data Leakage）の防止 → `./Overview.md`
 - 異常検知への応用（bytes_transferred 等の特徴量設計） → `Unsupervised_Learning/Anomaly_Detection.md`

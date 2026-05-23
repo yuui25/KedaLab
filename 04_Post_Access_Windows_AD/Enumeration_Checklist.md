@@ -602,5 +602,5 @@ $etwpatch = [System.Runtime.InteropServices.Marshal]
 - 後：SeEnableDelegationPrivilege がある → `Delegation_Attacks/Unconstrained.md`
 - 後：Kerberoastable アカウントがある → `Kerberos_Attacks/Kerberoasting.md`
 - 後：CVE の絞り込み・PoC の探し方 → `../../05_Tools_Reference/Searchsploit.md`
-- 後：UAC バイパスで SYSTEM に昇格後 → `Privilege_Tokens.md`（SeImpersonate / Potato系）
-- 後：EDR がカーネルレベルで動作しており PS / EXE をすべてブロックする → `BYOVD.md`
+- 後：UAC バイパスで SYSTEM に昇格後 → `./Privilege_Tokens.md`（SeImpersonate / Potato系）
+- 後：EDR がカーネルレベルで動作しており PS / EXE をすべてブロックする → `./BYOVD.md`

@@ -286,7 +286,7 @@ python3 jwt_tool.py [JWT_TOKEN] -X i
 ## 関連技術
 
 - 前：Web 列挙で JWT ベースの認証を確認 → `../../01_Reconnaissance/Web_Enumeration.md`
-- 前：SSRF でサーバー内部の JWKS エンドポイントを確認 → `SSRF.md`
-- 後：認証バイパス成功後のAPIエンドポイント列挙・権限昇格 → `IDOR.md` / `Command_Injection.md`
-- 関連：セッション Cookie 窃取（JWT が Cookie に格納されている場合） → `XSS.md`
+- 前：SSRF でサーバー内部の JWKS エンドポイントを確認 → `./SSRF.md`
+- 後：認証バイパス成功後のAPIエンドポイント列挙・権限昇格 → `./IDOR.md` / `./Command_Injection.md`
+- 関連：セッション Cookie 窃取（JWT が Cookie に格納されている場合） → `./XSS.md`
 - 関連：hashcat 詳細（mode 16500） → `../../05_Tools_Reference/Hashcat.md`

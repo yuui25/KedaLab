@@ -192,9 +192,9 @@ certipy ca \
 
 ## 関連技術
 
-- 前：AD CS の列挙と ESC 番号の特定 → `Overview.md`
-- 前：ESC4（テンプレート設定変更で ESC1 化） → `ESC4.md`
+- 前：AD CS の列挙と ESC 番号の特定 → `./Overview.md`
+- 前：ESC4（テンプレート設定変更で ESC1 化） → `./ESC4.md`
 - 後：証明書取得後 → PKINIT → DCSync → `../Credential_Dumping.md`
-- 後：ESC6（CA レベルの SAN 自由指定。テンプレートの Enrollee Supplies Subject が False でも有効） → `ESC6.md`
+- 後：ESC6（CA レベルの SAN 自由指定。テンプレートの Enrollee Supplies Subject が False でも有効） → `./ESC6.md`
 - 後：横展開（DCSync 取得後） → `../Kerberos_Attacks/Pass_The_Ticket.md`
 - ツール詳細 → `../../05_Tools_Reference/Certipy.md`

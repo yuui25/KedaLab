@@ -203,6 +203,6 @@ CWE (Common Weakness Enumeration) は GHSA / CVE 申請フォームで必須の�
 
 ## 関連技術
 
-- 関連：[`Variant_Hunting.md`](./Variant_Hunting.md)（バリアント探索手法・本ファイルの入手元情報を起点に動く）
-- 関連：[`CVSS_Scoring.md`](./CVSS_Scoring.md)（CVE 申請時の severity 算定・vector 記載）
+- 関連：[`./Variant_Hunting.md`](./Variant_Hunting.md)（バリアント探索手法・本ファイルの入手元情報を起点に動く）
+- 関連：[`./CVSS_Scoring.md`](./CVSS_Scoring.md)（CVE 申請時の severity 算定・vector 記載）
 - 関連：[`../02_Initial_Access/Edge_Appliance_CVEs.md`](../02_Initial_Access/Edge_Appliance_CVEs.md)（エッジ製品の既知 CVE 照合）

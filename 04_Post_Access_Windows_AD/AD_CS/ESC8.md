@@ -175,7 +175,7 @@ impacket-secretsdump \
 
 ## 関連技術
 
-- 前：AD CS の列挙と WebEnrollment エンドポイント確認 → `Overview.md`
+- 前：AD CS の列挙と WebEnrollment エンドポイント確認 → `./Overview.md`
 - 前：NTLM Relay の全体手順（ESC8 は Step 5 に記載）→ `../NTLM_Relay/ntlmrelayx.md`
 - 前：DC$ の認証強制（Coerce）→ `../NTLM_Relay/Coerce.md`
 - 前：LLMNR 無効環境での代替起点（IPv6）→ `../NTLM_Relay/mitm6.md`

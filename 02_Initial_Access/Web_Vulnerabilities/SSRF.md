@@ -103,6 +103,6 @@ Python バージョン要件を必ず確認する。
 - 後：内部ポートに到達できた → 対象サービスの脆弱性を調査 → `../../01_Reconnaissance/Network_Scanning.md`（内部ポートの意味を確認）
 - 後：クラウドメタデータから一時クレデンシャル取得 → `../Credential_Discovery.md`
 - 後：プロトコル切替で Redis / 内部 SMTP 等に到達 → `../Protocol_Exploitation.md`
-- 関連：パストラバーサルと併発しやすい（同じ「入力URL/パス」系の脆弱性） → `Path_Traversal.md`
-- 関連：Blind SSRF のコールバック受信手段（python3 -m http.server）→ `XSS.md`（攻撃側の準備セクション）
+- 関連：パストラバーサルと併発しやすい（同じ「入力URL/パス」系の脆弱性） → `./Path_Traversal.md`
+- 関連：Blind SSRF のコールバック受信手段（python3 -m http.server）→ `./XSS.md`（攻撃側の準備セクション）
 - 関連：攻撃側の準備・到達可能 IP の確認 → `../../06_Concepts/Reverse_Shell.md`

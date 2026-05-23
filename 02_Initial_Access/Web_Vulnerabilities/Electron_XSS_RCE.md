@@ -171,7 +171,7 @@ Windows では電卓が起動する = OS コマンド実行確定（= RCE 到達
 ## 関連技術
 
 - 前：Electron アプリの存在を確認（ファイル拡張子 / プロセス名 / パッケージ情報） → `../../01_Reconnaissance/Web_Enumeration.md`
-- 前：XSS sink の基本パターン（.html() / innerHTML の危険性）→ `XSS.md`（コードレビュー観点セクション）
+- 前：XSS sink の基本パターン（.html() / innerHTML の危険性）→ `./XSS.md`（コードレビュー観点セクション）
 - 後：RCE 到達後の OS コマンド実行 → リバースシェル取得 → `../../06_Concepts/Reverse_Shell.md`
 - 関連：Electron の nodeIntegration / contextIsolation の仕組み → `../../06_Concepts/Electron_Security.md`
 - 関連：バリアント（同クラスの脆弱性を別プロジェクトで探す手法）→ `../../06_Concepts/Variant_Hunting.md`

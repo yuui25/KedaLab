@@ -321,10 +321,10 @@ nuclei -t default-logins/jenkins/ -t default-logins/grafana/ -t default-logins/t
 - 前：管理画面・ログインフォーム・フレームワーク特定 → `../01_Reconnaissance/Web_Enumeration.md`
 - 前：証明書 Issuer / SAN からのアプライアンス製品名推定 → `../01_Reconnaissance/TLS_Audit.md`
 - 前：管理コンソール誤公開・Tomcat manager / JBoss / Spring Actuator / Jenkins の発見 → `../01_Reconnaissance/Exposed_Files.md`
-- 前：試行前にロックアウト閾値を必ず確認 → `Account_Lockout_Recon.md`
-- 後：SSH / WinRM / FTP に通った認証情報での本格的アクセス → `Protocol_Exploitation.md`
-- 後：`sa` 通過後の `xp_cmdshell` / ユーザーなりすまし → `MSSQL_Exploitation.md`
-- 後：通過した管理画面から保存されている他システムの認証情報を抽出 → `Credential_Discovery.md`
+- 前：試行前にロックアウト閾値を必ず確認 → `./Account_Lockout_Recon.md`
+- 後：SSH / WinRM / FTP に通った認証情報での本格的アクセス → `./Protocol_Exploitation.md`
+- 後：`sa` 通過後の `xp_cmdshell` / ユーザーなりすまし → `./MSSQL_Exploitation.md`
+- 後：通過した管理画面から保存されている他システムの認証情報を抽出 → `./Credential_Discovery.md`
 - 後：SMB / WinRM / MSSQL のスプレー詳細 → `../05_Tools_Reference/Netexec.md`
 - 後：製品名・バージョンが判明している場合の CVE 検索 → `../05_Tools_Reference/Searchsploit.md`
-- 後：デフォルト認証情報が変更済みで認証が突破できない場合の代替経路（製品判明時点でベンダー別既知 CVE へ） → `Edge_Appliance_CVEs.md`
+- 後：デフォルト認証情報が変更済みで認証が突破できない場合の代替経路（製品判明時点でベンダー別既知 CVE へ） → `./Edge_Appliance_CVEs.md`

@@ -365,8 +365,8 @@ LLM への DoS 攻撃は通常の DoS 攻撃と同様の目的を持つが、LLM
 
 ## 関連技術
 
-- LLM のアーキテクチャ・RAG・Fine-tuning の動作原理 → `LLM.md`
+- LLM のアーキテクチャ・RAG・Fine-tuning の動作原理 → `./LLM.md`
 - ML システム全体の攻撃分類（ML OWASP Top 10） → `../AI_Red_Teaming_Concepts.md`
-- プロンプトインジェクションの原理と手法 → `LLM.md`
+- プロンプトインジェクションの原理と手法 → `./LLM.md`
 - 埋め込みポイズニング（LLM08）の原理 → `../Data_Attacks.md`
 - モデル盗用（LLM10経由のサロゲートモデル学習） → `../AI_Red_Teaming_Concepts.md`

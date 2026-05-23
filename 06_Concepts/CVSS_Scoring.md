@@ -429,6 +429,6 @@ Environmental は **対象組織ごとに別**。ベンダー公表値（Base �
 
 ## 関連技術
 
-- 関連：[`Pentest_Fundamentals.md`](./Pentest_Fundamentals.md)（レポート構造全体）
+- 関連：[`./Pentest_Fundamentals.md`](./Pentest_Fundamentals.md)（レポート構造全体）
 - 関連：[`../02_Initial_Access/Web_Vulnerabilities/Open_Redirect.md`](../02_Initial_Access/Web_Vulnerabilities/Open_Redirect.md)（単独 vs チェーン併記の実例）
-- 関連：[`Variant_Hunting.md`](./Variant_Hunting.md)（CVE 申請時のスコア算定）
+- 関連：[`./Variant_Hunting.md`](./Variant_Hunting.md)（CVE 申請時のスコア算定）

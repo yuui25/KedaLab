@@ -295,4 +295,4 @@ impacket-psexec [DOMAIN]/administrator@[DC_FQDN] -k -no-pass
 - 前：GenericAll の確認 → `../ACE_Abuse/GenericAll.md`
 - 前：BloodHound でパスを発見 → `../../05_Tools_Reference/BloodHound.md`
 - 後：DCSync実行後 → `../Credential_Dumping.md`
-- Unconstrained Delegation との違い → `Unconstrained.md`
+- Unconstrained Delegation との違い → `./Unconstrained.md`

@@ -171,7 +171,7 @@ JSON.parse(atob("eyJ1c2VyIjoiYWRtaW4ifQ==".replace(/-/g,'+').replace(/_/g,'/')))
 ## 関連技術
 
 - 前：Webディレクトリ・エンドポイント列挙でJSファイルを発見 → `../../01_Reconnaissance/Web_Enumeration.md`
-- 後：発見したAPIエンドポイントへのコマンドインジェクション → `Command_Injection.md`
-- 後：デコード結果が JWT だった場合の攻撃手順 → `JWT_Attacks.md`
-- 後：デコード結果に ID が含まれていた場合 → `IDOR.md`
+- 後：発見したAPIエンドポイントへのコマンドインジェクション → `./Command_Injection.md`
+- 後：デコード結果が JWT だった場合の攻撃手順 → `./JWT_Attacks.md`
+- 後：デコード結果に ID が含まれていた場合 → `./IDOR.md`
 - 関連：多重エンコードの識別方法・各エンコード形式の原理 → `../../06_Concepts/Web_Pentest_Tooling.md`

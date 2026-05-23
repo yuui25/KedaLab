@@ -212,5 +212,5 @@ impacket-secretsdump \
 ---
 
 ## 関連技術
-- 関連：`RBCD.md`（よりシンプルな委任攻撃として比較）
+- 関連：`./RBCD.md`（よりシンプルな委任攻撃として比較）
 - 後：`../Credential_Dumping.md`（DC の TGT で DCSync を実行）

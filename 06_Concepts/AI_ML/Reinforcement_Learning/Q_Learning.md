@@ -78,8 +78,8 @@ for episode in range(n_episodes):
 
 ### 関連技術
 
-- SARSA（オンポリシー版のQ-learning） → `SARSA.md`
+- SARSA（オンポリシー版のQ-learning） → `./SARSA.md`
 - Deep Q-Network（DQN：Q-learningとニューラルネットワークの組み合わせ）
-- 強化学習の全体像 → `RL_Overview.md`
+- 強化学習の全体像 → `./RL_Overview.md`
 
 > 原理（Bellman方程式・最適性の証明） → `../../06_Concepts/Bellman_Equation.md`

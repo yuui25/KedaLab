@@ -254,10 +254,10 @@ enum4linux -a -u '[USER]' -p '[PASSWORD]' [IP] | tee enum4linux_auth.txt
 - `{GUID}` 形式のフォルダ名は複数存在することがある。すべてのGUID配下を確認すること
 
 ### 関連技術
-- 前：ポートスキャンで 445 / 139 を発見 → `Network_Scanning.md`
+- 前：ポートスキャンで 445 / 139 を発見 → `./Network_Scanning.md`
 - 前：AD 攻撃フロー上の現在地確認 → `../00_Playbook/Windows_AD_Attack_Flow.md`
 - 後：GPP で認証情報取得 → `../02_Initial_Access/Credential_Discovery.md`（GPPパターン）
 - 後：スクリプトに平文パスワード → `../02_Initial_Access/Credential_Discovery.md`
 - 後：実行ファイルが取得できた → `../02_Initial_Access/Binary_Analysis.md`
-- 後：取得したドキュメント・画像のメタデータ確認 → `Metadata_Analysis.md`
-- 後：認証情報が取得できた → `LDAP_Enumeration.md` へ進む
+- 後：取得したドキュメント・画像のメタデータ確認 → `./Metadata_Analysis.md`
+- 後：認証情報が取得できた → `./LDAP_Enumeration.md` へ進む

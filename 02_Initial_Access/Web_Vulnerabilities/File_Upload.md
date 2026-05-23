@@ -210,5 +210,5 @@ unzip [zip_file]
 
 - 前：Webアプリのフレームワーク・アプリ名の特定 → `../../01_Reconnaissance/Web_Enumeration.md`
 - 前：searchsploit で「unauthenticated file upload」を確認 → `../../05_Tools_Reference/Searchsploit.md`
-- 後：Webシェルからリバースシェルへの昇格 → `Command_Injection.md`（リバースシェル配信セクション）
+- 後：Webシェルからリバースシェルへの昇格 → `./Command_Injection.md`（リバースシェル配信セクション）
 - 後：Windowsで初期シェル取得後の列挙 → `../../04_Post_Access_Windows_AD/Enumeration_Checklist.md`

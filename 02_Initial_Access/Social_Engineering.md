@@ -154,6 +154,6 @@ OSINT で組織情報収集（従業員名・役職・利用ツール・メー�
 ## 関連技術
 
 - 前：OSINT による事前情報収集 → `../01_Reconnaissance/Web_Enumeration.md`
-- 後：取得した認証情報の活用（パスワードスプレー・使い回し確認） → `Credential_Discovery.md`
+- 後：取得した認証情報の活用（パスワードスプレー・使い回し確認） → `./Credential_Discovery.md`
 - 後：インサイダー脅威（侵害された内部者）との連鎖 → `../06_Concepts/AI_ML/Data_Attacks.md`
 - 参照：本番の前提全般 → `../06_Concepts/Pentest_Fundamentals.md`

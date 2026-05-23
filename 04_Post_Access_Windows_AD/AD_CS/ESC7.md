@@ -210,7 +210,7 @@ certipy ca \
 
 ## 関連技術
 
-- 前：AD CS の列挙と ESC 番号の特定 → `Overview.md`
-- 前：ESC6（ManageCA で有効化した SAN フラグを使った証明書申請） → `ESC6.md`
+- 前：AD CS の列挙と ESC 番号の特定 → `./Overview.md`
+- 前：ESC6（ManageCA で有効化した SAN フラグを使った証明書申請） → `./ESC6.md`
 - 後：PKINIT → NT ハッシュ取得 → DCSync → `../Credential_Dumping.md`
 - ツール詳細 → `../../05_Tools_Reference/Certipy.md`

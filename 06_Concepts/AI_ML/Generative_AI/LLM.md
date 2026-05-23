@@ -102,7 +102,7 @@ print(response.content[0].text)
 ### 関連技術
 
 - Transformerの前身 → `../Deep_Learning/RNN.md`
-- Diffusionモデル（画像生成の主流手法） → `Diffusion_Models.md`
+- Diffusionモデル（画像生成の主流手法） → `./Diffusion_Models.md`
 - RAGの実装にはベクトルデータベース（Pinecone, ChromaDB等）
 
 > 原理（Attentionメカニズムの数学的導出・Positional Encodingの設計） → `../../06_Concepts/Transformer_Theory.md`

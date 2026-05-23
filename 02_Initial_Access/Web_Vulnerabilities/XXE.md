@@ -171,8 +171,8 @@ echo "BASE64_STRING" | base64 -d   # [Attacker]
 ## 関連技術
 - 前：XMLアップロード機能の発見・リクエストのContent-Type確認 → `../../01_Reconnaissance/Web_Enumeration.md`
 - 後：ファイル読み込みで認証情報取得 → `../Credential_Discovery.md`
-- 後：XSLT処理が存在する場合はXSLTインジェクションも試す → `XSLT_Injection.md`
-- 後：内部ネットワーク探索（SSRF） → `SSRF.md`
+- 後：XSLT処理が存在する場合はXSLTインジェクションも試す → `./XSLT_Injection.md`
+- 後：内部ネットワーク探索（SSRF） → `./SSRF.md`
 - 後：取得した /etc/shadow ハッシュのクラック → `../../05_Tools_Reference/Hashcat.md`
 - 関連：製品構造調査・設定ファイルパスの特定 → `../../05_Tools_Reference/Searchsploit.md`
 - 関連：Blind XXE のコールバック受信・到達可能 IP の確認 → `../../06_Concepts/Reverse_Shell.md`

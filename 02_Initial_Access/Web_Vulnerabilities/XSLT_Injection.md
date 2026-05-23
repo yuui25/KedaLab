@@ -195,9 +195,9 @@ RCEを狙う場合は、`file_get_contents` の行を `system` / `passthru` に�
 
 ### 関連技術
 - 前：XMLアップロード機能の発見 → `../../01_Reconnaissance/Web_Enumeration.md`
-- 前：XXE（XMLのみでの攻撃） → `XXE.md`
+- 前：XXE（XMLのみでの攻撃） → `./XXE.md`
 - 後：ファイル読み込みで認証情報取得 → `../Credential_Discovery.md`
-- 後：SSRFへの転換（`document('http://...')` を使った内部ネットワーク探索）→ `SSRF.md`
+- 後：SSRFへの転換（`document('http://...')` を使った内部ネットワーク探索）→ `./SSRF.md`
 - 後：シェル取得後の安定化 → `../../03_Post_Access_Linux/Shell_Stabilization.md`
 - 後：取得した /etc/shadow ハッシュのクラック → `../../05_Tools_Reference/Hashcat.md`
 - 関連：製品構造調査・設定ファイルパスの特定 → `../../05_Tools_Reference/Searchsploit.md`

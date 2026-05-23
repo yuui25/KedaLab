@@ -348,6 +348,6 @@ Step 3: 特性に基づいて攻撃ペイロードを設計
 ## 関連技術
 
 - プロンプトインジェクション攻撃の原理 → `Generative_AI/LLM.md`
-- 敵対的サンプル攻撃の原理（FGSM/PGD/Sparsity） → `Adversarial_Examples.md`
-- データポイズニングの原理 → `Data_Attacks.md`
+- 敵対的サンプル攻撃の原理（FGSM/PGD/Sparsity） → `./Adversarial_Examples.md`
+- データポイズニングの原理 → `./Data_Attacks.md`
 - 攻撃の対象となる検知システムの仕組み → `Unsupervised_Learning/Anomaly_Detection.md`

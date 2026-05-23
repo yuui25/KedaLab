@@ -212,10 +212,10 @@ python3 dfscoerce.py -u [USER] -p [PASSWORD] -d [DOMAIN] [ATTACKER_IP] [TARGET_I
 
 ## 関連技術
 
-- 前：LLMNR / NBT-NS ポイズニングが GPO で無効化されている状況の確認 → `Responder.md`
-- 前：Relay 先の署名・チャネルバインディング設定の確認 → `ntlmrelayx.md`
-- 後：リレー先への LDAPS Shadow Credentials 付与 → `ntlmrelayx.md`（Step 3）
-- 後：リレー先への ESC8 証明書取得 → `ntlmrelayx.md`（Step 5）
-- 後：リレー先への RBCD 設定 → `ntlmrelayx.md`（Step 4）/ `../Delegation_Attacks/RBCD.md`
-- 後：3手法すべて無効の場合の代替認証強制 → `mitm6.md`
+- 前：LLMNR / NBT-NS ポイズニングが GPO で無効化されている状況の確認 → `./Responder.md`
+- 前：Relay 先の署名・チャネルバインディング設定の確認 → `./ntlmrelayx.md`
+- 後：リレー先への LDAPS Shadow Credentials 付与 → `./ntlmrelayx.md`（Step 3）
+- 後：リレー先への ESC8 証明書取得 → `./ntlmrelayx.md`（Step 5）
+- 後：リレー先への RBCD 設定 → `./ntlmrelayx.md`（Step 4）/ `../Delegation_Attacks/RBCD.md`
+- 後：3手法すべて無効の場合の代替認証強制 → `./mitm6.md`
 - 関連（Unconstrained Delegation との連携）：`../Delegation_Attacks/Unconstrained.md`

@@ -136,5 +136,5 @@ curl -s "http://[TARGET]/[エンドポイント]?[VULN_PARAM]=a,b,1,5))+and+(sel
 - 関連：アプリ × バージョン固有のペイロード（CMS Made Simple 等） → `../../05_Tools_Reference/CVE_Notes.md`
 - 後：認証情報が取得できた → `../Credential_Discovery.md`
 - 後：MD5+Salt ハッシュのクラック → `../../05_Tools_Reference/Hashcat.md`（mode 20）
-- 後：管理者パネルにアクセスできた → Webアプリ固有の機能を調査。コマンドインジェクション等を試す → `Command_Injection.md`
-- 関連：XSS（同じ入力フィールドの脆弱性） → `XSS.md`
+- 後：管理者パネルにアクセスできた → Webアプリ固有の機能を調査。コマンドインジェクション等を試す → `./Command_Injection.md`
+- 関連：XSS（同じ入力フィールドの脆弱性） → `./XSS.md`

@@ -113,8 +113,8 @@ class MLP(nn.Module):
 
 ### 関連技術
 
-- CNN（画像処理に特化した構造） → `CNN.md`
-- RNN（系列データに特化した構造） → `RNN.md`
+- CNN（画像処理に特化した構造） → `./CNN.md`
+- RNN（系列データに特化した構造） → `./RNN.md`
 - 生成 AI 系（Transformer・LLM 構造） → `../Generative_AI/LLM.md`
 - 拡散モデル（画像生成系の代表手法） → `../Generative_AI/Diffusion_Models.md`
 

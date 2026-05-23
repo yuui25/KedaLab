@@ -85,4 +85,4 @@ perl -e 'exec "/bin/bash";'
 
 ## 関連技術
 - 前：リバースシェル取得 → `../02_Initial_Access/Web_Vulnerabilities/Command_Injection.md`
-- 後：侵入後の列挙 → `Enumeration_Checklist.md`
+- 後：侵入後の列挙 → `./Enumeration_Checklist.md`

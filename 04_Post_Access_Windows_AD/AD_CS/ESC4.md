@@ -175,8 +175,8 @@ certipy template \
 
 ## 関連技術
 
-- 前：AD CS の列挙と ESC 番号の特定 → `Overview.md`
-- 前：テンプレート変更後の ESC1 手順 → `ESC1.md`
+- 前：AD CS の列挙と ESC 番号の特定 → `./Overview.md`
+- 前：テンプレート変更後の ESC1 手順 → `./ESC1.md`
 - 前：ACL 悪用の一般手法（GenericAll / GenericWrite / WriteDACL） → `../ACE_Abuse/GenericAll.md` / `../ACE_Abuse/WriteDACL.md`
 - 後：テンプレート ESC1 化後の証明書取得 → PKINIT → DCSync → `../Credential_Dumping.md`
 - ツール詳細 → `../../05_Tools_Reference/Certipy.md`

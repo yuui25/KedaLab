@@ -292,7 +292,7 @@ PoC のインパクトがそのラインを下回ると、独立 CVE 価値は�
 
 ## 関連技術
 
-- 関連：[`CVE_Research_Starter.md`](./CVE_Research_Starter.md)（起点 CVE 入手元・CWE 選定・ライブラリ仕様調査の前提知識）
-- 関連：[`CVSS_Scoring.md`](./CVSS_Scoring.md)（advisory 提出時の severity 算定）
+- 関連：[`./CVE_Research_Starter.md`](./CVE_Research_Starter.md)（起点 CVE 入手元・CWE 選定・ライブラリ仕様調査の前提知識）
+- 関連：[`./CVSS_Scoring.md`](./CVSS_Scoring.md)（advisory 提出時の severity 算定）
 - 関連：`../05_Tools_Reference/CVE_Notes.md`（既知 CVE エクスプロイト集）
 

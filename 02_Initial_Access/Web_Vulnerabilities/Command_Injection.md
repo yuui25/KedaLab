@@ -120,7 +120,7 @@ curl -X POST http://[TARGET]/api/v1/admin/vpn/generate \
 - 標準的なワードリストでAPIエンドポイントのファジングが失敗することがある（API専用パスが一般的なディレクトリ名と異なるため）。`/api/v1` 直叩きで一覧取得を先に試みる
 
 ## 関連技術
-- 前：難読化JSからAPIエンドポイント発見 → `JS_Obfuscation.md`
+- 前：難読化JSからAPIエンドポイント発見 → `./JS_Obfuscation.md`
 - 前：APIエンドポイント列挙・ディレクトリ探索 → `../../01_Reconnaissance/Web_Enumeration.md`
 - 後：シェル安定化 → `../../03_Post_Access_Linux/Shell_Stabilization.md`
 - 後：侵入後の .env ファイル・認証情報探索 → `../../02_Initial_Access/Credential_Discovery.md`
@@ -191,4 +191,4 @@ searchsploit [ライブラリ名] [バージョン]
 - 後：シェル安定化 → `../../03_Post_Access_Linux/Shell_Stabilization.md`
 - 後：侵入後の認証情報探索（`.bundle/config` 等） → `../../02_Initial_Access/Credential_Discovery.md`
 - 関連：CVE ペイロード詳細 → `../../05_Tools_Reference/CVE_Notes.md`
-- 関連：バージョンがパッチ済みの場合の SSRF への切り替え → `SSRF.md`
+- 関連：バージョンがパッチ済みの場合の SSRF への切り替え → `./SSRF.md`

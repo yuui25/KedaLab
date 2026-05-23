@@ -134,4 +134,4 @@ hashcat -m 18200 asrep_hashes.txt /usr/share/wordlists/rockyou.txt
 ## 関連技術
 - 前：`../../01_Reconnaissance/LDAP_Enumeration.md`（ユーザー列挙）
 - 後：`../../05_Tools_Reference/Hashcat.md`（ハッシュのクラック）
-- 関連：`Kerberoasting.md`（認証情報が必要な類似手法）
+- 関連：`./Kerberoasting.md`（認証情報が必要な類似手法）

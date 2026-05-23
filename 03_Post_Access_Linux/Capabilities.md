@@ -128,7 +128,7 @@ GTFOBins (https://gtfobins.github.io/) の「Capabilities」フィルターで�
 ---
 
 ## 関連技術
-- 前：`Enumeration_Checklist.md`（`getcap -r /` の実行）
-- 後：SUID も確認 → `SUID_SGID.md`
+- 前：`./Enumeration_Checklist.md`（`getcap -r /` の実行）
+- 後：SUID も確認 → `./SUID_SGID.md`
 - 後：`/etc/shadow` を読めるようになった → ハッシュクラック: `../05_Tools_Reference/Hashcat.md`
 - GTFOBins: https://gtfobins.github.io/

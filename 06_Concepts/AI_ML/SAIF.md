@@ -125,8 +125,8 @@ SAIF はリスクに対する緩和策（Control）を定義し、**モデル作
 
 ## 関連技術
 
-- ML OWASP Top 10 との対応表 → `AI_Red_Teaming_Concepts.md`
+- ML OWASP Top 10 との対応表 → `./AI_Red_Teaming_Concepts.md`
 - LLM OWASP Top 10 との対応表 → `Generative_AI/LLM_Attacks.md`
-- Data Poisoning の詳細 → `Data_Attacks.md`
-- Model Poisoning / Model Source Tampering の詳細 → `AI_Red_Teaming_Concepts.md`（ML10）
+- Data Poisoning の詳細 → `./Data_Attacks.md`
+- Model Poisoning / Model Source Tampering の詳細 → `./AI_Red_Teaming_Concepts.md`（ML10）
 - Sensitive Information Disclosure の詳細 → `Generative_AI/LLM_Attacks.md`（LLM02）

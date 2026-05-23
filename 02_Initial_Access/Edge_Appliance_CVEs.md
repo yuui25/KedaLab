@@ -7,7 +7,7 @@
 
 - ターゲット製品の特定（証明書 Issuer / Server ヘッダー / favicon ハッシュ / ログイン HTML タイトル等）は `01_Reconnaissance/` 配下で済んでいる前提
 - CVE 個別の **長文 PoC・ペイロード・バージョン対応の細部** は `../05_Tools_Reference/CVE_Notes.md` 側に置く
-- 本ファイル側は **「ベンダー → 該当 CVE 行 → CVE_Notes.md の該当セクションへ」の遷移表** に徹する
+- 本ファイル側は **「ベンダー → 該当 CVE 行 → CVE_Notes の該当セクションへ」の遷移表** に徹する
 - どれも **「業務停止 / 持続化 / 不可逆設定変更 / SIEM 検知必至」のいずれかに該当する HIGH IMPACT 攻撃** であり、本番では事前合意必須
 
 対象ベンダー（過去 2 〜 3 年で影響が大きかった代表 RCE / 認証バイパスのみを扱う）：
@@ -94,7 +94,7 @@
 
 ## ベンダー別 CVE 照合表
 
-各行は **「ベンダー」「CVE」「影響バージョン範囲」「フィンガープリント / 確認パス」「nuclei テンプレート ID」「PoC リポジトリ（GitHub）」「成功シグナル」「CVE_Notes.md へのリンク」** の遷移表として読む。
+各行は **「ベンダー」「CVE」「影響バージョン範囲」「フィンガープリント / 確認パス」「nuclei テンプレート ID」「PoC リポジトリ（GitHub）」「成功シグナル」「CVE_Notes へのリンク」** の遷移表として読む。
 **実コマンド / ペイロード本文は `../05_Tools_Reference/CVE_Notes.md` 側のリンク先で参照する。**
 
 ### Citrix（NetScaler ADC / Gateway）
@@ -183,7 +183,7 @@ nuclei -id CVE-2022-1388 -u https://[TARGET]   # [Attacker]
 
 `nuclei` テンプレートは **検知系（脆弱性の存在確認まで）と RCE 系（実コマンド実行まで）が混在** している。本番では **検知系のみに絞る** か、`-headless=false -rl 1`（並列度 1、レート制限）で慎重に進める。
 
-### Step 3：照合表のリンクから CVE_Notes.md の該当セクションへ
+### Step 3：照合表のリンクから CVE_Notes の該当セクションへ
 
 ベンダー / バージョンが一致した CVE 行の **「詳細」列のリンク先**（`../05_Tools_Reference/CVE_Notes.md#cve-...`）に飛び、**実ペイロード・成功シグナル・原状回復項目** を取得する。
 本ファイルではペイロード本文は持たず、**「どの CVE に進めばよいか」** だけを示す。
@@ -231,7 +231,7 @@ grep -rE "curl|wget|base64|eval|exec" .   # [Attacker]   # 隠しダウンロー
 | 管理面が公開 IP からアクセスできない | 管理面アクセス制御 ACL が効いている | ユーザー面（SSL-VPN ポータル）に絞って試行。管理面前提の CVE（F5 TMUI 系）は試行不可と記録 |
 | 装置側で MFA / クライアント証明書 要求が出る | 強化された認証 | 認証バイパス系 CVE（CVE-2023-4966 / CVE-2023-46805 等）が候補。MFA は **認証段階の前段が無効化される CVE には効かない** ため再確認 |
 | 装置が Active/Standby ペアの片肺 | スタンバイ機の応答が本番と異なる | 試行対象が本番系か事前合意済みの保守系か再確認。誤って本番に投げると業務停止 |
-| 完全 RCE PoC が動かない / `curl` の応答だけは正常 | PoC のヘッダー順序 / TLS バージョン依存。あるいは PoC 自体が改竄されている | PoC コードを読み、本ファイル / CVE_Notes.md の **成功シグナル** に従って手動 1 リクエストで再構築 |
+| 完全 RCE PoC が動かない / `curl` の応答だけは正常 | PoC のヘッダー順序 / TLS バージョン依存。あるいは PoC 自体が改竄されている | PoC コードを読み、本ファイル / CVE_Notes の **成功シグナル** に従って手動 1 リクエストで再構築 |
 
 ---
 
@@ -297,9 +297,9 @@ echo "# kedalab-[CASE_ID] CVE-2024-21887 test at $(date -Iseconds)" >> /home/[US
 - 前：ログイン HTML タイトル / URL パス / favicon ハッシュ / Server ヘッダーからアプライアンス確定 → `../01_Reconnaissance/Web_Enumeration.md`
 - 前：典型ポート組合せでアプライアンス候補絞り込み → `../01_Reconnaissance/Network_Scanning.md`
 - 前：管理コンソール誤公開でアプライアンス管理面を発見した場合 → `../01_Reconnaissance/Exposed_Files.md`
-- 前：デフォルト認証情報が既に変更されている場合の代替経路として本ファイルへ → `Default_Credentials.md`
-- 前：認証バイパス系 CVE は **MFA を迂回するため、ロックアウト確認は不要だが SIEM 側の異常ログイン検知は別軸で発火する** ことの理解 → `Account_Lockout_Recon.md`
+- 前：デフォルト認証情報が既に変更されている場合の代替経路として本ファイルへ → `./Default_Credentials.md`
+- 前：認証バイパス系 CVE は **MFA を迂回するため、ロックアウト確認は不要だが SIEM 側の異常ログイン検知は別軸で発火する** ことの理解 → `./Account_Lockout_Recon.md`
 - 後：個別 CVE のペイロード本文・成功シグナル詳細・バージョン対応表 → `../05_Tools_Reference/CVE_Notes.md`
 - 後：PoC スクリプトのローカル検索・GitHub PoC 検索フロー → `../05_Tools_Reference/Searchsploit.md`
-- 後：侵害成功後の装置内設定ファイル / RADIUS / AAA 設定からの認証情報抽出 → `Credential_Discovery.md`
-- 後：取得した認証情報 / セッショントークンでの SSH / WinRM / 社内サービスへの横展開 → `Protocol_Exploitation.md`
+- 後：侵害成功後の装置内設定ファイル / RADIUS / AAA 設定からの認証情報抽出 → `./Credential_Discovery.md`
+- 後：取得した認証情報 / セッショントークンでの SSH / WinRM / 社内サービスへの横展開 → `./Protocol_Exploitation.md`

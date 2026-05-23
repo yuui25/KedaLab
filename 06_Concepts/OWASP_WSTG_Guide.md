@@ -188,4 +188,4 @@ kedalab は **v4.2 ベース**で記載している。WSTG は定期的に改訂
 ## 関連技術
 
 - 前：[`../TECHNIQUES_INDEX_WSTG.md`](../TECHNIQUES_INDEX_WSTG.md) — WSTG ID → kedalab ファイルの横断インデックス
-- 後：[`MITRE_ATTCK_Guide.md`](./MITRE_ATTCK_Guide.md) — インフラ・AD 診断軸のフレームワーク概要
+- 後：[`./MITRE_ATTCK_Guide.md`](./MITRE_ATTCK_Guide.md) — インフラ・AD 診断軸のフレームワーク概要

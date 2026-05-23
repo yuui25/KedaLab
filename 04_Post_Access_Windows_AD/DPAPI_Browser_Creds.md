@@ -374,8 +374,8 @@ DPAPI・ブラウザ認証情報の取得に成功したら以下を優先して
 
 ## 関連技術
 
-- 前：LSASS ダンプでマスターキーをメモリから取得 → `Privilege_Tokens.md`（SeDebug セクション）
-- 前：SAM/SYSTEM/SECURITY ダンプでオフライン復号の準備 → `Privilege_Tokens.md`（SeBackup セクション）・`Credential_Dumping.md`
+- 前：LSASS ダンプでマスターキーをメモリから取得 → `./Privilege_Tokens.md`（SeDebug セクション）
+- 前：SAM/SYSTEM/SECURITY ダンプでオフライン復号の準備 → `./Privilege_Tokens.md`（SeBackup セクション）・`./Credential_Dumping.md`
 - 後：取得した平文パスワードの使い回し確認 → `../02_Initial_Access/Credential_Discovery.md`
-- 後：取得した NTLM ハッシュで Pass-The-Hash → `Credential_Dumping.md`
-- 後：取得した RDP 認証情報で横断移動 → `Enumeration_Checklist.md`（Step 7.5 PSSession）
+- 後：取得した NTLM ハッシュで Pass-The-Hash → `./Credential_Dumping.md`
+- 後：取得した RDP 認証情報で横断移動 → `./Enumeration_Checklist.md`（Step 7.5 PSSession）

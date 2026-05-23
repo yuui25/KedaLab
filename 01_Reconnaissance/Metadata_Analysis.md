@@ -120,7 +120,7 @@ cat /tmp/doc_extracted/docProps/app.xml     # アプリ名・バージョン・�
 ## 関連技術
 
 - 前：FTP 匿名アクセスでファイルを取得した → `../02_Initial_Access/Protocol_Exploitation.md`（FTP セクション）
-- 前：SMB 共有からファイルを取得した → `SMB_Enumeration.md`
+- 前：SMB 共有からファイルを取得した → `./SMB_Enumeration.md`
 - 後：取得したユーザー名で ASREPRoasting を試す → `../04_Post_Access_Windows_AD/Kerberos_Attacks/ASREPRoasting.md`
-- 後：取得したドメイン名で LDAP 列挙 → `LDAP_Enumeration.md`
+- 後：取得したドメイン名で LDAP 列挙 → `./LDAP_Enumeration.md`
 - 後：取得したユーザー名で Kerbrute 検証 → `../04_Post_Access_Windows_AD/Kerberos_Attacks/ASREPRoasting.md`（Kerbrute セクション）

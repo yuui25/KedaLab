@@ -554,8 +554,8 @@ plot_history(history, "loss")
 
 ### 関連技術
 
-- ニューラルネットワーク基礎 → `Neural_Networks.md`
-- RNN（系列データ処理との組み合わせ：ビデオ認識等） → `RNN.md`
+- ニューラルネットワーク基礎 → `./Neural_Networks.md`
+- RNN（系列データ処理との組み合わせ：ビデオ認識等） → `./RNN.md`
 - 物体検出（YOLO、Faster R-CNN等）：CNNを骨格に使う
 - セグメンテーション（U-Net等）
 - 異常検知（ネットワークトラフィック分類等）→ `../Unsupervised_Learning/Anomaly_Detection.md`

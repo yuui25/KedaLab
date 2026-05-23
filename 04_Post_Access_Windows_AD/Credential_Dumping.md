@@ -165,4 +165,4 @@ impacket-secretsdump -sam sam.hive -system system.hive LOCAL
 - 後：取得したチケットの使用方法 → `Kerberos_Attacks/Pass_The_Ticket.md`
 - 後：取得したハッシュ・パスワードの使い回し確認 → `../02_Initial_Access/Credential_Discovery.md`
 - 後：ハッシュクラック → `../05_Tools_Reference/Hashcat.md`
-- 後：LAPS 値の取得 → `LAPS_Dump.md`
+- 後：LAPS 値の取得 → `./LAPS_Dump.md`

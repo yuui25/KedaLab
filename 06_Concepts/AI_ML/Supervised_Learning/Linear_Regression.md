@@ -50,8 +50,8 @@
 ### 関連技術
 
 - ロジスティック回帰（分類問題への拡張） → 本ファイル下部
-- 決定木（非線形関係に対応） → `Decision_Trees.md`
-- SVM回帰（SVR） → `SVM.md`
+- 決定木（非線形関係に対応） → `./Decision_Trees.md`
+- SVM回帰（SVR） → `./SVM.md`
 
 ---
 
@@ -100,7 +100,7 @@ P(y=1|x) = σ(w₀ + w₁x₁ + ... + wₙxₙ)
 ### 関連技術
 
 - 線形回帰（連続値予測） → 本ファイル上部
-- Naive Bayes（同じく確率的分類） → `Naive_Bayes.md`
-- SVM（マージン最大化による分類） → `SVM.md`
+- Naive Bayes（同じく確率的分類） → `./Naive_Bayes.md`
+- SVM（マージン最大化による分類） → `./SVM.md`
 
 > 原理（勾配降下法、交差エントロピー損失の導出） → `../../06_Concepts/Gradient_Descent_and_Loss.md`

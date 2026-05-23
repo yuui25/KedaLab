@@ -157,5 +157,5 @@ Administrator として接続できたら：
 
 - 前：BloodHound で LAPS 読み取りグループへのアクセス権限を確認 → `../../05_Tools_Reference/BloodHound.md`
 - 前：ForcePasswordChange / GenericAll でユーザーを乗っ取り → LAPS グループに追加 → `ACE_Abuse/ForcePasswordChange.md` / `ACE_Abuse/GenericAll.md`
-- 後：Administrator として DCSync → `Credential_Dumping.md`
+- 後：Administrator として DCSync → `./Credential_Dumping.md`
 - 後：psexec での接続 → `../../05_Tools_Reference/Impacket_Suite.md`

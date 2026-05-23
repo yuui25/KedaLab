@@ -106,7 +106,7 @@ image = pipe(
 
 ### 関連技術
 
-- LLM（テキスト生成の主流手法。Multimodalモデルでは画像生成と統合） → `LLM.md`
+- LLM（テキスト生成の主流手法。Multimodalモデルでは画像生成と統合） → `./LLM.md`
 - VAE（Latent Diffusionで使用される変分オートエンコーダ）
 - CLIP（テキストと画像の対応学習）
 - GAN（拡散モデル以前の主流生成手法）

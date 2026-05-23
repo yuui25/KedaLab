@@ -172,9 +172,9 @@ Debian 以外のディストリビューションや MOTD が無効化されて�
 
 ## 関連技術
 
-- 前：`id` 出力のグループ確認 → `Enumeration_Checklist.md`
+- 前：`id` 出力のグループ確認 → `./Enumeration_Checklist.md`
 - 前：PAM の動作原理 → `../06_Concepts/PAM.md`
 - 前：root が SSH ログイン時に何を実行しているかの観察 → `../05_Tools_Reference/pspy.md`
-- 後：sudo 権限昇格 → `Sudo_Misconfig.md`
-- 後：SUID バイナリ → `SUID_SGID.md`
+- 後：sudo 権限昇格 → `./Sudo_Misconfig.md`
+- 後：SUID バイナリ → `./SUID_SGID.md`
 - 後：取得した認証情報の使い回し確認 → `../02_Initial_Access/Credential_Discovery.md`

@@ -125,7 +125,7 @@ PSSession でターゲットユーザーになったら、**そのユーザー�
 ## 関連技術
 
 - 前：BloodHound で ForcePasswordChange エッジを発見 → `../../05_Tools_Reference/BloodHound.md`
-- 前：GenericAll チェーンの中間ステップとして ForcePasswordChange が出てくる場合 → `GenericAll.md`
+- 前：GenericAll チェーンの中間ステップとして ForcePasswordChange が出てくる場合 → `./GenericAll.md`
 - 後：PSSession でターゲットユーザーに移行 → `../Enumeration_Checklist.md`（PSSession セクション）
 - 後：次のユーザーが LAPS 読み取り権限を持つグループへの追加が可能な場合 → `../LAPS_Dump.md`
 - 後：DCSync 権限が得られた場合 → `../Credential_Dumping.md`

@@ -153,7 +153,7 @@ certipy auth \
 
 ## 関連技術
 
-- 前：AD CS の列挙と ESC 番号の特定 → `Overview.md`
+- 前：AD CS の列挙と ESC 番号の特定 → `./Overview.md`
 - 前：CA ホストへの RBCD 設定 → `../Delegation_Attacks/RBCD.md`
 - 後：CA 秘密鍵取得後の証明書偽造 → PKINIT → DCSync → `../Credential_Dumping.md`
 - ツール詳細 → `../../05_Tools_Reference/Certipy.md`

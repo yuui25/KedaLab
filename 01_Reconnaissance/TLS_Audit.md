@@ -214,9 +214,9 @@ curl -sI https://[TARGET]/ | grep -iE "strict-transport-security|content-securit
 
 ## 関連技術
 
-- 前：`Network_Scanning.md`（TLS ポートの発見）
-- 前：`Web_Enumeration.md`（HTTPS で動く Web サービスのフィンガープリント中に証明書情報が必要になった場合）
-- 後：`Web_Enumeration.md`（SAN から判明した追加 FQDN を vhost / 直接アクセスで調査）
-- 後：`Exposed_Files.md`（証明書の組織名・FQDN から推定したサブドメインで誤公開ファイルを探す）
+- 前：`./Network_Scanning.md`（TLS ポートの発見）
+- 前：`./Web_Enumeration.md`（HTTPS で動く Web サービスのフィンガープリント中に証明書情報が必要になった場合）
+- 後：`./Web_Enumeration.md`（SAN から判明した追加 FQDN を vhost / 直接アクセスで調査）
+- 後：`./Exposed_Files.md`（証明書の組織名・FQDN から推定したサブドメインで誤公開ファイルを探す）
 - 後：`../02_Initial_Access/Edge_Appliance_CVEs.md`（Issuer / SAN がアプライアンス製品の場合、製品名から既知 CVE を当たる）
 - 後：`../05_Tools_Reference/Searchsploit.md`（証明書から判明した製品/バージョンで CVE 検索）

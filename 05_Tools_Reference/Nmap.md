@@ -127,4 +127,4 @@ smb2-security-mode: signing required → NTLMリレー不可
 - 後：`../01_Reconnaissance/Web_Enumeration.md`（Web ポートが開いていた場合）
 - 後：`../01_Reconnaissance/SMB_Enumeration.md`（445 が開いていた場合）
 - 後：`../01_Reconnaissance/LDAP_Enumeration.md`（389 / 636 が開いていた場合）
-- 関連：`Searchsploit.md`（バージョン検出後に既知 CVE を検索）
+- 関連：`./Searchsploit.md`（バージョン検出後に既知 CVE を検索）

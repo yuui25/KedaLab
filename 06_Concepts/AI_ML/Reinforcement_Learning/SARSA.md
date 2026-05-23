@@ -73,7 +73,7 @@ for episode in range(n_episodes):
 
 ### 関連技術
 
-- Q-Learning（オフポリシー版との比較） → `Q_Learning.md`
-- 強化学習の全体像 → `RL_Overview.md`
+- Q-Learning（オフポリシー版との比較） → `./Q_Learning.md`
+- 強化学習の全体像 → `./RL_Overview.md`
 
 > 原理（オン・オフポリシーの収束性の違い） → `../../06_Concepts/Bellman_Equation.md`

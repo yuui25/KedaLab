@@ -88,4 +88,4 @@ done
 - 前：Web列挙でIDを含むURLを発見 → `../../01_Reconnaissance/Web_Enumeration.md`
 - 後：PCAPファイルが取得できた → `../Credential_Discovery.md`
 - 後：バイナリが取得できた → `../Binary_Analysis.md`
-- 関連：パストラバーサル（同じ「ファイルアクセス」系の脆弱性） → `Path_Traversal.md`
+- 関連：パストラバーサル（同じ「ファイルアクセス」系の脆弱性） → `./Path_Traversal.md`

@@ -219,8 +219,8 @@ print(classification_report(y_true, predictions, target_names=class_labels))
 
 ### 関連技術
 
-- PCA（次元削減してから異常検知） → `PCA.md`
-- K-Meansクラスタリング（クラスタから外れた点を異常とみなす） → `KMeans_Clustering.md`
+- PCA（次元削減してから異常検知） → `./PCA.md`
+- K-Meansクラスタリング（クラスタから外れた点を異常とみなす） → `./KMeans_Clustering.md`
 - Autoencoder → `../Deep_Learning/Neural_Networks.md`
 - Random Forest（教師あり異常検知・特徴量重要度） → `../Supervised_Learning/Decision_Trees.md`
 - classification_report の読み方・weighted avg vs macro avg → `../../Overview.md`

@@ -340,4 +340,4 @@ Tactic: TA0006 Credential Access
 ## 関連技術
 
 - 前：[`../TECHNIQUES_INDEX_MITRE.md`](../TECHNIQUES_INDEX_MITRE.md) — ATT&CK ID → kedalab ファイルの横断インデックス
-- 後：[`OWASP_WSTG_Guide.md`](./OWASP_WSTG_Guide.md) — Web 診断軸のフレームワーク概要
+- 後：[`./OWASP_WSTG_Guide.md`](./OWASP_WSTG_Guide.md) — Web 診断軸のフレームワーク概要

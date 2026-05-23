@@ -1467,14 +1467,17 @@
         // resolve:
         //  - "./X.md" or "../X.md"           → relative to baseDir
         //  - "01_Foo/X.md" (top-level prefix) → root-relative
-        //  - "X.md" (bare filename)           → sibling = baseDir/X.md
+        //  - "X.md" (bare filename)           → skip; use ./X.md for same-dir links
+        if (!raw.includes("/")) {
+          frag.appendChild(document.createTextNode(raw));
+          lastIdx = m.index + raw.length;
+          continue;
+        }
         let resolved;
         if (raw.startsWith("./") || raw.startsWith("../")) {
           resolved = resolvePath(baseDir, raw);
-        } else if (raw.includes("/")) {
-          resolved = raw;
         } else {
-          resolved = baseDir ? baseDir + "/" + raw : raw;
+          resolved = raw;
         }
         const a = document.createElement("a");
         a.className = "md-auto";

@@ -140,7 +140,7 @@ ML デプロイ環境で頻出する設定不備：
 ## 関連技術
 
 - LLM 固有の DoS・コスト攻撃（Unbounded Consumption）→ `Generative_AI/LLM_Attacks.md`（LLM10）
-- ML システムの全体的な攻撃面分類 → `AI_Red_Teaming_Concepts.md`
+- ML システムの全体的な攻撃面分類 → `./AI_Red_Teaming_Concepts.md`
 - パスワードスプレー（AD/SMB/SSH 環境） → `../../02_Initial_Access/Protocol_Exploitation.md`
-- モデル抽出（Model Extraction）→ `AI_Red_Teaming_Concepts.md`（モデルコンポーネント評価セクション）
-- CI/CD パイプラインの改ざん → `SAIF.md`（Model Deployment Tampering セクション）
+- モデル抽出（Model Extraction）→ `./AI_Red_Teaming_Concepts.md`（モデルコンポーネント評価セクション）
+- CI/CD パイプラインの改ざん → `./SAIF.md`（Model Deployment Tampering セクション）

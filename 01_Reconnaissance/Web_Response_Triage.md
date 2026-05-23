@@ -147,8 +147,8 @@ DevTools での全レスポンス検索:
 
 ### 関連技術
 
-- 前：`Web_Enumeration.md`（Webアプリの初期偵察・Cookie 分類）
-- 前：`TLS_Audit.md`（HSTS 等 TLS 関連ヘッダーの詳細確認）
+- 前：`./Web_Enumeration.md`（Webアプリの初期偵察・Cookie 分類）
+- 前：`./TLS_Audit.md`（HSTS 等 TLS 関連ヘッダーの詳細確認）
 - 後：`../02_Initial_Access/Web_Vulnerabilities/XSS.md`（HttpOnly 欠落・CSP 弱体の悪用）
 - 後：`../02_Initial_Access/Web_Vulnerabilities/JS_Obfuscation.md`（JWT / エンコード値の多重デコード）
 - 後：`../02_Initial_Access/Web_Vulnerabilities/JWT_Attacks.md`（JWT が検出された場合の攻撃手順）

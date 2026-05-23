@@ -321,9 +321,9 @@ nuclei -t exposures/backups/ -t exposures/configs/ -t exposures/tokens/ -u https
 
 ## 関連技術
 
-- 前：`Network_Scanning.md`（Web ポートの発見）
-- 前：`Web_Enumeration.md`（フレームワーク特定後、そのフレームワーク固有の誤公開パスへ）
-- 前：`TLS_Audit.md`（SAN から判明した FQDN 群を誤公開ファイル探索の対象にする）
+- 前：`./Network_Scanning.md`（Web ポートの発見）
+- 前：`./Web_Enumeration.md`（フレームワーク特定後、そのフレームワーク固有の誤公開パスへ）
+- 前：`./TLS_Audit.md`（SAN から判明した FQDN 群を誤公開ファイル探索の対象にする）
 - 後：`../02_Initial_Access/Credential_Discovery.md`（`.env` / `.git/` / `.htpasswd` から取り出した認証情報の処理）
 - 後：`../02_Initial_Access/Default_Credentials.md`（Tomcat / JBoss / Jenkins 等の管理コンソールが見つかった場合のデフォルト認証情報試行）
 - 後：`../02_Initial_Access/Web_Vulnerabilities/Path_Traversal.md`（`phpinfo` で `DOCUMENT_ROOT` 判明後）

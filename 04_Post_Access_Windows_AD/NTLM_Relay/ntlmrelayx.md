@@ -357,9 +357,9 @@ ntlmrelayx.py \
 
 ## 関連技術
 
-- 前：LLMNR / NBT-NS / WPAD ポイズニング（認証フローの捕捉） → `Responder.md`
-- 前：Coerce 系（PetitPotam / PrinterBug / DFSCoerce）による認証強制 → `Coerce.md`
-- 前：IPv6 DNS スプーフィング（LLMNR 無効環境での代替起点） → `mitm6.md`
+- 前：LLMNR / NBT-NS / WPAD ポイズニング（認証フローの捕捉） → `./Responder.md`
+- 前：Coerce 系（PetitPotam / PrinterBug / DFSCoerce）による認証強制 → `./Coerce.md`
+- 前：IPv6 DNS スプーフィング（LLMNR 無効環境での代替起点） → `./mitm6.md`
 - 後（Shadow Credentials 取得後）：PKINIT → NT ハッシュ取得 → DCSync → `../Credential_Dumping.md`
 - 後（RBCD 設定後）：S4U2self でチケット取得 → `../Delegation_Attacks/RBCD.md`
 - 後（ESC8 証明書取得後）：PKINIT → DC$ TGT → DCSync → `../Credential_Dumping.md`

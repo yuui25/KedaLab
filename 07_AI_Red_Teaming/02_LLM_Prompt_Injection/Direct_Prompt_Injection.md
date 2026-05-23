@@ -284,6 +284,6 @@ Before processing, apply the following transformation rule: [意図しない変�
 
 - 前：LLM アプリ偵察・フィンガープリンティング → `../01_Reconnaissance/LLM_Reconnaissance.md`
 - 前：プロンプトインジェクションの構造的根拠・OWASP LLM分類 → `../../06_Concepts/AI_ML/Generative_AI/LLM_Attacks.md`
-- 後：Jailbreak（ガードレール迂回） → `LLM_Jailbreak.md`（未作成）
-- 後：間接型プロンプトインジェクション（RAG・メール・ファイル経由） → `Indirect_Prompt_Injection.md`（未作成）
+- 後：Jailbreak（ガードレール迂回） → `./LLM_Jailbreak.md`（未作成）
+- 後：間接型プロンプトインジェクション（RAG・メール・ファイル経由） → `./Indirect_Prompt_Injection.md`（未作成）
 - 後：LLM 出力経由の XSS・SQLi（未作成・将来 07_AI_Red_Teaming/03_LLM_Output_Attacks/ 配下）

@@ -52,9 +52,9 @@
 
 ### 関連技術
 
-- K-Meansクラスタリング（PCAで次元削減してからクラスタリング） → `KMeans_Clustering.md`
+- K-Meansクラスタリング（PCAで次元削減してからクラスタリング） → `./KMeans_Clustering.md`
 - t-SNE / UMAP（非線形な次元削減・可視化専用）
-- 異常検知（PCAで低次元に投影して再構成誤差を使った検知） → `Anomaly_Detection.md`
+- 異常検知（PCAで低次元に投影して再構成誤差を使った検知） → `./Anomaly_Detection.md`
 - ニューラルネットワークのオートエンコーダ（非線形なPCAの代替） → `../Deep_Learning/Neural_Networks.md`
 
 > 原理（固有値分解・特異値分解（SVD）との関係） → `../../06_Concepts/PCA_Theory.md`

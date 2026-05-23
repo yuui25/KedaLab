@@ -255,5 +255,5 @@ impacket-wmiexec \
 - 前：NTLM リレー起点からの ESC8 評価 → `../NTLM_Relay/ntlmrelayx.md`（Step 5）
 - 前：Coerce 系で DC$ 認証を強制（ESC8 との組み合わせ） → `../NTLM_Relay/Coerce.md`
 - 後：証明書取得後の DCSync → `../Credential_Dumping.md`
-- 後：各 ESC の詳細手順 → `ESC1.md` / `ESC2.md` / `ESC3.md` / `ESC4.md` / `ESC5.md` / `ESC6.md` / `ESC7.md` / `ESC8.md` / `ESC9.md` / `ESC10.md` / `ESC11.md` / `ESC12.md` / `ESC13.md` / `ESC14.md` / `ESC15.md`
+- 後：各 ESC の詳細手順 → `./ESC1.md` / `./ESC2.md` / `./ESC3.md` / `./ESC4.md` / `./ESC5.md` / `./ESC6.md` / `./ESC7.md` / `./ESC8.md` / `./ESC9.md` / `./ESC10.md` / `./ESC11.md` / `./ESC12.md` / `./ESC13.md` / `./ESC14.md` / `./ESC15.md`
 - ツール詳細 → `../../05_Tools_Reference/Certipy.md`

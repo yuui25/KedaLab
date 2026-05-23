@@ -205,8 +205,8 @@ mitm6 が DHCPv6 偽応答を送り始めると、対象ホストがテスター
 
 ## 関連技術
 
-- 前：LLMNR / NBT-NS ポイズニングが GPO で無効化されている状況の確認 → `Responder.md`
-- 前：Coerce 系が全滅した場合の代替経路として使用 → `Coerce.md`
-- 後：受け取った NTLM 認証のリレー → `ntlmrelayx.md`
-- 後：LDAPS Shadow Credentials 取得 → `ntlmrelayx.md`（Step 3）
-- 後：ESC8 AD CS リレー → `ntlmrelayx.md`（Step 5）
+- 前：LLMNR / NBT-NS ポイズニングが GPO で無効化されている状況の確認 → `./Responder.md`
+- 前：Coerce 系が全滅した場合の代替経路として使用 → `./Coerce.md`
+- 後：受け取った NTLM 認証のリレー → `./ntlmrelayx.md`
+- 後：LDAPS Shadow Credentials 取得 → `./ntlmrelayx.md`（Step 3）
+- 後：ESC8 AD CS リレー → `./ntlmrelayx.md`（Step 5）

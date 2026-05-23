@@ -180,8 +180,8 @@ certipy auth \
 
 ## 関連技術
 
-- 前：AD CS の列挙と ESC 番号の特定 → `Overview.md`
-- 前：ESC5（`NTAuthCertificates` への Write 権限悪用。PKI オブジェクト改ざん） → `ESC5.md`
+- 前：AD CS の列挙と ESC 番号の特定 → `./Overview.md`
+- 前：ESC5（`NTAuthCertificates` への Write 権限悪用。PKI オブジェクト改ざん） → `./ESC5.md`
 - 前：各 ESC（1〜14）の個別手順 → 該当ファイルを参照
 - 後：証明書取得後の DCSync → `../Credential_Dumping.md`
 - ツール詳細 → `../../05_Tools_Reference/Certipy.md`

@@ -207,8 +207,8 @@ certipy ca \
 
 ## 関連技術
 
-- 前：AD CS の列挙と ESC 番号の特定 → `Overview.md`
+- 前：AD CS の列挙と ESC 番号の特定 → `./Overview.md`
 - 前：GenericWrite によるユーザー属性書き換え → `../ACE_Abuse/GenericWrite.md`
-- 後：ESC10（KDC 側のマッピング設定の確認）→ `ESC10.md`
+- 後：ESC10（KDC 側のマッピング設定の確認）→ `./ESC10.md`
 - 後：証明書取得後の DCSync → `../Credential_Dumping.md`
 - ツール詳細 → `../../05_Tools_Reference/Certipy.md`

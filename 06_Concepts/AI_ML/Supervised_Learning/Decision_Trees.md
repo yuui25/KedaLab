@@ -87,7 +87,7 @@ importances = rf.feature_importances_
 
 - ランダムフォレスト（決定木のアンサンブル）
 - 勾配ブースティング（XGBoost・LightGBM）
-- SVMと比較：非線形境界は両方対応するが、解釈性は決定木が優れる → `SVM.md`
+- SVMと比較：非線形境界は両方対応するが、解釈性は決定木が優れる → `./SVM.md`
 - SUID/特権昇格での自動化判断ロジックの可視化ツールとして参考になる考え方
 
 > 原理（情報エントロピー・ジニ不純度の導出） → `../../06_Concepts/Decision_Tree_Impurity.md`

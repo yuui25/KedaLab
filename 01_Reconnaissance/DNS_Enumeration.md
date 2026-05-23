@@ -175,4 +175,4 @@ sudo sed -i '/192.0.2.100/d' /etc/hosts
 ## 関連技術
 - 前：案件開始（ドメイン渡し）
 - 後：IP 特定後の OS 判定 → `../00_Playbook/00_OS_Identification.md`
-- 後：vhost・サブドメインの詳細列挙 → `Web_Enumeration.md`
+- 後：vhost・サブドメインの詳細列挙 → `./Web_Enumeration.md`

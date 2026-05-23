@@ -159,7 +159,7 @@ cp /tmp/passwd.bak /etc/passwd           # 元のファイルに戻す
 ---
 
 ## 関連技術
-- 前：`Enumeration_Checklist.md`（`find / -perm -4000` の実行）
-- 後：Capabilities も確認 → `Capabilities.md`
+- 前：`./Enumeration_Checklist.md`（`find / -perm -4000` の実行）
+- 後：Capabilities も確認 → `./Capabilities.md`
 - 後：`/etc/shadow` を読めるようになった → ハッシュクラック: `../05_Tools_Reference/Hashcat.md`
 - GTFOBins: https://gtfobins.github.io/

@@ -90,7 +90,7 @@ LSTMは長らくNLPの標準手法だったが、2017年のTransformer論文（"
 ### 関連技術
 
 - Transformerアーキテクチャ → `../Generative_AI/LLM.md`（Attentionメカニズム）
-- CNN（系列処理への応用：1D CNN） → `CNN.md`
+- CNN（系列処理への応用：1D CNN） → `./CNN.md`
 - 時系列予測（ARIMA等の統計手法との比較）
 
 > 原理（BPTT・LSTMゲート機構の数学的導出） → `../../06_Concepts/RNN_LSTM_Theory.md`

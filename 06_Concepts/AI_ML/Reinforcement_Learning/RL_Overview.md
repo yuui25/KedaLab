@@ -56,6 +56,6 @@ G_t = r_{t+1} + γ·r_{t+2} + γ²·r_{t+3} + ...
 
 ### 関連技術
 
-- Q-Learning（モデルフリー・テーブルベースの価値学習） → `Q_Learning.md`
-- SARSA（Q-Learningのオンポリシー版） → `SARSA.md`
+- Q-Learning（モデルフリー・テーブルベースの価値学習） → `./Q_Learning.md`
+- SARSA（Q-Learningのオンポリシー版） → `./SARSA.md`
 - Deep Q-Network（Q-LearningとNNの組み合わせ） → `../Deep_Learning/Neural_Networks.md`

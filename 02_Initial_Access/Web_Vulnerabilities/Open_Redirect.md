@@ -311,7 +311,7 @@ python3 -m http.server 8080
 
 - 前：Web 列挙でリダイレクト系パラメータを発見 → `../../01_Reconnaissance/Web_Enumeration.md`
 - 前：レスポンス一次トリアージで `Referrer-Policy` 欠落を確認 → `../../01_Reconnaissance/Web_Response_Triage.md`
-- 後：OAuth `redirect_uri` バイパス連鎖 → `OAuth_Attacks.md`（パターン 1b）
-- 後：SSRF 防御回避連鎖 → `SSRF.md`
-- 後：`javascript:` スキーム経由 XSS 化 → `XSS.md`
-- 関連：Cookie / Token を Referer で漏洩させる経路として → `XSS.md`（Cookie スティーリング）
+- 後：OAuth `redirect_uri` バイパス連鎖 → `./OAuth_Attacks.md`（パターン 1b）
+- 後：SSRF 防御回避連鎖 → `./SSRF.md`
+- 後：`javascript:` スキーム経由 XSS 化 → `./XSS.md`
+- 関連：Cookie / Token を Referer で漏洩させる経路として → `./XSS.md`（Cookie スティーリング）

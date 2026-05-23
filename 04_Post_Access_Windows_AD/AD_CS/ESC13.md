@@ -225,8 +225,8 @@ certipy ca \
 
 ## 関連技術
 
-- 前：AD CS の列挙と ESC 番号の特定 → `Overview.md`
-- 前：ESC8（HTTP WebEnrollment への NTLM リレー。HTTP が使える場合の同等手法） → `ESC8.md`
+- 前：AD CS の列挙と ESC 番号の特定 → `./Overview.md`
+- 前：ESC8（HTTP WebEnrollment への NTLM リレー。HTTP が使える場合の同等手法） → `./ESC8.md`
 - 前：Coerce 系（NTLM リレーの起点）→ `../NTLM_Relay/Coerce.md`
 - 後：証明書取得後の DCSync → `../Credential_Dumping.md`
 - ツール詳細 → `../../05_Tools_Reference/Certipy.md`
