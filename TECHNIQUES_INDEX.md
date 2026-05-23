@@ -4,6 +4,8 @@
 
 **フォーマット:** `技術名 | カテゴリ | ファイルパス`
 
+**並び順:** 同一ファイル由来の複数行は、そのファイルが「Basic → 高難度」順で書かれている場合、その順序を本 INDEX 内でも保つ（例: `02_Initial_Access/SSH.md` の §1 バナー観察 〜 §11 Port Forwarding）。ファイル側で順序が定義されていない場合は追記順で構わない。
+
 ---
 
 ## 調査・列挙
@@ -145,8 +147,19 @@
 | パスワード命名パターン推測（サービス名＋年号型）| Initial Access | `02_Initial_Access/Binary_Analysis.md` |
 | FTP匿名ログイン | Initial Access | `02_Initial_Access/Protocol_Exploitation.md` |
 | FTP平文通信からの認証情報取得 | Initial Access | `02_Initial_Access/Protocol_Exploitation.md` |
-| SSH バージョンユーザー列挙（CVE-2018-15473） | Initial Access | `02_Initial_Access/Protocol_Exploitation.md` |
-| SSH 秘密鍵パスフレーズクラック（ssh2john） | Initial Access | `02_Initial_Access/Protocol_Exploitation.md` |
+| SSH §1 バナー観察と OS / ディストリ推定（nmap -sV / nc）| Initial Access | `02_Initial_Access/SSH.md` |
+| SSH §1 CVE-2024-6387 (regreSSHion) バージョン判定と注意点（OpenSSH 8.5p1〜9.7p1 on glibc Linux・race condition pre-auth RCE） | Initial Access | `02_Initial_Access/SSH.md` |
+| SSH §2 対応認証方式の列挙（`ssh -v -o PreferredAuthentications=none` で `publickey,password,keyboard-interactive,gssapi-with-mic` 判定） | Initial Access | `02_Initial_Access/SSH.md` |
+| SSH §3 ホスト鍵 fingerprint 捕捉（ssh-keyscan / ssh-keygen -lf）と鍵使い回し横展開検出 | Initial Access | `02_Initial_Access/SSH.md` |
+| SSH §4 アルゴリズム・暗号スイート列挙（nmap --script ssh2-enum-algos / 弱い KEX・Cipher 検出 / CVE-2023-48795 Terrapin prefix truncation 判定） | Initial Access | `02_Initial_Access/SSH.md` |
+| SSH §5 agent forwarding（`ssh -A`）の逆方向リスクと侵入先ホストでの鍵乗っ取り観点 | Initial Access | `02_Initial_Access/SSH.md` |
+| SSH §6 制限シェル（rbash / lshell）の脱出（vi / ed エディタ経由・`ssh -t '/bin/bash'`・PATH 復元） | Initial Access | `02_Initial_Access/SSH.md` |
+| SSH §6 SCP / SFTP のみ許可された制限アカウントからのファイル読み取り（/etc/passwd / .bash_history / .ssh/ 系） | Initial Access | `02_Initial_Access/SSH.md` |
+| SSH §7 パスワード認証突破（hydra / medusa / ncrack / nmap ssh-brute による辞書攻撃・スプレー・ロックアウト前提）| Initial Access | `02_Initial_Access/SSH.md` |
+| SSH §8 秘密鍵パスフレーズクラック（ssh2john + john / hashcat mode 22921） | Initial Access | `02_Initial_Access/SSH.md` |
+| SSH §9 ユーザー名列挙（CVE-2018-15473・OpenSSH 7.7 未満・タイミング差ベース / GitHub `.keys` OSINT 補完） | Initial Access | `02_Initial_Access/SSH.md` |
+| SSH §10 Debian PRNG 弱鍵試行（CVE-2008-0166・事前生成 32K 鍵リスト・レガシー機器対象） | Initial Access | `02_Initial_Access/SSH.md` |
+| SSH §11 Port Forwarding / SOCKS pivot（`-L` Local / `-R` Remote / `-D` Dynamic SOCKS / `-J` ProxyJump 多段チェイン） | Initial Access | `02_Initial_Access/SSH.md` |
 | WinRM (evil-winrm) | Initial Access | `02_Initial_Access/Protocol_Exploitation.md` |
 | WinRM Pass-The-Hash | Initial Access | `02_Initial_Access/Protocol_Exploitation.md` |
 | Impacket exec ツール群（wmiexec / psexec / smbexec）— WinRM 閉鎖時のシェル取得 | Initial Access | `02_Initial_Access/Protocol_Exploitation.md` |

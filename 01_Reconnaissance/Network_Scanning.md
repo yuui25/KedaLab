@@ -136,6 +136,7 @@ searchsploit --nmap nmap_allports.xml
 - 前：案件開始（IP 渡し）／OS 判定 → `../00_Playbook/00_OS_Identification.md`
 - 後：`./Web_Enumeration.md`（HTTP / HTTPS ポート発見後）
 - 後：`./SMB_Enumeration.md`（445 / 139 発見後）
+- 後：`../02_Initial_Access/SSH.md`（22 ポート発見後の SSH 列挙〜認証突破〜制限シェル脱出）
 - 後：`./LDAP_Enumeration.md`（389 / 636 発見後）
 - 後：`./TLS_Audit.md`（443 / 8443 / 993 / 995 / 465 等 TLS ポート発見後のプロトコル/暗号/証明書監査）
 - 後：`./Exposed_Files.md`（Web ポート発見後の誤公開ファイル探索）

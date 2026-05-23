@@ -275,6 +275,7 @@ curl -L https://github.com/carlospolop/PEASS-ng/releases/latest/download/linpeas
 ---
 
 ## 関連技術
+- 前：SSH 経由でシェル取得（認証突破・秘密鍵・制限シェル脱出後） → `../02_Initial_Access/SSH.md`
 - 前：リバースシェル取得直後の安定化 → `./Shell_Stabilization.md`
 - 後：Capabilities 発見 → `./Capabilities.md`
 - 後：SUID 発見 → `./SUID_SGID.md`

@@ -123,7 +123,8 @@ nmap の `-sC` スクリプトスキャン結果から：
 
 > 原理（なぜ IP では Kerberos / LDAP / TLS が動かないのか・どのドメイン名を登録すべきか・原状回復） → `../06_Concepts/Hosts_File_For_AD.md`
 
-**FTP（21）・SSH（22）がスキャン結果に含まれる場合は並行確認する** → `../02_Initial_Access/Protocol_Exploitation.md`
+**FTP（21）がスキャン結果に含まれる場合は並行確認する** → `../02_Initial_Access/Protocol_Exploitation.md`
+**SSH（22）がスキャン結果に含まれる場合は並行確認する** → `../02_Initial_Access/SSH.md`
 
 ---
 

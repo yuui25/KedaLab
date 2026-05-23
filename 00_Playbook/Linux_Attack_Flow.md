@@ -135,7 +135,7 @@ Linux と確定した上でこのファイルのStep 1以降を進める。
 - 認証情報が判明したら直接ログインを試みる
 - **見つかった秘密鍵（`id_rsa` 等）がある場合はパスフレーズをクラックする**
 
-→ 詳細: `../02_Initial_Access/Protocol_Exploitation.md`
+→ 詳細: `../02_Initial_Access/SSH.md`（バナー観察〜認証突破〜制限シェル脱出まで）
 
 ### FTPが開いている場合
 - 匿名ログインを試行 (`ftp anonymous@`)
@@ -169,7 +169,7 @@ Step 2の列挙結果を元に、「今の状況でどの手法を試すか」�
 | バイナリ・設定ファイルが取得できた | strings / 逆コンパイル → 認証情報 | `../02_Initial_Access/Binary_Analysis.md` |
 | PCAPファイルが取得できた | tshark で平文認証情報を抽出 | `../02_Initial_Access/Credential_Discovery.md` |
 | FTPに匿名ログインできた | ダウンロードしたファイルの内容確認・認証情報探索 | `../02_Initial_Access/Protocol_Exploitation.md` |
-| SSH のバージョンが古い | SSH 脆弱性 / ユーザー列挙 | `../02_Initial_Access/Protocol_Exploitation.md` |
+| SSH のバージョンが古い | SSH 脆弱性 / ユーザー列挙 | `../02_Initial_Access/SSH.md` |
 
 ---
 

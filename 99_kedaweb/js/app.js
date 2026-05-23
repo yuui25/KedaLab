@@ -1619,14 +1619,12 @@
         // resolve:
         //  - "./X.md" or "../X.md"           → relative to baseDir
         //  - "01_Foo/X.md" (top-level prefix) → root-relative
-        //  - "X.md" (bare filename)           → skip; use ./X.md for same-dir links
-        if (!raw.includes("/")) {
-          frag.appendChild(document.createTextNode(raw));
-          lastIdx = m.index + raw.length;
-          continue;
-        }
+        //  - "X.md" (bare filename)           → same folder as the current file
+        //    (matches WRITING_GUIDE: bare name is preferred for sibling references)
         let resolved;
-        if (raw.startsWith("./") || raw.startsWith("../")) {
+        if (!raw.includes("/")) {
+          resolved = baseDir ? baseDir + "/" + raw : raw;
+        } else if (raw.startsWith("./") || raw.startsWith("../")) {
           resolved = resolvePath(baseDir, raw);
         } else {
           resolved = raw;

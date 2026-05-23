@@ -478,7 +478,8 @@ netexec smb [IP] -u users.txt -p '[PASSWORD]' --continue-on-success
 ---
 
 ## 関連技術
-- 前：PCAPからFTP認証情報 → SSHで同じ認証情報を試す（`./Protocol_Exploitation.md` FTP セクション）
+- 前：PCAP から FTP 認証情報 → 同じ認証情報を SSH で試す（`./Protocol_Exploitation.md` FTP セクション + `./SSH.md`）
+- 関連：取得した認証情報を SSH で試す前に、SSH の対応認証方式を確認（`publickey` のみなら password cred は通らない） → `./SSH.md`
 - 前：LDAP認証情報でLDAPにアクセス → `../01_Reconnaissance/LDAP_Enumeration.md`
 - 前：バイナリから認証情報 → `./Binary_Analysis.md`
 - 前：Webアプリのファイル読み取りでDBを取得 → `Web_Vulnerabilities/Path_Traversal.md`
@@ -488,4 +489,5 @@ netexec smb [IP] -u users.txt -p '[PASSWORD]' --continue-on-success
 - 後：取得したパスワードを使ったsudo悪用（YAML.load） → `../03_Post_Access_Linux/Sudo_Misconfig.md`（パターン5）
 - 後：取得した認証情報を製品管理画面のデフォルト試行と組合せて他システムへ展開 → `./Default_Credentials.md`
 - 後：取得済みパスワードの使い回し確認スプレー前にロックアウトポリシーを取得し試行設計を組む → `./Account_Lockout_Recon.md`
+- 後：取得した cred / 秘密鍵を SSH で試行（認証突破・秘密鍵パスフレーズクラック・制限シェル脱出） → `./SSH.md`
 - 参照：GPP cpassword の動作原理（AES 鍵公開・MS14-025） → `../06_Concepts/GPP_Credential.md`
