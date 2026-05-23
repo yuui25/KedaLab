@@ -34,7 +34,7 @@ PDF: https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-115.p
 | 3.2 | Log Review | kedalab 対象外（防御側手法）|
 | 3.3 | Ruleset Review | kedalab 対象外（防御側手法）|
 | 3.4 | System Configuration Review | 関連: [`01_Reconnaissance/Exposed_Files.md`](./01_Reconnaissance/Exposed_Files.md)（設定誤公開）|
-| 3.5 | Network Sniffing | [`01_Reconnaissance/SMB_Enumeration.md`](./01_Reconnaissance/SMB_Enumeration.md)（NTLM 観点）/ [`02_Initial_Access/Protocol_Exploitation.md`](./02_Initial_Access/Protocol_Exploitation.md) |
+| 3.5 | Network Sniffing | [`01_Reconnaissance/SMB_Enumeration.md`](./01_Reconnaissance/SMB_Enumeration.md)（NTLM 観点）/ [`02_Initial_Access/FTP.md`](./02_Initial_Access/FTP.md)（§6 PCAP 経由の平文認証情報抽出）/ [`02_Initial_Access/Protocol_Exploitation.md`](./02_Initial_Access/Protocol_Exploitation.md)（Mail 平文） |
 | 3.6 | File Integrity Checking | kedalab 対象外（防御側手法）|
 
 ### §4 Target Identification and Analysis Techniques（標的特定・解析手法）

@@ -2,7 +2,7 @@
 
 > **このファイルの位置づけ：** AI アプリケーションのセキュアな開発・運用のための Google のフレームワーク。OWASP が「何を攻撃されるか（リスクの技術的チェックリスト）」を提供するのに対し、SAIF は「どこを守るか・誰が守るか（パイプライン全体の設計指針）」を提供する。評価の対象範囲を決める際や、防御側の責任分担を整理する際の参照として使う。
 > ML OWASP Top 10 → `AI_Red_Teaming_Concepts.md`
-> LLM OWASP Top 10 → `Generative_AI/LLM_Attacks.md`
+> LLM OWASP Top 10 → `./Generative_AI/LLM_Attacks.md`
 
 ---
 
@@ -126,7 +126,7 @@ SAIF はリスクに対する緩和策（Control）を定義し、**モデル作
 ## 関連技術
 
 - ML OWASP Top 10 との対応表 → `./AI_Red_Teaming_Concepts.md`
-- LLM OWASP Top 10 との対応表 → `Generative_AI/LLM_Attacks.md`
+- LLM OWASP Top 10 との対応表 → `./Generative_AI/LLM_Attacks.md`
 - Data Poisoning の詳細 → `./Data_Attacks.md`
 - Model Poisoning / Model Source Tampering の詳細 → `./AI_Red_Teaming_Concepts.md`（ML10）
-- Sensitive Information Disclosure の詳細 → `Generative_AI/LLM_Attacks.md`（LLM02）
+- Sensitive Information Disclosure の詳細 → `./Generative_AI/LLM_Attacks.md`（LLM02）

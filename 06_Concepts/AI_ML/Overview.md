@@ -135,18 +135,18 @@ weighted avg       0.99      0.99      0.99     29704   ← 多数クラスの�
 
 ### 関連技術
 
-- 関連：教師あり学習・線形回帰 → `Supervised_Learning/Linear_Regression.md`
-- 関連：教師あり学習・決定木 → `Supervised_Learning/Decision_Trees.md`
-- 関連：教師あり学習・SVM → `Supervised_Learning/SVM.md`
-- 関連：教師あり学習・ナイーブベイズ → `Supervised_Learning/Naive_Bayes.md`
-- 関連：教師なし学習・クラスタリング → `Unsupervised_Learning/KMeans_Clustering.md`
-- 関連：教師なし学習・次元削減 → `Unsupervised_Learning/PCA.md`
-- 関連：教師なし学習・異常検知 → `Unsupervised_Learning/Anomaly_Detection.md`
-- 関連：強化学習・全体観 → `Reinforcement_Learning/RL_Overview.md`
-- 関連：強化学習・Q-Learning → `Reinforcement_Learning/Q_Learning.md`
-- 関連：強化学習・SARSA → `Reinforcement_Learning/SARSA.md`
-- 関連：深層学習・ニューラルネットワーク → `Deep_Learning/Neural_Networks.md`
-- 関連：深層学習・CNN → `Deep_Learning/CNN.md`
-- 関連：深層学習・RNN → `Deep_Learning/RNN.md`
-- 関連：生成 AI・LLM → `Generative_AI/LLM.md`
-- 関連：生成 AI・拡散モデル → `Generative_AI/Diffusion_Models.md`
+- 関連：教師あり学習・線形回帰 → `./Supervised_Learning/Linear_Regression.md`
+- 関連：教師あり学習・決定木 → `./Supervised_Learning/Decision_Trees.md`
+- 関連：教師あり学習・SVM → `./Supervised_Learning/SVM.md`
+- 関連：教師あり学習・ナイーブベイズ → `./Supervised_Learning/Naive_Bayes.md`
+- 関連：教師なし学習・クラスタリング → `./Unsupervised_Learning/KMeans_Clustering.md`
+- 関連：教師なし学習・次元削減 → `./Unsupervised_Learning/PCA.md`
+- 関連：教師なし学習・異常検知 → `./Unsupervised_Learning/Anomaly_Detection.md`
+- 関連：強化学習・全体観 → `./Reinforcement_Learning/RL_Overview.md`
+- 関連：強化学習・Q-Learning → `./Reinforcement_Learning/Q_Learning.md`
+- 関連：強化学習・SARSA → `./Reinforcement_Learning/SARSA.md`
+- 関連：深層学習・ニューラルネットワーク → `./Deep_Learning/Neural_Networks.md`
+- 関連：深層学習・CNN → `./Deep_Learning/CNN.md`
+- 関連：深層学習・RNN → `./Deep_Learning/RNN.md`
+- 関連：生成 AI・LLM → `./Generative_AI/LLM.md`
+- 関連：生成 AI・拡散モデル → `./Generative_AI/Diffusion_Models.md`

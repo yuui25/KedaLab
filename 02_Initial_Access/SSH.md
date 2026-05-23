@@ -2,7 +2,6 @@
 
 > **スコープ: 22 番ポート（または非標準 SSH ポート）の列挙〜接続取得まで**。バナー観察・認証方式列挙・ホスト鍵 fingerprint・アルゴリズム監査・既知バグ判定・認証突破・秘密鍵パスフレーズクラック・制限シェル脱出・取得後の Port Forwarding / pivot までを 1 ファイルで扱う。接続後の Linux 列挙・権限昇格・横展開（例: agent hijack / authorized_keys 書込・bash_history 痕跡）は `../03_Post_Access_Linux/Enumeration_Checklist.md` を参照。
 
-> **ブロック順序: Basic → 高難度** で並べてある。上から順に通して試すのが基本ワークフロー。
 
 ## 着火条件
 
@@ -443,5 +442,5 @@ ssh -J [USER1]@[HOP1]:22 [USER2]@[INTERNAL_TARGET]
 - 前：製品出荷時のデフォルト認証情報試行 → `Default_Credentials.md`
 - 後：シェル取得後の Linux 列挙・権限昇格・横展開 → `../03_Post_Access_Linux/Enumeration_Checklist.md`
 - 後：§11 SOCKS pivot 経由の内部ネットワーク列挙 → `../00_Playbook/Internal_LAN_Pentest_Flow.md`
-- 関連：他プロトコルでの認証情報使い回し → `Protocol_Exploitation.md`（FTP / Mail / WinRM 各セクション）
+- 関連：他プロトコルでの認証情報使い回し → `FTP.md` / `Protocol_Exploitation.md`（Mail / WinRM / Impacket exec 各セクション）
 - 関連：TLS バナーと同様の証明書/鍵からの組織推定軸 → `../01_Reconnaissance/TLS_Audit.md`

@@ -280,7 +280,7 @@ Federated Learning では学習データをサーバーに送信しない代わ�
 
 ## 関連技術
 
-- 異常検知モデルへの回避 → `Unsupervised_Learning/Anomaly_Detection.md`
-- 敵対的サンプル攻撃（推論時） → `Deep_Learning/Neural_Networks.md`
+- 異常検知モデルへの回避 → `./Unsupervised_Learning/Anomaly_Detection.md`
+- 敵対的サンプル攻撃（推論時） → `./Deep_Learning/Neural_Networks.md`
 - モデル評価指標（Precision/Recall の歪み方） → `./Overview.md`
 - サプライチェーン攻撃（モデル・ライブラリ含む全体像） → `./AI_Red_Teaming_Concepts.md`

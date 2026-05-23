@@ -28,7 +28,7 @@ msfvenom で生成したシェルコードに置き換えて権限昇格を行�
   - `searchsploit`（ペネトレ用Linuxディストリ標準）
   - `msfvenom`（Metasploit Framework 付属、ペネトレ用Linuxディストリ標準）
   - `nc`（netcat、標準搭載）
-  - `chisel`（ポートフォワーディング用 → `../../05_Tools_Reference/Chisel.md`）
+  - `chisel`（ポートフォワーディング用 → `../05_Tools_Reference/Chisel.md`）
 - オフライン環境: msfvenom は Metasploit Framework がインストールされていれば動作（オフライン可）
 
 ---
@@ -194,6 +194,6 @@ reg save HKLM\SYSTEM C:\Users\Public\system.bak
 ### 関連技術
 
 - 前：ローカルポートの発見（netstat） → `./Enumeration_Checklist.md`（Step 1.5）
-- 前：Chisel でポートフォワーディング → `../../05_Tools_Reference/Chisel.md`
-- 前：searchsploit で PoC を特定 → `../../05_Tools_Reference/Searchsploit.md`
+- 前：Chisel でポートフォワーディング → `../05_Tools_Reference/Chisel.md`
+- 前：searchsploit で PoC を特定 → `../05_Tools_Reference/Searchsploit.md`
 - 後：SAM ダンプで認証情報取得 → `./Credential_Dumping.md`

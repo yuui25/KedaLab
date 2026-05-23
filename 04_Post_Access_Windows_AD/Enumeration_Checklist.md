@@ -71,7 +71,7 @@ systeminfo | findstr /C:"OS Name" /C:"OS Version" /C:"Domain" /C:"System Type"
 3. **X（旧Twitter）** — CVE番号で検索。研究者が PoC を最速で公開する場
 4. **NVD** — `https://nvd.nist.gov/` で CPE と影響範囲を確認
 
-→ 詳細: `../../05_Tools_Reference/Searchsploit.md`（「Exploit-DB 以外の情報源と使い分け」セクション）
+→ 詳細: `../05_Tools_Reference/Searchsploit.md`（「Exploit-DB 以外の情報源と使い分け」セクション）
 
 ---
 
@@ -244,7 +244,7 @@ dir "C:\Program Files (x86)"
 ```
 
 ローカルにしか公開されていないサービスに脆弱なバージョンがある場合 → **ポートフォワーディングで手元に引き込んで攻撃する**
-→ Chisel を使ったポートフォワーディング: `../../05_Tools_Reference/Chisel.md`
+→ Chisel を使ったポートフォワーディング: `../05_Tools_Reference/Chisel.md`
 → Exploit-DB PoC を使った Buffer Overflow: `Buffer_Overflow_LocalService.md`
 
 ---
@@ -265,7 +265,7 @@ bloodhound-python -u [USER] -p '[PASSWORD]' -ns [DC_IP] -d [DOMAIN] -c All
 3. 「Find Principals with DCSync Rights」→ DCSync が可能なアカウント
 4. 現在のユーザー・所属グループが持つ ACE（アクセス制御エントリ）
 
-→ 詳細: `../../05_Tools_Reference/BloodHound.md`
+→ 詳細: `../05_Tools_Reference/BloodHound.md`
 
 ---
 
@@ -307,7 +307,7 @@ netexec ldap [IP] -u [USER] -p '[PASSWORD]' --kerberoasting output.txt
 netexec ldap [IP] -u [USER] -p '[PASSWORD]' --asreproast output.txt
 ```
 
-→ 詳細: `Kerberos_Attacks/Kerberoasting.md`, `Kerberos_Attacks/ASREPRoasting.md`
+→ 詳細: `./Kerberos_Attacks/Kerberoasting.md`, `./Kerberos_Attacks/ASREPRoasting.md`
 
 ---
 
@@ -319,7 +319,7 @@ smbclient //[IP]/SYSVOL -U '[DOMAIN]\[USER]%[PASSWORD]' -c "recurse ON; ls"
 
 認証済みユーザーとして SYSVOL にアクセスし、スクリプトに他ユーザーの認証情報が含まれていないか確認する。匿名アクセス時に見逃した内容も、認証済みなら追加で取れることがある。
 
-→ 詳細: `../../01_Reconnaissance/SMB_Enumeration.md`
+→ 詳細: `../01_Reconnaissance/SMB_Enumeration.md`
 
 ---
 
@@ -500,7 +500,7 @@ searchsploit [技術名] [バージョン]
 # Star数・コミット日時・README の前提条件を確認してから使う
 ```
 
-→ CVE の絞り込み基準・新しい OS 用の調べ方の詳細 → `../../05_Tools_Reference/Searchsploit.md`（「searchsploit が0件のときのフロー」）
+→ CVE の絞り込み基準・新しい OS 用の調べ方の詳細 → `../05_Tools_Reference/Searchsploit.md`（「searchsploit が0件のときのフロー」）
 
 **注意点・落とし穴：**
 
@@ -592,15 +592,15 @@ $etwpatch = [System.Runtime.InteropServices.Marshal]
 ---
 
 ## 関連技術
-- 前：WinRM シェルの取得 → `../../02_Initial_Access/Protocol_Exploitation.md`（WinRMセクション）
-- 前：パスワードスプレーで初期シェル取得 → `../../00_Playbook/Windows_AD_Attack_Flow.md`（Step 3.5）
-- 後：BloodHound で GenericAll が判明 → `ACE_Abuse/GenericAll.md`
-- 後：BloodHound で GenericWrite が判明 → `ACE_Abuse/GenericWrite.md`
-- 後：BloodHound で WriteDACL が判明 → `ACE_Abuse/WriteDACL.md`
-- 後：BloodHound で ForceChangePassword が判明 → `ACE_Abuse/ForcePasswordChange.md`
-- 後：SeMachineAccountPrivilege がある → `Delegation_Attacks/RBCD.md`
-- 後：SeEnableDelegationPrivilege がある → `Delegation_Attacks/Unconstrained.md`
-- 後：Kerberoastable アカウントがある → `Kerberos_Attacks/Kerberoasting.md`
-- 後：CVE の絞り込み・PoC の探し方 → `../../05_Tools_Reference/Searchsploit.md`
+- 前：WinRM シェルの取得 → `../02_Initial_Access/Protocol_Exploitation.md`（WinRMセクション）
+- 前：パスワードスプレーで初期シェル取得 → `../00_Playbook/Windows_AD_Attack_Flow.md`（Step 3.5）
+- 後：BloodHound で GenericAll が判明 → `./ACE_Abuse/GenericAll.md`
+- 後：BloodHound で GenericWrite が判明 → `./ACE_Abuse/GenericWrite.md`
+- 後：BloodHound で WriteDACL が判明 → `./ACE_Abuse/WriteDACL.md`
+- 後：BloodHound で ForceChangePassword が判明 → `./ACE_Abuse/ForcePasswordChange.md`
+- 後：SeMachineAccountPrivilege がある → `./Delegation_Attacks/RBCD.md`
+- 後：SeEnableDelegationPrivilege がある → `./Delegation_Attacks/Unconstrained.md`
+- 後：Kerberoastable アカウントがある → `./Kerberos_Attacks/Kerberoasting.md`
+- 後：CVE の絞り込み・PoC の探し方 → `../05_Tools_Reference/Searchsploit.md`
 - 後：UAC バイパスで SYSTEM に昇格後 → `./Privilege_Tokens.md`（SeImpersonate / Potato系）
 - 後：EDR がカーネルレベルで動作しており PS / EXE をすべてブロックする → `./BYOVD.md`

@@ -124,7 +124,7 @@ AI 固有の攻撃手法だけに注目すると、AI を組み込んだ Web ア
 | フレームワーク | 視点 | 主な用途 | 詳細 |
 |-------------|------|---------|------|
 | **ML OWASP Top 10** | 攻撃者目線・技術的リスクチェックリスト | MLシステムへの攻撃ベクターを特定する | このファイル（下記） |
-| **LLM OWASP Top 10** | 攻撃者目線・LLM固有リスクチェックリスト | LLMアプリへの攻撃ベクターを特定する | `Generative_AI/LLM_Attacks.md` |
+| **LLM OWASP Top 10** | 攻撃者目線・LLM固有リスクチェックリスト | LLMアプリへの攻撃ベクターを特定する | `./Generative_AI/LLM_Attacks.md` |
 | **Google SAIF** | 防御者目線・パイプライン全体の設計指針 | 評価スコープの分解・責任分担の整理 | `SAIF.md` |
 
 ---
@@ -347,7 +347,7 @@ Step 3: 特性に基づいて攻撃ペイロードを設計
 
 ## 関連技術
 
-- プロンプトインジェクション攻撃の原理 → `Generative_AI/LLM.md`
+- プロンプトインジェクション攻撃の原理 → `./Generative_AI/LLM.md`
 - 敵対的サンプル攻撃の原理（FGSM/PGD/Sparsity） → `./Adversarial_Examples.md`
 - データポイズニングの原理 → `./Data_Attacks.md`
-- 攻撃の対象となる検知システムの仕組み → `Unsupervised_Learning/Anomaly_Detection.md`
+- 攻撃の対象となる検知システムの仕組み → `./Unsupervised_Learning/Anomaly_Detection.md`

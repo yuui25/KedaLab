@@ -1,7 +1,7 @@
 # 敵対的サンプル攻撃（Adversarial Examples）
 
 > **このファイルの位置づけ：** ニューラルネットワークへの推論時攻撃の原理。人間には知覚できない微小な入力変化でモデルを意図的に誤分類させる手法群の共通基盤。勾配ベース攻撃とスパース攻撃の区別、ホワイトボックス／ブラックボックスの脅威モデルを把握していないと、各攻撃の条件判断ができない。
-> 前提知識 → `Deep_Learning/Neural_Networks.md`（勾配・誤差逆伝播の概念）
+> 前提知識 → `./Deep_Learning/Neural_Networks.md`（勾配・誤差逆伝播の概念）
 
 ---
 
@@ -259,7 +259,7 @@ x⁽ᵗ⁺¹⁾ = Proj_ε[ x⁽ᵗ⁾ + α × sign(∇ₓ J(x⁽ᵗ⁾, y)) ]
 
 ## 関連技術
 
-- 勾配・誤差逆伝播の概念 → `Deep_Learning/Neural_Networks.md`
-- 攻撃の対象となる検知システムの仕組み → `Unsupervised_Learning/Anomaly_Detection.md`
+- 勾配・誤差逆伝播の概念 → `./Deep_Learning/Neural_Networks.md`
+- 攻撃の対象となる検知システムの仕組み → `./Unsupervised_Learning/Anomaly_Detection.md`
 - 学習時を狙うデータポイズニング（推論時攻撃との区別） → `./Data_Attacks.md`
 - AIシステム全体の攻撃面分類 → `./AI_Red_Teaming_Concepts.md`

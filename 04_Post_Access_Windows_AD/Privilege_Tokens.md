@@ -397,5 +397,5 @@ takeown /F C:\Windows\System32\config\SAM /A
 - 前：IIS / MSSQL サービスアカウントとして初期シェル取得 → `../02_Initial_Access/MSSQL_Exploitation.md`
 - 後：取得した NTLM ハッシュで Pass-The-Hash → `./Credential_Dumping.md`
 - 後：DPAPI マスターキー → ブラウザ保存パスワード復号 → `./DPAPI_Browser_Creds.md`
-- 後：LSASS の Kerberos チケット → `Kerberos_Attacks/Pass_The_Ticket.md`
+- 後：LSASS の Kerberos チケット → `./Kerberos_Attacks/Pass_The_Ticket.md`
 - 後：取得したハッシュのクラック → `../05_Tools_Reference/Hashcat.md`

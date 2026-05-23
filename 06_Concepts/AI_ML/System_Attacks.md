@@ -1,6 +1,6 @@
 # ML システムコンポーネントへの攻撃
 
-> **このファイルの位置づけ：** ML ベースシステムの「System コンポーネント」（ハードウェア・OS・設定・デプロイ環境）を標的とした攻撃の原理と TTP をまとめる。`AI_Red_Teaming_Concepts.md` のコンポーネント分類における System 層の詳細ファイル。LLM 固有の DoS（Unbounded Consumption）は `Generative_AI/LLM_Attacks.md` を参照し、このファイルは ML 全般に適用されるシステム層攻撃を対象にする。
+> **このファイルの位置づけ：** ML ベースシステムの「System コンポーネント」（ハードウェア・OS・設定・デプロイ環境）を標的とした攻撃の原理と TTP をまとめる。`AI_Red_Teaming_Concepts.md` のコンポーネント分類における System 層の詳細ファイル。LLM 固有の DoS（Unbounded Consumption）は `./Generative_AI/LLM_Attacks.md` を参照し、このファイルは ML 全般に適用されるシステム層攻撃を対象にする。
 
 ---
 
@@ -47,7 +47,7 @@ ML モデルのデプロイは開発スピードが優先され、セキュリ�
 
 ## ML 固有のリソース枯渇攻撃
 
-> LLM 固有の DoS（コスト攻撃・サロゲートモデル学習への連鎖）→ `Generative_AI/LLM_Attacks.md`（LLM10）
+> LLM 固有の DoS（コスト攻撃・サロゲートモデル学習への連鎖）→ `./Generative_AI/LLM_Attacks.md`（LLM10）
 
 ### 着火条件
 
@@ -139,7 +139,7 @@ ML デプロイ環境で頻出する設定不備：
 
 ## 関連技術
 
-- LLM 固有の DoS・コスト攻撃（Unbounded Consumption）→ `Generative_AI/LLM_Attacks.md`（LLM10）
+- LLM 固有の DoS・コスト攻撃（Unbounded Consumption）→ `./Generative_AI/LLM_Attacks.md`（LLM10）
 - ML システムの全体的な攻撃面分類 → `./AI_Red_Teaming_Concepts.md`
 - パスワードスプレー（AD/SMB/SSH 環境） → `../../02_Initial_Access/Protocol_Exploitation.md`
 - モデル抽出（Model Extraction）→ `./AI_Red_Teaming_Concepts.md`（モデルコンポーネント評価セクション）

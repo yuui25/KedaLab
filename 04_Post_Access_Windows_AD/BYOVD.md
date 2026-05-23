@@ -131,7 +131,7 @@ ERROR 1275: ... driver could not be loaded  → ブロック（Blocklist / セ�
 2. 脆弱ドライバーの任意書き込み IOCTL を使って、コールバックポインタを NULL に書き換える
 3. 以降はプロセス生成・オブジェクトアクセスが EDR に通知されなくなる
 
-> **原理の詳細** → `../../06_Concepts/Windows_Standalone_vs_AD.md` （Kernel Callback の仕組みは現時点未記載。必要に応じて `06_Concepts/` に追加する）
+> **原理の詳細** → `../06_Concepts/Windows_Standalone_vs_AD.md` （Kernel Callback の仕組みは現時点未記載。必要に応じて `06_Concepts/` に追加する）
 
 ---
 

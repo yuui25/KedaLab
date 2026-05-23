@@ -61,12 +61,12 @@ OWASP Web Security Testing Guide v4.2 のテストカテゴリ・テストケー
 
 | WSTG ID | テスト項目 | kedalab ファイル |
 |---------|-----------|--------|
-| WSTG-ATHN-01 | Testing for Credentials Transported over an Encrypted Channel | `01_Reconnaissance/TLS_Audit.md` / `02_Initial_Access/Protocol_Exploitation.md`（FTP 平文） |
+| WSTG-ATHN-01 | Testing for Credentials Transported over an Encrypted Channel | `01_Reconnaissance/TLS_Audit.md` / `02_Initial_Access/FTP.md`（平文認証 / PCAP 抽出 / AUTH TLS 判定） |
 | WSTG-ATHN-02 | Testing for Default Credentials | `02_Initial_Access/Default_Credentials.md` |
 | WSTG-ATHN-03 | Testing for Weak Lock Out Mechanism | `02_Initial_Access/Account_Lockout_Recon.md` |
 | WSTG-ATHN-06 | Testing for Browser Cache Weaknesses | （手動確認・kedalab 化候補） |
 | WSTG-ATHN-07 | Testing for Weak Password Policy | `02_Initial_Access/Account_Lockout_Recon.md`（FGPP / msDS-PasswordSettings） |
-| WSTG-ATHN-10 | Testing for Weaker Authentication in Alternative Channel | `02_Initial_Access/Protocol_Exploitation.md`（SSH / FTP / WinRM） / `02_Initial_Access/Web_Vulnerabilities/OAuth_Attacks.md`（ソーシャルログイン経路の信頼境界破り） |
+| WSTG-ATHN-10 | Testing for Weaker Authentication in Alternative Channel | `02_Initial_Access/SSH.md` / `02_Initial_Access/FTP.md` / `02_Initial_Access/Protocol_Exploitation.md`（WinRM / Mail） / `02_Initial_Access/Web_Vulnerabilities/OAuth_Attacks.md`（ソーシャルログイン経路の信頼境界破り） |
 
 ---
 

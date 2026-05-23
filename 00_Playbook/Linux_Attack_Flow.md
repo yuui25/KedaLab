@@ -142,7 +142,7 @@ Linux と確定した上でこのファイルのStep 1以降を進める。
 - ファイルがあればダウンロードして内容確認
 - **FTPは平文通信** → ネットワークキャプチャファイル（PCAP）があれば認証情報が含まれている可能性
 
-→ 詳細: `../02_Initial_Access/Protocol_Exploitation.md`
+→ 詳細: `../02_Initial_Access/FTP.md`（バナー観察〜匿名取得〜書込判定〜辞書攻撃〜既知 CVE まで）
 
 ---
 
@@ -168,7 +168,7 @@ Step 2の列挙結果を元に、「今の状況でどの手法を試すか」�
 | stolen cookie で管理画面に入れた → 管理画面に input フォームがある | 管理者専用APIにコマンドインジェクションがある典型パターン | `../02_Initial_Access/Web_Vulnerabilities/Command_Injection.md` |
 | バイナリ・設定ファイルが取得できた | strings / 逆コンパイル → 認証情報 | `../02_Initial_Access/Binary_Analysis.md` |
 | PCAPファイルが取得できた | tshark で平文認証情報を抽出 | `../02_Initial_Access/Credential_Discovery.md` |
-| FTPに匿名ログインできた | ダウンロードしたファイルの内容確認・認証情報探索 | `../02_Initial_Access/Protocol_Exploitation.md` |
+| FTPに匿名ログインできた | ダウンロードしたファイルの内容確認・認証情報探索 | `../02_Initial_Access/FTP.md` |
 | SSH のバージョンが古い | SSH 脆弱性 / ユーザー列挙 | `../02_Initial_Access/SSH.md` |
 
 ---

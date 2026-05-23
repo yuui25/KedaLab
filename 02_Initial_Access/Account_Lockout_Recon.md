@@ -388,6 +388,7 @@ done   # [Attacker]
 - 前：`--pass-pol` の詳細 → `../05_Tools_Reference/Netexec.md`
 - 後：ポリシー確定後にデフォルト認証情報試行へ進む → `./Default_Credentials.md`
 - 後：SSH の試行設計に反映 → `./SSH.md`
-- 後：WinRM / FTP の試行設計に反映 → `./Protocol_Exploitation.md`
+- 後：FTP の試行設計に反映 → `./FTP.md`
+- 後：WinRM の試行設計に反映 → `./Protocol_Exploitation.md`
 - 後：取得済みパスワードの使い回し確認時、試行回数制御に使う → `./Credential_Discovery.md`
 - 後：パスワードスプレー実行時の `--continue-on-success` / sleep 設計 → `../05_Tools_Reference/Netexec.md`

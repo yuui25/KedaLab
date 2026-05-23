@@ -38,7 +38,7 @@
 | LDAP 匿名バインド / namingcontexts 確認 | Reconnaissance | `01_Reconnaissance/LDAP_Enumeration.md` |
 | GetADUsers.py によるドメインユーザー高速列挙（PasswordLastSet / LastLogon）| Reconnaissance | `05_Tools_Reference/Impacket_Suite.md` |
 | ファイルメタデータ解析（exiftool / docProps/core.xml）によるユーザー名・ドメイン名取得 | Reconnaissance | `01_Reconnaissance/Metadata_Analysis.md` |
-| FTP 匿名アクセス・再帰ダウンロード（wget -m ftp://）| Reconnaissance | `02_Initial_Access/Protocol_Exploitation.md` |
+| FTP §3 匿名アクセス・再帰ダウンロード（wget -m / lftp mirror / curl）| Reconnaissance | `02_Initial_Access/FTP.md` |
 | OLE2 / .msg ファイル解析・変換（msgconvert / extract-msg）| Reconnaissance | `02_Initial_Access/Binary_Analysis.md` |
 | TLS プロトコル/暗号スイート列挙（nmap ssl-enum-ciphers / testssl.sh / sslyze） | Reconnaissance | `01_Reconnaissance/TLS_Audit.md` |
 | 証明書 CN / SAN / Issuer からの組織・製品・FQDN 推定 | Reconnaissance | `01_Reconnaissance/TLS_Audit.md` |
@@ -145,8 +145,15 @@
 | バイナリ実行（Wine）＋ネットワークキャプチャ（tcpdump）によるクレデンシャル取得 | Initial Access | `02_Initial_Access/Binary_Analysis.md` |
 | KeePass データベース（.kdbx）のクラック（keepass2john + hashcat / john）| Initial Access | `02_Initial_Access/Credential_Discovery.md` |
 | パスワード命名パターン推測（サービス名＋年号型）| Initial Access | `02_Initial_Access/Binary_Analysis.md` |
-| FTP匿名ログイン | Initial Access | `02_Initial_Access/Protocol_Exploitation.md` |
-| FTP平文通信からの認証情報取得 | Initial Access | `02_Initial_Access/Protocol_Exploitation.md` |
+| FTP §1 バナー観察 / バージョン判定（nmap -sV / nc 21 / FEAT） | Initial Access | `02_Initial_Access/FTP.md` |
+| FTP §2 匿名ログイン試行 + 機能列挙（ftp-anon / SYST / HELP / STAT） | Initial Access | `02_Initial_Access/FTP.md` |
+| FTP §4 取得後の精査順序（file / メタデータ / テキスト grep / 認証情報探索） | Initial Access | `02_Initial_Access/FTP.md` |
+| FTP §5 書き込み可能性の確認（put / curl -T / DocumentRoot 経由 webshell 経路） | Initial Access | `02_Initial_Access/FTP.md` |
+| FTP §6 PCAP からの平文認証情報抽出（tshark / USER + PASS / ftp-data export） | Initial Access | `02_Initial_Access/FTP.md` |
+| FTP §7 パスワード認証突破（hydra / medusa / ncrack / nmap ftp-brute）| Initial Access | `02_Initial_Access/FTP.md` |
+| FTP §8.1 vsftpd 2.3.4 backdoor (CVE-2011-2523) — `:)` スマイリーで TCP/6200 root シェル | Initial Access | `02_Initial_Access/FTP.md` |
+| FTP §8.2 ProFTPD 1.3.5 mod_copy (CVE-2015-3306) — SITE CPFR/CPTO 任意ファイルコピー | Initial Access | `02_Initial_Access/FTP.md` |
+| FTP §9 FTP Bounce 攻撃（PORT command 経由の踏み台スキャン・古典・finding 用）| Initial Access | `02_Initial_Access/FTP.md` |
 | SSH §1 バナー観察と OS / ディストリ推定（nmap -sV / nc）| Initial Access | `02_Initial_Access/SSH.md` |
 | SSH §1 CVE-2024-6387 (regreSSHion) バージョン判定と注意点（OpenSSH 8.5p1〜9.7p1 on glibc Linux・race condition pre-auth RCE） | Initial Access | `02_Initial_Access/SSH.md` |
 | SSH §2 対応認証方式の列挙（`ssh -v -o PreferredAuthentications=none` で `publickey,password,keyboard-interactive,gssapi-with-mic` 判定） | Initial Access | `02_Initial_Access/SSH.md` |

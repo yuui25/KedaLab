@@ -95,7 +95,7 @@ ldapsearch ... "(objectClass=user)" sAMAccountName info description \
   | grep -i "info\|description"
 ```
 
-→ 詳細: `../../01_Reconnaissance/LDAP_Enumeration.md`
+→ 詳細: `../01_Reconnaissance/LDAP_Enumeration.md`
 
 ### 注意点・落とし穴
 - `info` は GUI の「説明」欄とは別の目立たないフィールド。見落とされやすい分だけ平文パスワードが残りやすい
@@ -174,7 +174,7 @@ hash_bytes = binascii.unhexlify(hash_hex)
 print(f'sha256:10000:{base64.b64encode(salt).decode()}:{base64.b64encode(hash_bytes).decode()}')
 ```
 
-→ 変換後ハッシュのクラック: `../../05_Tools_Reference/Hashcat.md`（mode 10900）
+→ 変換後ハッシュのクラック: `../05_Tools_Reference/Hashcat.md`（mode 10900）
 
 ### 注意点・落とし穴
 - ハッシュが HEX 文字列で保存されている場合、Hashcat に渡す前に base64 形式に変換が必要（アプリ依存）
@@ -198,7 +198,7 @@ print(f'sha256:10000:{base64.b64encode(salt).decode()}:{base64.b64encode(hash_by
 
 `userName` 属性がドメインアカウントを指している場合（例: `DOMAIN\SVC_xxx`）、そのアカウントのドメインパスワードが得られる。ローカルアカウントを指している場合も、共通化されたローカル管理者パスワードである可能性が高く、ドメイン内の他端末への横展開で有効なケースが多い。
 
-> 原理（なぜ AES 暗号化されていても復号できるのか・MS14-025 後の挙動・対象XMLの範囲） → `../../06_Concepts/GPP_Credential.md`
+> 原理（なぜ AES 暗号化されていても復号できるのか・MS14-025 後の挙動・対象XMLの範囲） → `../06_Concepts/GPP_Credential.md`
 
 ### 手順
 
@@ -217,7 +217,7 @@ gpp-decrypt '[cpassword 属性の値]'
 - 取得したアカウントが低権限でも、そのアカウントで LDAP・SMB・BloodHound の認証が通るため、AD全体の列挙が一気に進む
 - → 取得した認証情報の確認手順：このファイル末尾「認証情報を取得したら必ず試すこと」を参照
 
-→ 詳細な取得手順: `../../01_Reconnaissance/SMB_Enumeration.md`（GPPセクション）
+→ 詳細な取得手順: `../01_Reconnaissance/SMB_Enumeration.md`（GPPセクション）
 
 ---
 
@@ -478,11 +478,11 @@ netexec smb [IP] -u users.txt -p '[PASSWORD]' --continue-on-success
 ---
 
 ## 関連技術
-- 前：PCAP から FTP 認証情報 → 同じ認証情報を SSH で試す（`./Protocol_Exploitation.md` FTP セクション + `./SSH.md`）
+- 前：PCAP から FTP 認証情報 → 同じ認証情報を SSH で試す（`./FTP.md` §6 + `./SSH.md`）
 - 関連：取得した認証情報を SSH で試す前に、SSH の対応認証方式を確認（`publickey` のみなら password cred は通らない） → `./SSH.md`
 - 前：LDAP認証情報でLDAPにアクセス → `../01_Reconnaissance/LDAP_Enumeration.md`
 - 前：バイナリから認証情報 → `./Binary_Analysis.md`
-- 前：Webアプリのファイル読み取りでDBを取得 → `Web_Vulnerabilities/Path_Traversal.md`
+- 前：Webアプリのファイル読み取りでDBを取得 → `./Web_Vulnerabilities/Path_Traversal.md`
 - 前：`.env` / `.git/` / `.htpasswd` / Spring actuator/env / heapdump 等の誤公開から認証情報を取得した直後 → `../01_Reconnaissance/Exposed_Files.md`
 - 前：GPP cpassword の取得手順 → `../01_Reconnaissance/SMB_Enumeration.md`（GPP セクション）
 - 後：Grafana ハッシュのクラック → `../05_Tools_Reference/Hashcat.md`

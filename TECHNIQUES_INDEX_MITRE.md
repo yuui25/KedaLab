@@ -137,12 +137,12 @@ ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
 | T1555.004 | Credentials from Password Stores: Windows Credential Manager | `04_Post_Access_Windows_AD/DPAPI_Browser_Creds.md` |
 | T1555.005 | Credentials from Password Stores: Password Managers | `02_Initial_Access/Credential_Discovery.md`（KeePass） |
 | T1552.001 | Unsecured Credentials: Credentials In Files | `02_Initial_Access/Credential_Discovery.md`（.env / スクリプト埋め込み） |
-| T1552.004 | Unsecured Credentials: Private Keys | `02_Initial_Access/Credential_Discovery.md` / `02_Initial_Access/Protocol_Exploitation.md`（SSH 鍵） |
+| T1552.004 | Unsecured Credentials: Private Keys | `02_Initial_Access/Credential_Discovery.md` / `02_Initial_Access/SSH.md`（§5 鍵接続 / §8 ssh2john パスフレーズクラック / §10 Debian PRNG 弱鍵） |
 | T1552.006 | Unsecured Credentials: Group Policy Preferences | `01_Reconnaissance/SMB_Enumeration.md` / `02_Initial_Access/Credential_Discovery.md` |
 | T1557.001 | Adversary-in-the-Middle: LLMNR/NBT-NS Poisoning and SMB Relay | `04_Post_Access_Windows_AD/NTLM_Relay/Responder.md` / `04_Post_Access_Windows_AD/NTLM_Relay/ntlmrelayx.md` |
 | T1557.003 | Adversary-in-the-Middle: DHCP Spoofing | `04_Post_Access_Windows_AD/NTLM_Relay/mitm6.md` |
 | T1649 | Steal or Forge Authentication Certificates | `04_Post_Access_Windows_AD/AD_CS/*`（ESC1〜15 全般） |
-| T1212 | Exploitation for Credential Access | `02_Initial_Access/Protocol_Exploitation.md`（SSH CVE-2018-15473） |
+| T1212 | Exploitation for Credential Access | `02_Initial_Access/SSH.md`（§9 CVE-2018-15473 ユーザー列挙） |
 
 ---
 

@@ -131,7 +131,7 @@ nc -lvnp [PORT]
 |---|---|
 | Proxy 送信も `resolveProxyClass()` でブロックされる | 両経路が保護済み → この手法は使えない |
 | ガジェットライブラリがクラスパスにない | クラスロードは確認できても RCE に繋がらない → SSRF / 情報漏洩系の影響評価に切り替える |
-| エンドポイントがバイト列を受け付けない | プロトコルが違う（XML / JSON 等）→ `02_Initial_Access/Web_Vulnerabilities/XXE.md` や `Deserialization_Other.md` を確認 |
+| エンドポイントがバイト列を受け付けない | プロトコルが違う（XML / JSON 等）→ `XXE.md` や `Deserialization_Other.md` を確認 |
 
 ---
 

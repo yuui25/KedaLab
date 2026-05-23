@@ -445,7 +445,7 @@ dnSpy メニュー: File → Save Module → 保存先を指定
 
 ## 関連技術
 - 前：SMB 共有からバイナリを取得した → `../01_Reconnaissance/SMB_Enumeration.md`
-- 前：FTP からファイルを取得した → `./Protocol_Exploitation.md`（FTP セクション）
+- 前：FTP からファイルを取得した → `./FTP.md`
 - 前：取得ファイルのメタデータ確認 → `../01_Reconnaissance/Metadata_Analysis.md`
 - 後：復号・キャプチャした認証情報の使い回し確認 → `./Credential_Discovery.md`
 - 後：LDAP 接続先が判明した → `../01_Reconnaissance/LDAP_Enumeration.md`

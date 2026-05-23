@@ -160,9 +160,9 @@ impacket-secretsdump -sam sam.hive -system system.hive LOCAL
 ---
 
 ## 関連技術
-- 前：RBCD で Admin TGS を取得 → `Delegation_Attacks/RBCD.md`
-- 前：Unconstrained Delegation で DC$ TGT を取得 → `Delegation_Attacks/Unconstrained.md`
-- 後：取得したチケットの使用方法 → `Kerberos_Attacks/Pass_The_Ticket.md`
+- 前：RBCD で Admin TGS を取得 → `./Delegation_Attacks/RBCD.md`
+- 前：Unconstrained Delegation で DC$ TGT を取得 → `./Delegation_Attacks/Unconstrained.md`
+- 後：取得したチケットの使用方法 → `./Kerberos_Attacks/Pass_The_Ticket.md`
 - 後：取得したハッシュ・パスワードの使い回し確認 → `../02_Initial_Access/Credential_Discovery.md`
 - 後：ハッシュクラック → `../05_Tools_Reference/Hashcat.md`
 - 後：LAPS 値の取得 → `./LAPS_Dump.md`
