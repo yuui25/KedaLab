@@ -45,7 +45,7 @@ Playbook が「今どこにいるか」と「次に何をすべきか」を繋�
 | Webシステムが疑われる（Web診断スコープ・脆弱性の網羅的洗い出し） | `00_Playbook/Web_Vuln_Flow.md` |
 | Linuxと判明している | `00_Playbook/Linux_Attack_Flow.md` |
 | Windowsと判明している | `00_Playbook/Windows_AD_Attack_Flow.md` |
-| 内部 VLAN に接続済み（認証情報あり・なし問わず、内部ペネトレ開始時） | `00_Playbook/Internal_LAN_Pentest_Flow.md` |
+| 内部 VLAN に接続済み（認証情報あり・なし問わず、内部 LAN テスト開始時） | `00_Playbook/Internal_LAN_Pentest_Flow.md` |
 
 ### Step 2 — Playbook を上から順に読む
 
@@ -124,7 +124,7 @@ IPだけ渡された状態からゴール（権限昇格・機密情報取得）
 | Windows ADシェルを取った直後 | `04_Post_Access_Windows_AD/Enumeration_Checklist.md` |
 | 管理者認証情報があるが WinRM (5985/5986) が閉じている | `02_Initial_Access/Protocol_Exploitation.md`（Impacket exec ツール群セクション） |
 | BloodHoundで権限が判明した | `04_Post_Access_Windows_AD/ACE_Abuse/` |
-| 内部 VLAN に接続済み（認証情報あり・なし問わず、内部ペネトレ全体フローを確認したい） | `00_Playbook/Internal_LAN_Pentest_Flow.md` |
+| 内部 VLAN に接続済み（認証情報あり・なし問わず、内部 LAN 攻撃の全体フローを確認したい） | `00_Playbook/Internal_LAN_Pentest_Flow.md` |
 | コマンドのオプションを忘れた | `05_Tools_Reference/` |
 | 手順は知っているが「なぜ効くか」がわからない | `06_Concepts/` の該当ファイル |
 | 環境が違って手順が通用しない | `06_Concepts/` で原理を確認し、条件を読み解く |
