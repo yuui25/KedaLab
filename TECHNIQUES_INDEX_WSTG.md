@@ -3,7 +3,7 @@
 OWASP Web Security Testing Guide v4.2 のテストカテゴリ・テストケース ID から kedalab の該当ファイルを引くための横断インデックス。
 
 **主インデックスではない。** 技術名から引きたいときは [`TECHNIQUES_INDEX.md`](./TECHNIQUES_INDEX.md) を使う。
-本ファイルは「Web ペネトレ案件で WSTG カバレッジを示したい」「報告書に WSTG ID を併記したい」「顧客が WSTG ID で要件指定してきた」場合の参照用。
+本ファイルは「Web ペネトレテストで WSTG カバレッジを示したい」「報告書に WSTG ID を併記したい」「対象組織が WSTG ID で要件指定してきた」場合の参照用。
 
 公式: https://owasp.org/www-project-web-security-testing-guide/v42/
 
@@ -13,11 +13,11 @@ OWASP Web Security Testing Guide v4.2 のテストカテゴリ・テストケー
 
 | 用途 | 引き方 |
 |------|-------|
-| Web ペネトレ案件のテスト項目を WSTG に沿って網羅したい | カテゴリ別に kedalab ファイルが揃っているか確認 |
+| Web ペネトレテストのテスト項目を WSTG に沿って網羅したい | カテゴリ別に kedalab ファイルが揃っているか確認 |
 | 報告書に WSTG-INPV-05 のような ID 併記したい | 該当手順実施後、本表で kedalab ファイル → WSTG ID を逆引き |
-| 顧客 RFP に「WSTG-ATHN を全項目」とある | 該当カテゴリの行から kedalab ファイルへ飛ぶ |
+| 対象組織 RFP に「WSTG-ATHN を全項目」とある | 該当カテゴリの行から kedalab ファイルへ飛ぶ |
 
-> **網羅していない領域の扱い**: WSTG-BUSLOGIC（ビジネスロジック）、WSTG-APIT（API テスト）等は kedalab の現スコープ外。手動テスト・案件個別対応とする。
+> **網羅していない領域の扱い**: WSTG-BUSLOGIC（ビジネスロジック）、WSTG-APIT（API テスト）等は kedalab の現スコープ外。手動テスト・スコープ個別対応とする。
 
 ---
 

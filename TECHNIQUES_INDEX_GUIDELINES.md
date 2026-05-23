@@ -3,7 +3,7 @@
 NIST SP 800-115 / PTES の章・フェーズから kedalab の該当ファイルを引くための横断インデックス。
 
 **主インデックスではない。** 技術名から引きたいときは [`TECHNIQUES_INDEX.md`](./TECHNIQUES_INDEX.md) を使う。
-本ファイルは「ペネトレ全体プロセスをガイドラインに沿って確認したい」「報告書にガイドライン参照を併記したい」「顧客 RFP にガイドライン名指定がある」場合の参照用。
+本ファイルは「ペネトレ全体プロセスをガイドラインに沿って確認したい」「報告書にガイドライン参照を併記したい」「対象組織 RFP にガイドライン名指定がある」場合の参照用。
 
 ガイドライン自体の概要・使い分けは [`06_Concepts/Pentest_Guidelines_Guide.md`](./06_Concepts/Pentest_Guidelines_Guide.md) を参照。
 
@@ -15,7 +15,7 @@ NIST SP 800-115 / PTES の章・フェーズから kedalab の該当ファイル
 |------|-------|
 | ガイドラインに沿ってテスト項目の網羅を確認したい | 各章別セクションで kedalab 対応ファイルが揃っているか確認 |
 | 報告書に NIST SP 800-115 §4.2 / PTES Intelligence Gathering のような参照を併記したい | 該当手順実施後、本表で kedalab ファイル → 章/フェーズを逆引き |
-| 顧客要件に「NIST SP 800-115 準拠」「PTES に沿った実施」とある | 該当章・フェーズの行から kedalab ファイルへ飛ぶ |
+| 対象組織要件に「NIST SP 800-115 準拠」「PTES に沿った実施」とある | 該当章・フェーズの行から kedalab ファイルへ飛ぶ |
 | kedalab がカバーしない領域を把握したい | 各表の「kedalab 対象外」マーク付き行を参照 |
 
 ---
@@ -30,7 +30,7 @@ PDF: https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-115.p
 
 | 節 | テスト項目 | kedalab ファイル |
 |----|---------|--------|
-| 3.1 | Documentation Review | kedalab 対象外（文書レビューは案件依存）|
+| 3.1 | Documentation Review | kedalab 対象外（文書レビューはスコープ依存）|
 | 3.2 | Log Review | kedalab 対象外（防御側手法）|
 | 3.3 | Ruleset Review | kedalab 対象外（防御側手法）|
 | 3.4 | System Configuration Review | 関連: [`01_Reconnaissance/Exposed_Files.md`](./01_Reconnaissance/Exposed_Files.md)（設定誤公開）|
@@ -71,7 +71,7 @@ PDF: https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-115.p
 | 7.1 | Coordination | 各 Playbook 冒頭（[`00_Playbook/External_Service_Recon_Flow.md`](./00_Playbook/External_Service_Recon_Flow.md) 等の事前合意確認）|
 | 7.2 | Assessing | [`00_Playbook/`](./00_Playbook/) 全 Playbook（実施作業）|
 | 7.3 | Analysis | kedalab 対象外（報告書作成領域）|
-| 7.4 | Data Handling（Collection/Storage/Transmission/Destruction）| kedalab 対象外（案件運用ポリシー領域）|
+| 7.4 | Data Handling（Collection/Storage/Transmission/Destruction）| kedalab 対象外（テスト運用ポリシー領域）|
 
 ### §8 Post-Testing Activities（実施後活動）
 
@@ -96,7 +96,7 @@ Technical Guidelines: http://www.pentest-standard.org/index.php/PTES_Technical_G
 |---|---------|------------|
 | 1 | Pre-engagement Interactions | [`06_Concepts/Pentest_Fundamentals.md`](./06_Concepts/Pentest_Fundamentals.md)（事前合意項目） |
 | 2 | Intelligence Gathering | Technical Guidelines セクション表（後述）|
-| 3 | Threat Modeling | kedalab 対象外（攻撃シナリオ設計は案件個別）|
+| 3 | Threat Modeling | kedalab 対象外（攻撃シナリオ設計はスコープ個別）|
 | 4 | Vulnerability Analysis | Technical Guidelines セクション表（後述）|
 | 5 | Exploitation | Technical Guidelines セクション表（後述）|
 | 6 | Post Exploitation | Technical Guidelines セクション表（後述）|
@@ -171,12 +171,12 @@ NIST SP 800-115 と PTES のフェーズ対応関係：
 
 | 領域 | 該当章・フェーズ | 代替参照 |
 |------|----------------|---------|
-| 文書・ログ・設定レビュー（防御側）| NIST §3.1〜§3.4 | 案件個別対応 |
-| Wireless Scanning | NIST §4.4 / PTES RF | 案件個別対応 |
+| 文書・ログ・設定レビュー（防御側）| NIST §3.1〜§3.4 | スコープ個別対応 |
+| Wireless Scanning | NIST §4.4 / PTES RF | スコープ個別対応 |
 | Social Engineering 運用 | NIST §5.3 / PTES Covert | [`02_Initial_Access/Social_Engineering.md`](./02_Initial_Access/Social_Engineering.md)（限定的）|
-| Threat Modeling | PTES Phase 3 | 案件個別対応 |
+| Threat Modeling | PTES Phase 3 | スコープ個別対応 |
 | 評価計画策定（事務・契約）| NIST §6 大部分 | [`06_Concepts/Pentest_Fundamentals.md`](./06_Concepts/Pentest_Fundamentals.md) |
-| Data Handling 運用 | NIST §7.4 | 案件運用ポリシー |
+| Data Handling 運用 | NIST §7.4 | テスト運用ポリシー |
 | 報告書作成 | NIST §8 / PTES Reporting | [`06_Concepts/CVSS_Scoring.md`](./06_Concepts/CVSS_Scoring.md)（スコア表現のみ）|
 
 これらが必要な場合は手動対応、または他ガイドライン（OWASP WSTG・MITRE ATT&CK）を併用する。

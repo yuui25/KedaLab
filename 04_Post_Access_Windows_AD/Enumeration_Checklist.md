@@ -256,7 +256,7 @@ dir "C:\Program Files (x86)"
 ```bash
 # [Attacker] 未実行の場合のみ。テスター端末から実行
 bloodhound-python -u [USER] -p '[PASSWORD]' -ns [DC_IP] -d [DOMAIN] -c All
-# [DC_IP] は単一ホスト案件では [IP] と同じ。AD が複数DCで分散している場合のみ DC のIP を別途指定する
+# [DC_IP] は単一ホスト構成では [IP] と同じ。AD が複数DCで分散している場合のみ DC のIP を別途指定する
 ```
 
 **BloodHound で確認すべき項目（GUI で）：**
@@ -587,7 +587,7 @@ $etwpatch = [System.Runtime.InteropServices.Marshal]
 | `amsiInitFailed` パッチ | EDR「AMSI bypass attempt」/ Sysmon Event ID 10（PS への自己プロセスアクセス） | 高（書面合意必須） |
 | ETW パッチ | EDR「ETW tampering」/ Sysmon Event ID 8（CreateRemoteThread to ntdll.dll） | 最高（本番では原則禁止） |
 
-**本番での結論：** AMSI が壁になる場合は、まず **PowerShell v2 Downgrade** を試みる。それも使えない環境（PS v2 削除済み・Defender が v2 も監視）では、**ツール選択を変える**（PoC を C# バイナリにコンパイルして直接 EXE 実行 → AMSI は PS スクリプトを対象とするため）か、**実施範囲をクライアントに再確認**する。
+**本番での結論：** AMSI が壁になる場合は、まず **PowerShell v2 Downgrade** を試みる。それも使えない環境（PS v2 削除済み・Defender が v2 も監視）では、**ツール選択を変える**（PoC を C# バイナリにコンパイルして直接 EXE 実行 → AMSI は PS スクリプトを対象とするため）か、**実施範囲を対象組織に再確認**する。
 
 ---
 

@@ -3,7 +3,7 @@
 MITRE ATT&CK Enterprise Matrix の Tactic / Technique ID から kedalab の該当ファイルを引くための横断インデックス。
 
 **主インデックスではない。** 技術名から引きたいときは [`TECHNIQUES_INDEX.md`](./TECHNIQUES_INDEX.md) を使う。
-本ファイルは「報告書に ATT&CK ID を併記したい」「ATT&CK Tactic 軸でカバレッジを確認したい」「顧客が提示した Technique ID から該当手順を引きたい」場合の参照用。
+本ファイルは「報告書に ATT&CK ID を併記したい」「ATT&CK Tactic 軸でカバレッジを確認したい」「対象組織が提示した Technique ID から該当手順を引きたい」場合の参照用。
 
 公式: https://attack.mitre.org/
 ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
@@ -19,7 +19,7 @@ ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
 | 用途 | 引き方 |
 |------|-------|
 | 報告書に Technique ID を併記したい | 該当手順を実施した後、本表で kedalab ファイル → ATT&CK ID を逆引き |
-| 顧客の RFP に「ATT&CK T1558.003 を扱えること」とある | 本表の T1558.003 行から kedalab ファイルへ飛ぶ |
+| 対象組織の RFP に「ATT&CK T1558.003 を扱えること」とある | 本表の T1558.003 行から kedalab ファイルへ飛ぶ |
 | ATT&CK Tactic 軸でテストカバレッジを示したい | Tactic 別セクションの kedalab 対応ファイル数を集計 |
 
 ---

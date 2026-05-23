@@ -205,8 +205,8 @@ impacket-secretsdump \
   - ✅ 追加した DNS レコードの削除（`dnstool.py --action remove`）
   - ✅ 追加した SPN の削除（`addspn.py --remove`）
   - ✅ Unconstrained Delegation 属性のクリア（`Set-ADComputer -TrustedForDelegation $False`）
-  - ✅ `/tmp/loot/` 配下にキャプチャしたチケットファイル（`.ccache`）の暗号化保管 → 案件終了時破棄
-- **取得情報の取扱**: DC$ TGT は最高機密扱い。暗号化保管、案件終了時破棄
+  - ✅ `/tmp/loot/` 配下にキャプチャしたチケットファイル（`.ccache`）の暗号化保管 → テスト完了時破棄
+- **取得情報の取扱**: DC$ TGT は最高機密扱い。暗号化保管、テスト完了時破棄
 - **演習環境での扱い**: 制約なし（HTB / OSCP 等は本セクション全項目をスキップしてよい）
 
 ---

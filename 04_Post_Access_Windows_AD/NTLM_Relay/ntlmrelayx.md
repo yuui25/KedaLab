@@ -124,8 +124,8 @@ ntlmrelayx.py \
   --add-computer [CASE_ID]_RELAY$ [STRONG_MACHINE_PASSWORD]
 ```
 
-> `[CASE_ID]_RELAY$` は案件識別子コメントマーカー方式の命名（原状回復時に grep で識別できる）。
-> 作成したマシンアカウントは案件終了時に必ず削除する。
+> `[CASE_ID]_RELAY$` はテスト識別子コメントマーカー方式の命名（原状回復時に grep で識別できる）。
+> 作成したマシンアカウントはテスト完了時に必ず削除する。
 
 ```bash
 # 作成したマシンアカウントの削除（原状回復）
@@ -167,7 +167,7 @@ python3 PKINITtools/getnthash.py \
 > 原理 → Shadow Credentials は msDS-KeyCredentialLink 属性にテスター生成の公開鍵を書き込み、
 > PKINIT（証明書ベース Kerberos）でそのマシンアカウントの TGT を取得する手法。
 
-> **原状回復**：追加した KeyCredential は案件終了時に削除する。
+> **原状回復**：追加した KeyCredential はテスト完了時に削除する。
 > `bloodyAD` または `pywhisker` の `--action remove` で削除可能。
 
 ---
@@ -318,7 +318,7 @@ ntlmrelayx.py \
 ## 注意点・落とし穴
 
 - **Responder の SMB/HTTP が On のまま ntlmrelayx を起動しない**：ポート 445/80 の競合で両方が機能不全になる
-- **`--add-computer` で作成したマシンアカウントは必ず削除する**：AD のマシンアカウント数の上限（デフォルトで一般ユーザーは10台）を消費する。案件識別子コメントマーカー方式でマシンアカウント名を命名しておくと削除漏れを防げる
+- **`--add-computer` で作成したマシンアカウントは必ず削除する**：AD のマシンアカウント数の上限（デフォルトで一般ユーザーは10台）を消費する。テスト識別子コメントマーカー方式でマシンアカウント名を命名しておくと削除漏れを防げる
 - **Shadow Credentials の削除漏れはバックドアになる**：`msDS-KeyCredentialLink` にテスター生成の公開鍵が残ると、誰でも対象マシンの TGT を取得できる状態になる
 - **RBCD 設定の削除漏れも同様**：`msDS-AllowedToActOnBehalfOfOtherIdentity` に残ったエントリはバックドア権限になる
 - **ESC8 は AD CS のネットワークアクセス設定に依存**：WebEnrollment が HTTP でのみアクセス可能なことが前提。HTTPS のみ（証明書バインド付き）の環境では NTLM リレーが困難
@@ -349,8 +349,8 @@ ntlmrelayx.py \
   - ✅ `--shadow-credentials` で追加した `msDS-KeyCredentialLink` エントリの削除
   - ✅ `--delegate-access` で設定した `msDS-AllowedToActOnBehalfOfOtherIdentity` エントリの削除
   - ✅ MSSQL で有効化した `xp_cmdshell` の無効化
-  - ✅ 取得した証明書・TGT・NTLM ハッシュの暗号化保管 → 案件終了時破棄
-- **取得情報の取扱**: 証明書・ハッシュ・TGT は暗号化保管、案件終了後破棄。クライアントとの契約書面での合意必須
+  - ✅ 取得した証明書・TGT・NTLM ハッシュの暗号化保管 → テスト完了時破棄
+- **取得情報の取扱**: 証明書・ハッシュ・TGT は暗号化保管、テスト完了後破棄。対象組織との書面合意必須
 - **演習環境での扱い**: 制約なし（HTB / OSCP 等は本セクション全項目をスキップしてよい）
 
 ---

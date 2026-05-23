@@ -21,7 +21,7 @@ kedalab 全体の「ATT&CK 軸での参照」を支える概念ガイド。
 ### 何ができるか
 
 - 実施したテスト手法を標準 ID で報告書に記載できる
-- 顧客の要件（「ATT&CK T1558.003 に対応できること」等）を技術的に解釈できる
+- 対象組織の要件（「ATT&CK T1558.003 に対応できること」等）を技術的に解釈できる
 - テストカバレッジを Tactic / Technique 軸で可視化し、報告書に添付できる
 - Atomic Red Team によって Technique 単位の再現テスト（検知確認）ができる
 
@@ -78,7 +78,7 @@ Sub-Technique が存在する場合、親 Technique（`T1078`）は参照用と�
 
 | Matrix | 対象 | 用途 |
 |--------|------|------|
-| Enterprise | Windows / Linux / macOS / Cloud / Network / Containers | ペネトレ案件の主参照先 |
+| Enterprise | Windows / Linux / macOS / Cloud / Network / Containers | ペネトレテストの主参照先 |
 | Mobile | Android / iOS | モバイルアプリ診断 |
 | ICS | 産業制御システム | OT/ICS ペネトレ |
 
@@ -113,7 +113,7 @@ Technique ID をクリックすると以下が確認できる：
 | Sub-Techniques | バリアント一覧 | 高 |
 | **Procedure Examples** | 実際の攻撃グループの使用事例 | **最重要** |
 | Detection | 検知ポイント（Event ID・ログ観点） | 高（Blue Team 視点） |
-| Mitigations | 対策（顧客向け説明の素材） | 中 |
+| Mitigations | 対策（対象組織向け説明の素材） | 中 |
 | References | 出典論文・ブログ | 参考 |
 
 > **Procedure Examples が最重要。** 実際の APT グループがどのようにその手法を使ったかが具体例として載っており、「この手法が通用する環境条件」の理解に直結する。「この Technique は理論上わかるが実際にどう使われるか」を知りたいときはここを読む。
@@ -138,7 +138,7 @@ Technique ID をクリックすると以下が確認できる：
 | 操作 | 用途 |
 |------|------|
 | Technique にスコアを付ける | テストカバレッジを色分けで可視化 |
-| Technique をハイライト | 今回の案件スコープを図示 |
+| Technique をハイライト | 今回のテストスコープを図示 |
 | APT グループのレイヤーを重ねる | 特定の脅威アクターが使う手法を可視化 |
 | レイヤーを JSON 出力 | 報告書への添付・カバレッジ共有 |
 
@@ -174,7 +174,7 @@ Technique ID をクリックすると以下が確認できる：
 }
 ```
 
-JSON を Navigator にインポートすれば、前回案件のカバレッジを引き継いで比較できる。報告書に SVG として添付すると「どの Tactic/Technique をカバーしたか」の一覧として機能する。
+JSON を Navigator にインポートすれば、前回のテストのカバレッジを引き継いで比較できる。報告書に SVG として添付すると「どの Tactic/Technique をカバーしたか」の一覧として機能する。
 
 ### APT グループレイヤーの重ね合わせ
 
@@ -310,7 +310,7 @@ YAML を読む際の着眼点：
 5. -Cleanup で痕跡削除
 ```
 
-**本番環境・顧客環境での Atomic Red Team 実行は事前合意必須。**
+**本番環境・対象組織環境での Atomic Red Team 実行は事前合意必須。**
 Cleanup コマンドが存在しない Technique もあるため、`-ShowDetails` で確認してから実行する。
 
 ---

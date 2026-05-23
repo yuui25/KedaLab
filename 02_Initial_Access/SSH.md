@@ -428,7 +428,7 @@ ssh -J [USER1]@[HOP1]:22 [USER2]@[INTERNAL_TARGET]
 - **想定される SIEM / EDR 検知**: `auth.log` / `secure` の `Failed password for [USER] from [IP]` 大量、fail2ban アラート、`Connection closed by [IP] [preauth]` の連続記録、SSH ハニーポット検知、§11 port forwarding は IDS の lateral movement signature に当たる可能性
 - **業務影響リスク**: アカウントロック発生時の業務影響（管理者アカウントなら系統的影響）、§1 CVE-2024-6387 試行時の sshd クラッシュリスク
 - **原状回復必須項目**: ✅ 取得した秘密鍵の安全な破棄 / ✅ §11 で確立した port forwarding セッションの切断（接続後の活動に伴う痕跡 — authorized_keys 追加・history 等 — は `../03_Post_Access_Linux/` 領域で扱う）
-- **取得情報の取扱**: 秘密鍵は暗号化保管、案件終了時破棄
+- **取得情報の取扱**: 秘密鍵は暗号化保管、テスト完了時破棄
 - **演習環境での扱い**: 制約なし（HTB / OSCP 等は本セクション全項目をスキップしてよい）
 
 > **シェル取得後の横展開・列挙はこのファイルの範囲外** → `../03_Post_Access_Linux/Enumeration_Checklist.md`。取得した秘密鍵を起点にした横展開は同ファイルおよび本ファイル §3 の fingerprint と連携する。

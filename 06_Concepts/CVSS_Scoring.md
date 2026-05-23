@@ -168,7 +168,7 @@ v4.0 は **MacroVector / Equivalence Class ベース** の参照テーブル方�
 **判断軸の例：**
 
 - 報告書の用途が「ベンダー報告（修正促進）」なら Worst-case 寄りで書いて緊急度を伝える
-- 報告書の用途が「対象組織の SIEM 連携・優先度付け」なら Likely-case で書いて他案件と比較可能にする
+- 報告書の用途が「対象組織の SIEM 連携・優先度付け」なら Likely-case で書いて他のテストと比較可能にする
 - CVE 申請（NVD published）には Likely-case 寄りが多い（NVD の Analyst も保守的に振る傾向）
 
 **両方書くのが安全：** 単独スコア（Likely-case）と、現実的なチェーン込みスコア（Worst-case）を併記する。

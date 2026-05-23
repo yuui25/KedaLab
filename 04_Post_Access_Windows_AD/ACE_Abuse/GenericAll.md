@@ -138,12 +138,12 @@ BloodHound GUI で対象ノードを選択 → 「Inbound Object Control」→ `
   - Event ID 4769（Targeted Kerberoasting で SPN 追加後に発生する TGS 要求）
 - **業務影響リスク**: サービス停止（パスワードリセット対象ユーザーは即座に業務不可になる）／グループ権限変更による業務上の権限拡張
 - **原状回復必須項目**:
-  - ✅ パスワードリセットしたユーザー：可能な限り元のパスワードへ戻す（不可なら顧客側でリセット運用）
+  - ✅ パスワードリセットしたユーザー：可能な限り元のパスワードへ戻す（不可なら対象組織側でリセット運用）
   - ✅ 追加したグループメンバーシップの削除（`net rpc group delmem` / `Remove-ADGroupMember`）
   - ✅ Targeted Kerberoasting で付与した SPN の削除
   - ✅ Shadow Credentials で追加した `msDS-KeyCredentialLink` 値の削除（`certipy shadow remove`）
-  - ✅ 取得した TGT / NTLM ハッシュは暗号化保管 → 案件終了時破棄
-- **取得情報の取扱**: 取得した認証情報・TGT・ハッシュは暗号化保管、案件終了時破棄
+  - ✅ 取得した TGT / NTLM ハッシュは暗号化保管 → テスト完了時破棄
+- **取得情報の取扱**: 取得した認証情報・TGT・ハッシュは暗号化保管、テスト完了時破棄
 - **演習環境での扱い**: 制約なし（HTB / OSCP 等は本セクション全項目をスキップしてよい）
 
 ---

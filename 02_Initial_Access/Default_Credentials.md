@@ -309,8 +309,8 @@ nuclei -t default-logins/jenkins/ -t default-logins/grafana/ -t default-logins/t
   - Linux: `/var/log/auth.log` の `Failed password` 連発、`pam_unix(sshd:auth): authentication failure`
   - Web 製品: アプリログ・WAF ログのログインエンドポイント連続失敗、IDS のシグネチャ（`Hydra` UA・`User-Agent: Mozilla/4.0`）
 - **業務影響リスク**: アカウントロックアウト → 正規ユーザー締め出し / SCADA・IPMI に対する誤コマンドでフェイルセーフ停止
-- **原状回復必須項目**: ✅ 試行ログ（テスター側）の暗号化保管・案件終了時破棄 / ✅ 通過後に追加したアカウント・設定変更（WAR デプロイ・xp_cmdshell 有効化等）の元戻し
-- **取得情報の取扱**: 通過したクレデンシャルは暗号化保管、案件終了時に破棄
+- **原状回復必須項目**: ✅ 試行ログ（テスター側）の暗号化保管・テスト完了時破棄 / ✅ 通過後に追加したアカウント・設定変更（WAR デプロイ・xp_cmdshell 有効化等）の元戻し
+- **取得情報の取扱**: 通過したクレデンシャルは暗号化保管、テスト完了時に破棄
 - **演習環境での扱い**: 制約なし（HTB / OSCP 等は本セクション全項目をスキップしてよい）
 
 ---

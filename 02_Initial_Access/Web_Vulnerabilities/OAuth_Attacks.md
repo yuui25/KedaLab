@@ -395,9 +395,9 @@ curl -s https://[VICTIM_DOMAIN]/static/js/main.*.js | grep -iE "client[_-]?secre
 - **業務影響リスク**: 中（攻撃者のソーシャル ID を被害者アカウントに紐付けた状態のまま放置するとログイン乗っ取りが残る）
 - **原状回復必須項目**:
   - ✅ パターン 2 で被害者役アカウントに紐付けた攻撃者の IdP 連携を解除
-  - ✅ パターン 7 で取得した client_secret は暗号化保管・案件終了時破棄
+  - ✅ パターン 7 で取得した client_secret は暗号化保管・テスト完了時破棄
   - ✅ 検証中に発行したアクセストークン・リフレッシュトークンを revoke
-- **取得情報の取扱**: id_token・access_token・client_secret は全て認証情報扱い。暗号化保管・案件終了時破棄
+- **取得情報の取扱**: id_token・access_token・client_secret は全て認証情報扱い。暗号化保管・テスト完了時破棄
 - **演習環境での扱い**: 制約なし
 
 ---

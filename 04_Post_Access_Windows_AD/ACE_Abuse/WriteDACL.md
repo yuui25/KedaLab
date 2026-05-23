@@ -89,9 +89,9 @@ dacledit.py -action write \
 - **業務影響リスク**: なし（参照権限の追加のみだが、悪用されると全ドメイン認証情報流出の起点となる）
 - **原状回復必須項目**:
   - ✅ 自己付与した GenericAll / DCSync 権限（`DS-Replication-Get-Changes` / `DS-Replication-Get-Changes-All`）の削除（`dacledit.py -action remove`）
-  - ✅ 変更前の DACL を BloodHound 等で記録しておき、案件終了時に同等の状態へ戻す
+  - ✅ 変更前の DACL を BloodHound 等で記録しておき、テスト完了時に同等の状態へ戻す
   - ✅ 派生して取得した認証情報は Credential_Dumping.md の原状回復項目に従う
-- **取得情報の取扱**: ACE 変更の証跡（変更前後の DACL ダンプ）を案件報告書に添付。案件終了時に変更を復旧
+- **取得情報の取扱**: ACE 変更の証跡（変更前後の DACL ダンプ）をテストレポートに添付。テスト完了時に変更を復旧
 - **演習環境での扱い**: 制約なし（HTB / OSCP 等は本セクション全項目をスキップしてよい）
 
 ---
