@@ -1015,10 +1015,55 @@ details.qs-tips-acc[open] .qs-tips { animation: coll-slide 0.3s ease; }
 }
 .filter-chip.active .badge { background: rgba(0,0,0,0.3); color: var(--bg-0); }
 
+/* Top-level container is now a vertical stack of phase groups.
+   The per-group grid (.tb-group-grid) is the actual card grid. */
 .tb-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tb-group {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--tc, var(--acc-g));
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+.tb-group-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 12px;
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--tc, var(--acc-g)) 14%, transparent),
+    transparent 65%);
+  border-bottom: 1px solid var(--line);
+}
+.tb-group-code {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--tc, var(--acc-g));
+  letter-spacing: 0.12em;
+}
+.tb-group-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--fg-0);
+}
+.tb-group-count {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--fg-2);
+  margin-left: auto;
+  letter-spacing: 0.05em;
+}
+.tb-group-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 10px;
+  padding: 10px;
 }
 .tech-card {
   background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
@@ -1082,6 +1127,53 @@ details.qs-tips-acc[open] .qs-tips { animation: coll-slide 0.3s ease; }
   border-radius: 2px;
   color: var(--fg-2);
   text-transform: lowercase;
+}
+
+/* Matched technique entries within a file card (one li per index row). */
+.tech-hits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 11px;
+  color: var(--fg-1);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tech-hits li {
+  position: relative;
+  padding-left: 12px;
+  line-height: 1.45;
+}
+.tech-hits li::before {
+  content: "›";
+  position: absolute;
+  left: 0;
+  color: var(--tc, var(--acc-g));
+  opacity: 0.55;
+}
+.tech-hits-more {
+  color: var(--fg-2);
+  font-style: italic;
+}
+
+/* Body snippet around the earliest token hit, with <mark> highlights. */
+.tech-snippet {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--fg-2);
+  background: var(--bg-2);
+  padding: 6px 8px;
+  border-left: 2px solid var(--tc, var(--acc-g));
+  border-radius: 0 2px 2px 0;
+  line-height: 1.45;
+  word-break: break-word;
+}
+.tech-snippet mark {
+  background: color-mix(in srgb, var(--tc, var(--acc-g)) 30%, transparent);
+  color: var(--fg-0);
+  padding: 0 2px;
+  border-radius: 2px;
 }
 
 .tb-empty {

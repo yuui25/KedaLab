@@ -610,30 +610,113 @@
     renderTechniques();
   }
 
-  function matchQuery(t, q) {
-    if (!q) return true;
-    const hay = (t.n + " " + (t.tags || []).join(" ") + " " + (t.f || "")).toLowerCase();
+  // Score = how well an entry matches the query.
+  // 0 = excluded (a token didn't match anywhere). Higher = better match.
+  // Weights: name 100 / file basename 80 / tags 50 / file path 30 / body 5.
+  // All tokens must hit somewhere (preserves the previous all-tokens-required behavior).
+  function scoreEntry(t, q) {
+    if (!q) return 1;
+    const tokens = q.toLowerCase().split(/\s+/).filter(Boolean);
+    if (!tokens.length) return 1;
+    const name = (t.n || "").toLowerCase();
+    const fileFull = (t.f || "").toLowerCase();
+    const fileBase = fileFull.split("/").pop();
+    const tags = (t.tags || []).join(" ").toLowerCase();
     const body = _contentIndex.get(t.f) || "";
-    return q.toLowerCase().split(/\s+/).filter(Boolean).every(tok =>
-      hay.includes(tok) || body.includes(tok)
-    );
+    let total = 0;
+    for (const tok of tokens) {
+      let s = 0;
+      if (name.includes(tok))     s += 100;
+      if (fileBase.includes(tok)) s += 80;
+      if (tags.includes(tok))     s += 50;
+      if (fileFull.includes(tok)) s += 30;
+      if (body.includes(tok))     s += 5;
+      if (s === 0) return 0;
+      total += s;
+    }
+    return total;
+  }
+
+  function matchQuery(t, q) {
+    return scoreEntry(t, q) > 0;
+  }
+
+  // Extract a ~120-char snippet around the earliest body hit, with all
+  // matched tokens wrapped in <mark>. Returns "" if no body hit / no raw MD.
+  // bodyRaw comes from _mdCache (original case); bodyLower from _contentIndex
+  // (lowercased) is used to find positions.
+  function bodySnippet(t, q) {
+    if (!q) return "";
+    const tokens = q.toLowerCase().split(/\s+/).filter(Boolean);
+    if (!tokens.length) return "";
+    const bodyLower = _contentIndex.get(t.f);
+    if (!bodyLower) return "";
+    const bodyRaw = _mdCache.get(t.f);
+    // Length mismatch (rare: some Unicode lowercases change length) → bail out.
+    if (!bodyRaw || bodyRaw.length !== bodyLower.length) return "";
+    let earliest = -1, earlyTok = "";
+    for (const tok of tokens) {
+      const i = bodyLower.indexOf(tok);
+      if (i < 0) continue;
+      if (earliest < 0 || i < earliest) { earliest = i; earlyTok = tok; }
+    }
+    if (earliest < 0) return "";
+    const ctxStart = Math.max(0, earliest - 60);
+    const ctxEnd = Math.min(bodyRaw.length, earliest + earlyTok.length + 60);
+    const win = bodyRaw.slice(ctxStart, ctxEnd);
+    const winLower = bodyLower.slice(ctxStart, ctxEnd);
+    const ranges = [];
+    for (const tok of tokens) {
+      let p = 0;
+      while (p <= winLower.length - tok.length) {
+        const i = winLower.indexOf(tok, p);
+        if (i < 0) break;
+        ranges.push([i, i + tok.length]);
+        p = i + tok.length;
+      }
+    }
+    ranges.sort((a, b) => a[0] - b[0]);
+    const merged = [];
+    for (const [s, e] of ranges) {
+      const last = merged[merged.length - 1];
+      if (last && s <= last[1]) last[1] = Math.max(last[1], e);
+      else merged.push([s, e]);
+    }
+    let out = "";
+    let cursor = 0;
+    for (const [s, e] of merged) {
+      out += escapeHtml(win.slice(cursor, s));
+      out += "<mark>" + escapeHtml(win.slice(s, e)) + "</mark>";
+      cursor = e;
+    }
+    out += escapeHtml(win.slice(cursor));
+    out = out.replace(/[\r\n]+/g, " ").replace(/\s{2,}/g, " ").trim();
+    return (ctxStart > 0 ? "…" : "") + out + (ctxEnd < bodyRaw.length ? "…" : "");
   }
 
   function renderTechniques() {
     const g = $("#tbGrid");
     const empty = $("#tbEmpty");
-    const filtered = D.techniques.filter(t => {
-      const okPhase = currentPhase === "all" || t.p === currentPhase;
-      return okPhase && matchQuery(t, currentQuery);
-    });
-    // update count badge on the collapsible header (visible while folded)
+    const q = currentQuery;
+
+    // Score & filter every technique row
+    const scored = [];
+    for (const t of D.techniques) {
+      if (currentPhase !== "all" && t.p !== currentPhase) continue;
+      const s = scoreEntry(t, q);
+      if (s === 0) continue;
+      scored.push({ t, s });
+    }
+
+    // Count badge: matched rows / total rows (preserves the previous semantic).
     const countEl = document.getElementById("browserCount");
     if (countEl) {
       countEl.textContent = D.techniques.length
-        ? `${filtered.length} / ${D.techniques.length}`
+        ? `${scored.length} / ${D.techniques.length}`
         : "—";
     }
-    if (!filtered.length) {
+
+    if (!scored.length) {
       g.innerHTML = "";
       empty.style.display = "block";
       empty.textContent = isFile
@@ -646,23 +729,85 @@
       return;
     }
     empty.style.display = "none";
-    g.innerHTML = filtered.map(t => {
-      const p = phaseById[t.p];
-      const tagsHtml = (t.tags || []).slice(0, 4).map(x => `<span class="tag">${x}</span>`).join("");
-      return `
-        <div class="tech-card" data-file="${t.f}" style="--tc: ${p.color};">
-          <div class="tech-name">${escapeHtml(t.n)}</div>
-          <div class="tech-meta">
-            <span class="tech-phase">${p.code} · ${p.name}</span>
-            <span class="tech-file">${t.f}</span>
-          </div>
-          <div class="tech-tags">${tagsHtml}</div>
-        </div>
-      `;
-    }).join("");
+
+    // Group matched rows by file. file → { p, sMax, hits[], tagSet }
+    const fileMap = new Map();
+    for (const { t, s } of scored) {
+      let entry = fileMap.get(t.f);
+      if (!entry) {
+        entry = { f: t.f, p: t.p, sMax: 0, hits: [], tagSet: new Set() };
+        fileMap.set(t.f, entry);
+      }
+      if (s > entry.sMax) entry.sMax = s;
+      entry.hits.push({ n: t.n, s });
+      (t.tags || []).forEach(x => entry.tagSet.add(x));
+    }
+
+    // Group file entries by phase id.
+    const byPhase = new Map();
+    for (const fe of fileMap.values()) {
+      let arr = byPhase.get(fe.p);
+      if (!arr) { arr = []; byPhase.set(fe.p, arr); }
+      arr.push(fe);
+    }
+    // Sort files within each phase: by score desc when a query is active,
+    // else alphabetically by path so the no-query view is stable.
+    for (const arr of byPhase.values()) {
+      if (q) arr.sort((a, b) => b.sMax - a.sMax || a.f.localeCompare(b.f));
+      else arr.sort((a, b) => a.f.localeCompare(b.f));
+    }
+
+    // Render phases in D.phases order so 00→01→02→… stays consistent.
+    const html = [];
+    for (const p of D.phases) {
+      const arr = byPhase.get(p.id);
+      if (!arr || !arr.length) continue;
+      const cards = arr.map(fe => renderFileCard(fe, p, q)).join("");
+      html.push(
+        `<div class="tb-group" data-phase="${p.id}" style="--tc: ${p.color};">` +
+        `<div class="tb-group-head">` +
+        `<span class="tb-group-code">${p.code}</span>` +
+        `<span class="tb-group-name">${escapeHtml(p.name)}</span>` +
+        `<span class="tb-group-count">${arr.length} 件</span>` +
+        `</div>` +
+        `<div class="tb-group-grid">${cards}</div>` +
+        `</div>`
+      );
+    }
+    g.innerHTML = html.join("");
+
     $$(".tech-card", g).forEach(el => {
       el.addEventListener("click", () => openMD(el.dataset.file));
     });
+  }
+
+  // Build a single card for a file with one or more matched technique hits.
+  function renderFileCard(fe, p, q) {
+    const title = shortLabel(fe.f);
+    // Sort hits within the card by score desc (query-active) else input order.
+    const hitsArr = q ? [...fe.hits].sort((a, b) => b.s - a.s) : fe.hits;
+    const shown = hitsArr.slice(0, 6);
+    const moreCount = hitsArr.length - shown.length;
+    const hitsHtml = shown.map(h => `<li>${escapeHtml(h.n)}</li>`).join("");
+    const moreHtml = moreCount > 0
+      ? `<li class="tech-hits-more">+${moreCount} more</li>`
+      : "";
+    const tagsHtml = Array.from(fe.tagSet).slice(0, 4)
+      .map(x => `<span class="tag">${escapeHtml(x)}</span>`).join("");
+    const snippet = bodySnippet({ f: fe.f }, q);
+    const snippetHtml = snippet ? `<div class="tech-snippet">${snippet}</div>` : "";
+    return (
+      `<div class="tech-card" data-file="${fe.f}" style="--tc: ${p.color};">` +
+      `<div class="tech-name">${escapeHtml(title)}</div>` +
+      `<ul class="tech-hits">${hitsHtml}${moreHtml}</ul>` +
+      snippetHtml +
+      `<div class="tech-meta">` +
+      `<span class="tech-phase">${p.code} · ${escapeHtml(p.name)}</span>` +
+      `<span class="tech-file">${escapeHtml(fe.f)}</span>` +
+      `</div>` +
+      `<div class="tech-tags">${tagsHtml}</div>` +
+      `</div>`
+    );
   }
 
   function escapeHtml(s) {
@@ -1275,7 +1420,14 @@
     if (!q) {
       paletteHits = D.techniques.slice(0, 40);
     } else {
-      paletteHits = D.techniques.filter(t => matchQuery(t, q)).slice(0, 60);
+      // Score each entry, drop zeros, sort by score desc, then keep top 60.
+      // Same ranking weights as the Browser scoring (scoreEntry).
+      paletteHits = D.techniques
+        .map(t => ({ t, s: scoreEntry(t, q) }))
+        .filter(x => x.s > 0)
+        .sort((a, b) => b.s - a.s)
+        .slice(0, 60)
+        .map(x => x.t);
     }
     drawPalette();
   });

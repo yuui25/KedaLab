@@ -180,21 +180,39 @@ orphan 解決後に `recomputeStats()` + `renderToolbar()` + `renderTechniques()
 
 ## 検索の動作
 
+### スコアリング (`scoreEntry`)
+
+Top Search と Cmd Palette はともに `scoreEntry(t, q)` を経由する。各トークンが以下のどこに当たるかで重みを加算し、**全トークンがどこかに当たれば**スコアを合算、1 つでも完全に当たらないトークンがあれば 0 を返して除外する:
+
+| 当たり所 | 重み |
+|---|---|
+| 技術名 (`t.n`) | +100 |
+| ファイル名のベース部分 (path 末尾) | +80 |
+| タグ (`t.tags`) | +50 |
+| ファイルパス全体 (`t.f`) | +30 |
+| 本文 (`_contentIndex` の小文字化 MD) | +5 |
+
+旧 `matchQuery` は `scoreEntry > 0` を返すだけのシンとなり、過去の「全トークン部分一致」セマンティクスを保つ。
+
 ### Top Search (`#topSearch`)
 - 入力 → Browser 自動展開、フェーズフィルタは現在値維持
-- 同時に `ensureContentIndex()` をキック (初回のみ)
-- マッチング: `名前 + タグ + ファイルパス` (小文字化) に対し全トークン部分一致。本文インデックス完成後はそれも対象
-- 構築中は loader pill に `⋯ indexing N/M` 進捗
+- 同時に `ensureContentIndex()` をキック (初回のみ)。構築中は loader pill に `⋯ indexing N/M` 進捗
+- `renderTechniques()` で以下を実施:
+  1. `D.techniques` の全行を `scoreEntry` でスコアリング、0 は除外
+  2. ファイル (`t.f`) ごとにグルーピング → 1 ファイル 1 カード化。複数の技術行は `.tech-hits` 内に `<li>` で列挙 (最大 6 件、超過分は `+N more`)
+  3. ファイルをフェーズ id ごとに分け、`D.phases` の順 (00 → 01 → 02 → …) に `.tb-group` セクションで描画
+  4. クエリありの場合はファイルをスコア降順、なしの場合はパス昇順でソート
+- 本文ヒットがあれば、`bodySnippet(t, q)` で**最初のヒット位置を中心に ±60 文字**を抽出、全マッチトークンを `<mark>` で囲んだスニペットをカード末尾に表示。原文の大小は `_mdCache` から取得し、位置検出は `_contentIndex` (小文字化) で行う
 
 ### Navigator Search (`#navSearch`)
 - 入力 → セルに `.qfilter-out` クラスを付けて `display: none`
-- マッチング: セル表示テキスト + ファイルパスに対し全トークン部分一致
+- マッチング: セル表示テキスト + ファイルパスに対し全トークン部分一致 (スコアリングは未適用、Navigator はフィルタ用途のみ)
 - Enter → 第一ヒットを `setNavFocus()`
 - Esc → 入力クリア + フィルタ解除
 
 ### Cmd Palette
-- 同じ `matchQuery` を使うので本文インデックスの恩恵を受ける
-- 上位 60 件まで表示
+- 同じ `scoreEntry` を使い、**スコア降順でソートしてから上位 60 件**を表示
+- `<mark>` ハイライトやグルーピングはなし (Browser よりコンパクトな UI を維持)
 
 ## ファイル構成
 
