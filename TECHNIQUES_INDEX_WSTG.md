@@ -66,7 +66,7 @@ OWASP Web Security Testing Guide v4.2 のテストカテゴリ・テストケー
 | WSTG-ATHN-03 | Testing for Weak Lock Out Mechanism | `02_Initial_Access/Account_Lockout_Recon.md` |
 | WSTG-ATHN-06 | Testing for Browser Cache Weaknesses | （手動確認・kedalab 化候補） |
 | WSTG-ATHN-07 | Testing for Weak Password Policy | `02_Initial_Access/Account_Lockout_Recon.md`（FGPP / msDS-PasswordSettings） |
-| WSTG-ATHN-10 | Testing for Weaker Authentication in Alternative Channel | `02_Initial_Access/SSH.md` / `02_Initial_Access/FTP.md` / `02_Initial_Access/Protocol_Exploitation.md`（WinRM / Mail） / `02_Initial_Access/Web_Vulnerabilities/OAuth_Attacks.md`（ソーシャルログイン経路の信頼境界破り） |
+| WSTG-ATHN-10 | Testing for Weaker Authentication in Alternative Channel | `02_Initial_Access/SSH.md` / `02_Initial_Access/FTP.md` / `02_Initial_Access/Mail_Services.md` / `02_Initial_Access/Protocol_Exploitation.md`（WinRM） / `02_Initial_Access/Web_Vulnerabilities/OAuth_Attacks.md`（ソーシャルログイン経路の信頼境界破り） |
 
 ---
 

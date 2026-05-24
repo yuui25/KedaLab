@@ -103,7 +103,7 @@ Step 2 で CVE が見つかった場合はそこに集中し、Step 3〜6 は後
 |---|---|---|
 | 22 / 非標準（SSH） | `../02_Initial_Access/SSH.md` | バナー観察〜認証突破〜既知 CVE〜SOCKS pivot まで |
 | 21 / 非標準（FTP） | `../02_Initial_Access/FTP.md` | バナー観察〜匿名取得〜書込判定〜既知 CVE まで |
-| 25 / 465 / 587 / 110 / 995 / 143 / 993（メール系） | `../02_Initial_Access/Protocol_Exploitation.md` の SMTP / POP / IMAP セクション | ユーザー列挙・スプレー・オープンリレー確認 |
+| 25 / 465 / 587 / 110 / 995 / 143 / 993（メール系） | `../02_Initial_Access/Mail_Services.md` | バナー〜ユーザー列挙〜オープンリレー〜SPF/DKIM/DMARC〜認証スプレー〜メール本文精査〜既知 CVE まで |
 | 53 / TCP・UDP（DNS） | `../01_Reconnaissance/DNS_Enumeration.md` | zone transfer / 内部 FQDN 漏洩 / DDNS |
 | 161 UDP（SNMP） | `../01_Reconnaissance/SNMP_Enumeration.md` | コミュニティ文字列ブルートフォース。外部公開は稀だが見つかれば情報量大 |
 | 445 / 139（SMB） | `../01_Reconnaissance/SMB_Enumeration.md` | 外部公開は稀。匿名共有 / EternalBlue 等 |

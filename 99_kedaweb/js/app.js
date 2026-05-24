@@ -1696,7 +1696,9 @@
       const body = rows.slice(1);
       let html = "<table><thead><tr>" + head.map(h => `<th>${inline(h)}</th>`).join("") + "</tr></thead>";
       html += "<tbody>" + body.map(r => "<tr>" + r.map(c => `<td>${inline(c)}</td>`).join("") + "</tr>").join("") + "</tbody></table>";
-      return html;
+      // Preserve a trailing \n so the blank line that originally separated the
+      // table from the next paragraph survives split(/\n{2,}/) below.
+      return html + "\n";
     });
 
     // headers
@@ -1716,11 +1718,11 @@
     // lists
     src = src.replace(/(?:^[ \t]*[-*]\s+.*\n?)+/gm, block => {
       const items = block.trim().split("\n").map(l => l.replace(/^[ \t]*[-*]\s+/, ""));
-      return "<ul>" + items.map(i => `<li>${inline(i)}</li>`).join("") + "</ul>";
+      return "<ul>" + items.map(i => `<li>${inline(i)}</li>`).join("") + "</ul>\n";
     });
     src = src.replace(/(?:^[ \t]*\d+\.\s+.*\n?)+/gm, block => {
       const items = block.trim().split("\n").map(l => l.replace(/^[ \t]*\d+\.\s+/, ""));
-      return "<ol>" + items.map(i => `<li>${inline(i)}</li>`).join("") + "</ol>";
+      return "<ol>" + items.map(i => `<li>${inline(i)}</li>`).join("") + "</ol>\n";
     });
 
     // paragraphs — split on blank lines, wrap non-block lines

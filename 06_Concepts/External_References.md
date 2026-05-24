@@ -147,6 +147,7 @@
 |---|---|
 | **SpecterOps Posts** | `https://posts.specterops.io/` |
 | **Synacktiv** | `https://www.synacktiv.com/publications` |
+| **SEC Consult Vulnerability Lab**（Timo Longin 等。SMTP Smuggling 公開元）| `https://sec-consult.com/blog/` |
 | **NCC Group Research** | `https://research.nccgroup.com/` |
 | **Rapid7 Blog** | `https://www.rapid7.com/blog/` |
 | **Mandiant / Google Cloud TI** | `https://www.mandiant.com/resources/blog` |

@@ -169,6 +169,16 @@
 | SSH §11 authorized_keys 書込による侵入・persistence（FTP/SMB 書込 / Redis unauth `CONFIG SET dir` / PostgreSQL `COPY ... TO PROGRAM` 経由・原状回復必須） | Initial Access | `02_Initial_Access/SSH.md` |
 | SSH §12 Port Forwarding / SOCKS pivot（`-L` Local / `-R` Remote / `-D` Dynamic SOCKS / `-J` ProxyJump 多段チェイン） | Initial Access | `02_Initial_Access/SSH.md` |
 | SSH §13 SSH Agent ハイジャック（他ユーザの `SSH_AUTH_SOCK` 流用 / `ssh-add -l` 鍵列挙 / agent 経由の横展開連鎖 / `ssh -A` 逆方向リスク） | Initial Access | `02_Initial_Access/SSH.md` |
+| Mail §1 バナー観察 / 製品判定（SMTP / POP3 / IMAP 一括・Postfix / Exim / Sendmail / Dovecot / Exchange / Cyrus 判別）| Initial Access | `02_Initial_Access/Mail_Services.md` |
+| Mail §2 SMTP 機能列挙（EHLO / HELP / AUTH メカニズム / STARTTLS / nmap smtp-commands） | Initial Access | `02_Initial_Access/Mail_Services.md` |
+| Mail §3 SMTP ユーザー列挙（VRFY / EXPN / RCPT TO バウンス挙動・smtp-user-enum）| Initial Access | `02_Initial_Access/Mail_Services.md` |
+| Mail §4 オープンリレー判定（nmap smtp-open-relay / swaks 実送信テスト）| Initial Access | `02_Initial_Access/Mail_Services.md` |
+| Mail §5 SPF / DKIM / DMARC 設定確認（dig TXT・受信側設定の finding）| Initial Access | `02_Initial_Access/Mail_Services.md` |
+| Mail §6 SMTP Smuggling（EOD シーケンス解釈差悪用・SPF/DKIM/DMARC バイパス・Timo Longin / SEC Consult 2023 公開）| Initial Access | `02_Initial_Access/Mail_Services.md` |
+| Mail §7 SMTP / POP3 / IMAP 認証スプレー（hydra smtp / pop3 / imap・Exchange Throttling 対応）| Initial Access | `02_Initial_Access/Mail_Services.md` |
+| Mail §8 POP3 / IMAP 認証突破後のメール本文精査（imaplib / poplib・他システム cred 抽出）| Initial Access | `02_Initial_Access/Mail_Services.md` |
+| Mail §9.1 Exchange ProxyLogon (CVE-2021-26855) / ProxyShell (CVE-2021-34473) / ProxyNotShell (CVE-2022-41040 / 41082) | Initial Access | `02_Initial_Access/Mail_Services.md` |
+| Mail §9.2 Exim CVE-2019-10149 (Return of the WIZard) — Exim 4.87〜4.91 の SMTP RCE | Initial Access | `02_Initial_Access/Mail_Services.md` |
 | WinRM (evil-winrm) | Initial Access | `02_Initial_Access/Protocol_Exploitation.md` |
 | WinRM Pass-The-Hash | Initial Access | `02_Initial_Access/Protocol_Exploitation.md` |
 | Impacket exec ツール群（wmiexec / psexec / smbexec）— WinRM 閉鎖時のシェル取得 | Initial Access | `02_Initial_Access/Protocol_Exploitation.md` |
@@ -383,6 +393,7 @@
 | OWASP WSTG マッピング運用ガイド（Web 系チェック項目の引き方） | TECHNIQUES_INDEX_WSTG.md 全般 | `06_Concepts/OWASP_WSTG_Guide.md` |
 | ペネトレプロセス・ガイドライン運用ガイド（NIST SP 800-115 / PTES の章軸・使い分け） | TECHNIQUES_INDEX_GUIDELINES.md 全般 | `06_Concepts/Pentest_Guidelines_Guide.md` |
 | 外部リファレンス集（HackTricks / OWASP / PortSwigger / NIST / ベンダーアドバイザリ / awesome 系 / SecLists 等の参照元目次） | 各サービス・各技術の参照元 | `06_Concepts/External_References.md` |
+| メールプロトコル動作原理（SMTP 対話モデル / EHLO 拡張 / VRFY-EXPN の歴史 / STARTTLS と Implicit TLS / POP3 vs IMAP / SPF-DKIM-DMARC / メールヘッダ / MIME / SASL 認証メカニズム / Open Relay 史） | `02_Initial_Access/Mail_Services.md` | `06_Concepts/Mail_Protocols.md` |
 | ペネトレ基礎（攻撃者視点の前提・思考の組み立て方） | 初学者導入 | `06_Concepts/Pentest_Fundamentals.md` |
 | CVSS スコアリング（v3.1 / v4.0 構造差・Worst-case vs Likely-case・Environmental・報告書記載フォーマット） | 報告書作成・CVE 申請 | `06_Concepts/CVSS_Scoring.md` |
 | CVE 研究スターター（起点 CVE 入手元・ライブラリ仕様調査・CWE 選定） | CVE 研究着手 | `06_Concepts/CVE_Research_Starter.md` |
