@@ -166,7 +166,9 @@
 | SSH §8 秘密鍵パスフレーズクラック（ssh2john + john / hashcat mode 22921） | Initial Access | `02_Initial_Access/SSH.md` |
 | SSH §9 ユーザー名列挙（CVE-2018-15473・OpenSSH 7.7 未満・タイミング差ベース / GitHub `.keys` OSINT 補完） | Initial Access | `02_Initial_Access/SSH.md` |
 | SSH §10 Debian PRNG 弱鍵試行（CVE-2008-0166・事前生成 32K 鍵リスト・レガシー機器対象） | Initial Access | `02_Initial_Access/SSH.md` |
-| SSH §11 Port Forwarding / SOCKS pivot（`-L` Local / `-R` Remote / `-D` Dynamic SOCKS / `-J` ProxyJump 多段チェイン） | Initial Access | `02_Initial_Access/SSH.md` |
+| SSH §11 authorized_keys 書込による侵入・persistence（FTP/SMB 書込 / Redis unauth `CONFIG SET dir` / PostgreSQL `COPY ... TO PROGRAM` 経由・原状回復必須） | Initial Access | `02_Initial_Access/SSH.md` |
+| SSH §12 Port Forwarding / SOCKS pivot（`-L` Local / `-R` Remote / `-D` Dynamic SOCKS / `-J` ProxyJump 多段チェイン） | Initial Access | `02_Initial_Access/SSH.md` |
+| SSH §13 SSH Agent ハイジャック（他ユーザの `SSH_AUTH_SOCK` 流用 / `ssh-add -l` 鍵列挙 / agent 経由の横展開連鎖 / `ssh -A` 逆方向リスク） | Initial Access | `02_Initial_Access/SSH.md` |
 | WinRM (evil-winrm) | Initial Access | `02_Initial_Access/Protocol_Exploitation.md` |
 | WinRM Pass-The-Hash | Initial Access | `02_Initial_Access/Protocol_Exploitation.md` |
 | Impacket exec ツール群（wmiexec / psexec / smbexec）— WinRM 閉鎖時のシェル取得 | Initial Access | `02_Initial_Access/Protocol_Exploitation.md` |
@@ -380,6 +382,7 @@
 | MITRE ATT&CK マッピング運用ガイド（ID 引きの考え方・本リポジトリでの使い方） | TECHNIQUES_INDEX_MITRE.md 全般 | `06_Concepts/MITRE_ATTCK_Guide.md` |
 | OWASP WSTG マッピング運用ガイド（Web 系チェック項目の引き方） | TECHNIQUES_INDEX_WSTG.md 全般 | `06_Concepts/OWASP_WSTG_Guide.md` |
 | ペネトレプロセス・ガイドライン運用ガイド（NIST SP 800-115 / PTES の章軸・使い分け） | TECHNIQUES_INDEX_GUIDELINES.md 全般 | `06_Concepts/Pentest_Guidelines_Guide.md` |
+| 外部リファレンス集（HackTricks / OWASP / PortSwigger / NIST / ベンダーアドバイザリ / awesome 系 / SecLists 等の参照元目次） | 各サービス・各技術の参照元 | `06_Concepts/External_References.md` |
 | ペネトレ基礎（攻撃者視点の前提・思考の組み立て方） | 初学者導入 | `06_Concepts/Pentest_Fundamentals.md` |
 | CVSS スコアリング（v3.1 / v4.0 構造差・Worst-case vs Likely-case・Environmental・報告書記載フォーマット） | 報告書作成・CVE 申請 | `06_Concepts/CVSS_Scoring.md` |
 | CVE 研究スターター（起点 CVE 入手元・ライブラリ仕様調査・CWE 選定） | CVE 研究着手 | `06_Concepts/CVE_Research_Starter.md` |

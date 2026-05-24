@@ -49,9 +49,10 @@
 
 ```
 [Step 1] ポートスキャン・バナー取得・製品識別    → 01_Reconnaissance/          【必須】
+          ├─→ サービス別分岐表（22/21/Mail/53/445/...）で各サービスを並行確認
           ↓
-[Step 2] Edge CVE照合（製品確定後の最初の一手）  → 02_Initial_Access/Edge_Appliance_CVEs.md  【必須】
-          ↓ CVEなし・パッチ済み・対象外
+[Step 2] Edge CVE照合                            → 02_Initial_Access/Edge_Appliance_CVEs.md  【条件次第：エッジアプライアンス製品確定時のみ】
+          ↓ CVEなし・パッチ済み・対象外・一般サーバ
 [Step 3] 誤設定・誤公開ファイル確認              → 01_Reconnaissance/Exposed_Files.md        【条件次第】
           ↓
 [Step 4] TLS弱点・証明書情報の確認              → 01_Reconnaissance/TLS_Audit.md            【条件次第】
@@ -63,16 +64,17 @@
 
 各ステップは「前のステップで得た情報」を次の判断に使う。スキップは判断根拠が記録できる場合のみ許容する。
 
-**Step 着手の優先順位**：【必須】のStep（1・2・5）を先に完了させる。
-【条件次第】のStep（3・4・6）は以下の着手条件で判定する：
+**Step 着手の優先順位**：【必須】のStep（1・5）を先に完了させる。
+【条件次第】のStep（2・3・4・6）は以下の着手条件で判定する：
 
 | Step | 着手する条件 | 着手しない（後回し）条件 |
 |---|---|---|
-| Step 3（誤設定・誤公開） | Step 2 で悪用可能な CVE なし／製品が CVE 対象外／製品名のみ判明でバージョン不明 | Step 2 で悪用可能な CVE が見つかった（先に Step 2 を完遂） |
+| Step 2（Edge CVE 照合） | Step 1 でエッジアプライアンス製品（SSL-VPN / 次世代 FW / LB 等）と判定された | 対象が一般 Linux / Windows サーバ・通常の Web アプリ（→ Step 1 のサービス別分岐表が主軸）|
+| Step 3（誤設定・誤公開） | Step 2 で悪用可能な CVE なし／製品が CVE 対象外／製品名のみ判明でバージョン不明／そもそも一般サーバで Step 2 スキップ | Step 2 で悪用可能な CVE が見つかった（先に Step 2 を完遂） |
 | Step 4（TLS監査） | 診断スコープに TLS 評価が含まれる、または証明書から組織情報を抜きたい | スコープに TLS 評価がなく、Step 1b で製品識別が済んでいる |
 | Step 6（デフォルト認証情報） | Step 5 で「閾値あり・短時間でロック解除」または演習環境と確認できた | Step 5 でロックアウトが厳しい（5回で永久ロック等）／本番で対象組織承認なし |
 
-Step 2 で CVE が見つかった場合はそこに集中し、Step 3〜6 は後回しにしてよい。
+Step 2 で CVE が見つかった場合はそこに集中し、Step 3〜6 は後回しにしてよい。エッジアプライアンスでない一般サーバの場合は Step 2 をスキップし、Step 1 のサービス別分岐で各サービス専用ファイル（SSH.md / FTP.md 等）へ進む。
 
 ---
 
@@ -84,13 +86,32 @@ Step 2 で CVE が見つかった場合はそこに集中し、Step 3〜6 は後
 
 ### Step 1 の判断分岐
 
+#### ハブ的分岐（次の Step への遷移条件）
+
 | 得られたシグナル | 次のアクション |
 |----------------|--------------|
 | TLS ポート（443 / 8443 / 10443 等）が開いている | Step 1b（TLS証明書取得）へ → Step 2 |
-| `Server:` ヘッダー / HTML タイトルに製品名が見える | Step 2（Edge CVE照合）へ |
+| `Server:` ヘッダー / HTML タイトルに製品名が見える（エッジアプライアンス製品判定済み） | Step 2（Edge CVE照合）へ |
 | Web が応答するが製品不明 | `../01_Reconnaissance/Web_Enumeration.md` でフィンガープリント追加 |
 | ポートスキャン結果が空（全ポートフィルタリング）| `../01_Reconnaissance/Network_Scanning.md` の「フィルタリング環境での追加オプション」セクションを参照 |
-| メール系ポート（25 / 465 / 587 / 110 / 995 / 143 / 993）が開いている | `../02_Initial_Access/Protocol_Exploitation.md` の SMTP / POP / IMAP セクションへ（メールサーバー対象。ユーザー列挙・スプレー・オープンリレー確認） |
+
+#### サービス別分岐（検出されたサービスを並行確認）
+
+ポートスキャンで判明したサービスは **エッジアプライアンス判定（Step 2）と並行して**それぞれ専用フローで確認する。「Edge 製品でなかった」「Edge CVE が空振りした」場合の主軸はこちら。
+
+| 検出されたサービス | 参照先 | 備考 |
+|---|---|---|
+| 22 / 非標準（SSH） | `../02_Initial_Access/SSH.md` | バナー観察〜認証突破〜既知 CVE〜SOCKS pivot まで |
+| 21 / 非標準（FTP） | `../02_Initial_Access/FTP.md` | バナー観察〜匿名取得〜書込判定〜既知 CVE まで |
+| 25 / 465 / 587 / 110 / 995 / 143 / 993（メール系） | `../02_Initial_Access/Protocol_Exploitation.md` の SMTP / POP / IMAP セクション | ユーザー列挙・スプレー・オープンリレー確認 |
+| 53 / TCP・UDP（DNS） | `../01_Reconnaissance/DNS_Enumeration.md` | zone transfer / 内部 FQDN 漏洩 / DDNS |
+| 161 UDP（SNMP） | `../01_Reconnaissance/SNMP_Enumeration.md` | コミュニティ文字列ブルートフォース。外部公開は稀だが見つかれば情報量大 |
+| 445 / 139（SMB） | `../01_Reconnaissance/SMB_Enumeration.md` | 外部公開は稀。匿名共有 / EternalBlue 等 |
+| 389 / 636（LDAP / LDAPS） | `../01_Reconnaissance/LDAP_Enumeration.md` | 外部公開は稀。匿名バインド確認 |
+| 1433（MSSQL） | `../02_Initial_Access/MSSQL_Exploitation.md` | 認証スプレー → xp_cmdshell / Linked Server |
+| 3389（RDP） | 専用ファイル未作成（候補）。当面は `../02_Initial_Access/Default_Credentials.md`（cred 試行）+ `../05_Tools_Reference/Searchsploit.md`（BlueKeep / DejaBlue CVE 検索） | fastpentest §4 で優先 2 番目に位置付け |
+| 3306 / 5432 / 6379 / 27017 / 9200（DB 系：MySQL / PostgreSQL / Redis / MongoDB / Elasticsearch） | 専用ファイル未作成。当面は `../02_Initial_Access/Default_Credentials.md` + `../05_Tools_Reference/Searchsploit.md` | fastpentest §4 で優先 3 番目（Redis unauth / PostgreSQL COPY FROM PROGRAM / Elasticsearch CVE-2014-3120 等が高影響） |
+| 23（Telnet） / 5900-5903（VNC） / 873（rsync） / 2049（NFS） | 専用ファイル未作成。当面は `../02_Initial_Access/Default_Credentials.md` | fastpentest §4 で「稀だが見つけたら即取得系」グループとして位置付け |
 
 ### Step 1b — TLS証明書から製品識別
 
@@ -111,9 +132,11 @@ TLS ポートが開いている場合は、証明書の `Issuer` / `Subject CN` 
 
 ---
 
-## Step 2 — Edge CVE 照合
+## Step 2 — Edge CVE 照合（エッジアプライアンス製品確定時のみ）
 
-**目的：** 確定した製品・バージョンに対し、認証不要のRCE・認証バイパスCVEが適用できないかを照合する。
+**前提：** Step 1 で対象がエッジアプライアンス（SSL-VPN ゲートウェイ / 次世代ファイアウォール / ロードバランサー / 境界 Web アプリケーション機器）と判明した場合にのみ実施する。一般 Linux / Windows サーバ・通常の Web アプリの場合は **Step 1 の「サービス別分岐」表が主軸**となり、本 Step はスキップして Step 3 へ進む。
+
+**目的：** 確定したエッジアプライアンス製品・バージョンに対し、認証不要のRCE・認証バイパスCVEが適用できないかを照合する。
 
 → 詳細: `../02_Initial_Access/Edge_Appliance_CVEs.md`
 
