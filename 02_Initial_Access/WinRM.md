@@ -26,7 +26,7 @@
 - **5985 / 5986 のどちらが開いているか**: 5986（HTTPS）のみの環境では `evil-winrm -S` が必須（§4）
 - **攻撃側端末が Windows / Linux のどちらか**: Linux 側なら evil-winrm / nxc / pypsrp、Windows 側なら PowerShell ネイティブ cmdlet（§6）を選ぶ
 
-> 原理（WS-Management / SOAP over HTTP / Authentication negotiation の仕様 / Kerberos vs NTLM の選択挙動 / wsmprovhost.exe プロセスモデル）→ MS-WSMV プロトコル仕様（Microsoft 公式ドキュメント）を参照。本ファイルでは挙動レベルで扱う。
+> 原理（WS-Management / SOAP over HTTP / http.sys カーネル共有 / SPNEGO 認証 negotiation / Kerberos SPN / TrustedHosts と NTLM Mutual Auth / 二重ホップ問題 / wsmprovhost.exe プロセスモデル）→ `../06_Concepts/WinRM_Protocol.md`。本ファイルでは挙動レベルで扱う。
 
 **攻撃者の思考トレース:** WinRM は「Windows 環境での SSH」相当 — 対話シェル・ファイル転送・スクリプト実行が可能で、SMB ベースの psexec / wmiexec ほどイベントログ痕跡を残さない（サービス作成や WMI 呼び出しが入らない）。**認証情報が取れた瞬間に最初に試すべき経路**。`nxc winrm` で `(Pwn3d!)` が出れば 1 コマンドで対話シェル確定、出なくても認証は通っていればグループ追加経路 / 別ユーザー探索に進める。**辞書攻撃の起点としては薄い**（取得済み cred 試行が本命）— SSH と同じく「取れた cred を試す」スタンス。**侵入後は Invoke-Command で AD 内他ホストへ連鎖侵入できる**（§7）ため、Lateral movement の主要ハブにもなる。
 
@@ -652,3 +652,4 @@ $session.Signal($cmdId, 0)
 - 関連：他プロトコルでの認証情報使い回し → `SSH.md` / `FTP.md` / `Mail_Services.md`
 - 関連：ツールリファレンス（nxc）→ `../05_Tools_Reference/Netexec.md`
 - 関連：AD 環境での hosts ファイル設定（Kerberos 認証で必須）→ `../06_Concepts/Hosts_File_For_AD.md`
+- 関連：WinRM / WS-Management の動作原理（プロセスモデル / 認証 negotiation / 二重ホップ）→ `../06_Concepts/WinRM_Protocol.md`
