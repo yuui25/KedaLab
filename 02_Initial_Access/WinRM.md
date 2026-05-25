@@ -1,6 +1,6 @@
 # WinRM
 
-> **スコープ: 5985（HTTP）/ 5986（HTTPS）ポートの列挙〜認証確認〜対話シェル取得・WinRM 経由の認証スプレー / Lateral movement / Persistence・関連既知 CVE まで**を 1 ファイルで扱う。Windows 環境で認証情報（パスワード / NTLM ハッシュ / Kerberos チケット）を取得した直後の **第一選択の対話シェル取得経路**。WinRM が閉じている場合の Impacket exec 経路は `./Protocol_Exploitation.md`、接続後の AD 列挙・横展開は `../04_Post_Access_Windows_AD/Enumeration_Checklist.md` を参照。
+> **スコープ: 5985（HTTP）/ 5986（HTTPS）ポートの列挙〜認証確認〜対話シェル取得・WinRM 経由の認証スプレー / Lateral movement / Persistence・関連既知 CVE まで**を 1 ファイルで扱う。Windows 環境で認証情報（パスワード / NTLM ハッシュ / Kerberos チケット）を取得した直後の **第一選択の対話シェル取得経路**。WinRM が閉じている場合の Impacket exec 経路は `./Impacket_Exec.md`、接続後の AD 列挙・横展開は `../04_Post_Access_Windows_AD/Enumeration_Checklist.md` を参照。
 
 ## 着火条件
 
@@ -68,7 +68,7 @@ curl -sk -I https://[TARGET_IP]:5986/wsman
 | 5985 が **Linux OS** のホストで開いている | **Azure Linux + OMI Agent の可能性** | §10 OMIGOD CVE-2021-38647 を確認 |
 | `WWW-Authenticate: Negotiate` のみ（Basic なし）| NTLM / Kerberos のみ受理、Basic auth 無効化済み | パスワード平文の Basic 経路は使えない。`evil-winrm` は既定で Negotiate 使うので問題なし |
 | `WWW-Authenticate: Basic` を含む | Basic auth 有効（HTTP 上で平文 cred 流れる構成、設定不備の finding 候補）| Basic 経路でも接続可。HTTPS 経路に切替を推奨記録 |
-| `/wsman` で 404 / 接続拒否 | WinRM 自体が無効化 / 別パスに移動 | `./Protocol_Exploitation.md` の Impacket exec 経路（135 / 445）に切替 |
+| `/wsman` で 404 / 接続拒否 | WinRM 自体が無効化 / 別パスに移動 | `./Impacket_Exec.md` の Impacket exec 経路（135 / 445）に切替 |
 
 > **注意:** `Microsoft HTTPAPI httpd 2.0` のバナーは WinRM 専用ではない（IIS / WSDAPI など http.sys を使う他サービスでも出る）。ポート番号（5985 / 5986）で WinRM と確定する。`HTTPAPI` のバージョン番号は **OS バージョンと直結しない**（カーネルコンポーネントなので独立に更新される）ため、OS 判定の手掛かりにはならない。
 
@@ -103,7 +103,7 @@ klist
 | `Negotiate` + `Kerberos` | Kerberos 単独受理経路あり、AD 環境 | `kinit` 済みなら `evil-winrm -k --spn HTTP/[TARGET_FQDN]` で Kerberos 経路（NTLM 無効化環境で有効）|
 | `Basic realm="WSMAN"` を含む | Basic auth 有効（設定不備の finding 候補）| 平文 cred 流れる経路、HTTP 5985 上の Basic 経路では MitM 経路で cred キャプチャの懸念。検出時は finding として記録 |
 | `CredSSP` を含む | CredSSP 認証有効（二段委任あり）| 既存 cred の他ホスト委任が可能、二重ホップ問題回避に使える（§7 Lateral movement で活きる） |
-| すべての方式が拒否 / 401 が返らない | エンドポイント自体に到達できていない（FW / IP 制限）| 接続元 IP を変える / `./Protocol_Exploitation.md` の Impacket exec 経路（445）に切替 |
+| すべての方式が拒否 / 401 が返らない | エンドポイント自体に到達できていない（FW / IP 制限）| 接続元 IP を変える / `./Impacket_Exec.md` の Impacket exec 経路（445）に切替 |
 
 > **NTLM 無効化環境の見分け方:** Kerberos のみ受理する設定は AD 強化構成で増えている（Microsoft 推奨）。`Negotiate` だけ返っていても、内部で Kerberos のみが許可されていると NTLM 認証は `STATUS_LOGON_FAILURE` で拒否される。**`kinit` で TGT 取得 → `evil-winrm -k --spn HTTP/[TARGET_FQDN]` を試す** か、Kerberos チケットを取得済みなら Pass-The-Ticket 経路（`../04_Post_Access_Windows_AD/Kerberos_Attacks/Pass_The_Ticket.md`）へ。
 
@@ -584,7 +584,7 @@ $session.Signal($cmdId, 0)
 
 | 状況 | 推定原因 | 代替手段 |
 |---|---|---|
-| 5985 / 5986 が両方とも閉じている | WinRM 自体が無効化（既定で無効の Server / 強化された環境）| `./Protocol_Exploitation.md` の Impacket exec 経路（135 / 445）に切替、または管理者権限取得後に §9 で強制有効化 |
+| 5985 / 5986 が両方とも閉じている | WinRM 自体が無効化（既定で無効の Server / 強化された環境）| `./Impacket_Exec.md` の Impacket exec 経路（135 / 445）に切替、または管理者権限取得後に §9 で強制有効化 |
 | 認証成功するが `(Pwn3d!)` 出ない | `Remote Management Users` / `Administrators` グループ外 | BloodHound でグループへの writable ACE を辿る / 別ユーザー探索 |
 | `NTLM is disabled on this machine` | NTLM 認証無効化、Kerberos のみ受理 | `kinit` で TGT 取得 → `evil-winrm -k --spn HTTP/[TARGET_FQDN]` |
 | `STATUS_ACCOUNT_LOCKED_OUT` が頻発 | スプレー設計失敗 | `Account_Lockout_Recon.md` で観察期間 +buffer 再設計、Linux PAM 系 / Web フォーム経路に切替も検討 |
@@ -648,7 +648,7 @@ $session.Signal($cmdId, 0)
 - 後：SeImpersonate / SeAssignPrimaryToken 経由の SYSTEM 昇格 → `../04_Post_Access_Windows_AD/Privilege_Tokens.md`
 - 後：DCSync 経由の全ハッシュ取得 → `../04_Post_Access_Windows_AD/Credential_Dumping.md`
 - 後（§10.3 NTLM Relay 詳細）：→ `../04_Post_Access_Windows_AD/NTLM_Relay/ntlmrelayx.md` / mitm6 トリガは `../04_Post_Access_Windows_AD/NTLM_Relay/mitm6.md`
-- 関連：WinRM が閉じている場合の Impacket exec（wmiexec / psexec / smbexec）→ `./Protocol_Exploitation.md`
+- 関連：WinRM が閉じている場合の Impacket exec（wmiexec / psexec / smbexec / atexec / dcomexec）→ `Impacket_Exec.md`
 - 関連：他プロトコルでの認証情報使い回し → `SSH.md` / `FTP.md` / `Mail_Services.md`
 - 関連：ツールリファレンス（nxc）→ `../05_Tools_Reference/Netexec.md`
 - 関連：AD 環境での hosts ファイル設定（Kerberos 認証で必須）→ `../06_Concepts/Hosts_File_For_AD.md`

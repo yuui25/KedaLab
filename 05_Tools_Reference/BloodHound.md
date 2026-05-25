@@ -171,7 +171,7 @@ MATCH (u:User) WHERE u.dontreqpreauth=true RETURN u.name
 ---
 
 ## 関連技術
-- 前：認証情報を取得してWindowsシェルを取得した → `../02_Initial_Access/WinRM.md` / `../02_Initial_Access/Protocol_Exploitation.md`（Impacket exec 経路）
+- 前：認証情報を取得してWindowsシェルを取得した → `../02_Initial_Access/WinRM.md` / `../02_Initial_Access/Impacket_Exec.md`
 - 後（GenericAll 発見） → `../04_Post_Access_Windows_AD/ACE_Abuse/GenericAll.md`
 - 後（GenericWrite 発見） → `../04_Post_Access_Windows_AD/ACE_Abuse/GenericWrite.md`
 - 後（WriteDACL 発見） → `../04_Post_Access_Windows_AD/ACE_Abuse/WriteDACL.md`

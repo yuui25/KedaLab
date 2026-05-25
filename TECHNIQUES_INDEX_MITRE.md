@@ -74,7 +74,10 @@ ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
 | T1059.004 | Command and Scripting Interpreter: Unix Shell | `03_Post_Access_Linux/Shell_Stabilization.md` |
 | T1059.006 | Command and Scripting Interpreter: Python | `02_Initial_Access/Web_Vulnerabilities/Command_Injection.md` |
 | T1203 | Exploitation for Client Execution | `02_Initial_Access/Web_Vulnerabilities/Electron_XSS_RCE.md` |
-| T1569.002 | System Services: Service Execution | `02_Initial_Access/Protocol_Exploitation.md`（psexec/smbexec/wmiexec） |
+| T1569.002 | System Services: Service Execution | `02_Initial_Access/Impacket_Exec.md`（§4 psexec / §5 smbexec — SCM 経由のサービス作成・Event 7045） |
+| T1047 | Windows Management Instrumentation | `02_Initial_Access/Impacket_Exec.md`（§3 wmiexec — Win32_Process.Create で cmd.exe 起動・wmiprvse.exe 子プロセス） |
+| T1053.005 | Scheduled Task/Job: Scheduled Task | `02_Initial_Access/Impacket_Exec.md`（§6 atexec — ATSvc / ITaskSchedulerService 経由・135 のみで FW 抜け・TaskScheduler Event 106/200/201/141） |
+| T1559.001 | Inter-Process Communication: Component Object Model | `02_Initial_Access/Impacket_Exec.md`（§7 dcomexec — MMC20.Application / ShellWindows / ShellBrowserWindow で親プロセス偽装・defense evasion） |
 
 ---
 
@@ -114,7 +117,7 @@ ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
 | T1685 | Disable or Modify Tools | `04_Post_Access_Windows_AD/Enumeration_Checklist.md`（Step 8 AMSI バイパス） / `04_Post_Access_Windows_AD/BYOVD.md`（BYOVD で EDR Kernel Callback 削除） |
 | T1027 | Obfuscated Files or Information | `02_Initial_Access/Web_Vulnerabilities/JS_Obfuscation.md` |
 | T1140 | Deobfuscate/Decode Files or Information | `02_Initial_Access/Web_Vulnerabilities/JS_Obfuscation.md` / `02_Initial_Access/Binary_Analysis.md` |
-| T1550.002 | Use Alternate Authentication Material: Pass the Hash | `04_Post_Access_Windows_AD/Credential_Dumping.md` / `02_Initial_Access/WinRM.md`（§4 evil-winrm -H） / `02_Initial_Access/Protocol_Exploitation.md`（Impacket exec PTH） |
+| T1550.002 | Use Alternate Authentication Material: Pass the Hash | `04_Post_Access_Windows_AD/Credential_Dumping.md` / `02_Initial_Access/WinRM.md`（§4 evil-winrm -H） / `02_Initial_Access/Impacket_Exec.md`（§3〜§7 全 exec ツールで `-hashes :[NTLM]` 経路） |
 
 ---
 
@@ -127,7 +130,7 @@ ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
 | T1003.003 | OS Credential Dumping: NTDS | `04_Post_Access_Windows_AD/Credential_Dumping.md` |
 | T1003.006 | OS Credential Dumping: DCSync | `04_Post_Access_Windows_AD/Credential_Dumping.md` |
 | T1110.002 | Brute Force: Password Cracking | `05_Tools_Reference/Hashcat.md` |
-| T1110.003 | Brute Force: Password Spraying | `05_Tools_Reference/Netexec.md` / `02_Initial_Access/Account_Lockout_Recon.md` / `02_Initial_Access/WinRM.md`（§6 nxc winrm --continue-on-success） |
+| T1110.003 | Brute Force: Password Spraying | `05_Tools_Reference/Netexec.md` / `02_Initial_Access/Account_Lockout_Recon.md` / `02_Initial_Access/WinRM.md`（§6 nxc winrm --continue-on-success） / `02_Initial_Access/Impacket_Exec.md`（§8 nxc smb --continue-on-success → wmiexec 連続実行・ローカル管理者 hash 使い回し検出 with `--local-auth`） |
 | T1110.001 | Brute Force: Password Guessing | `02_Initial_Access/Default_Credentials.md`（hydra / medusa） / `01_Reconnaissance/SNMP_Enumeration.md`（コミュニティ文字列ブルート） |
 | T1558.001 | Steal or Forge Kerberos Tickets: Golden Ticket | `04_Post_Access_Windows_AD/Kerberos_Attacks/Pass_The_Ticket.md` |
 | T1558.002 | Steal or Forge Kerberos Tickets: Silver Ticket | `04_Post_Access_Windows_AD/Kerberos_Attacks/Pass_The_Ticket.md` |
@@ -171,10 +174,10 @@ ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
 | Technique ID | 技術名 | kedalab ファイル |
 |------|-------|--------|
 | T1021.001 | Remote Services: Remote Desktop Protocol | `04_Post_Access_Windows_AD/Enumeration_Checklist.md` |
-| T1021.002 | Remote Services: SMB/Windows Admin Shares | `02_Initial_Access/Protocol_Exploitation.md`（psexec/smbexec） |
+| T1021.002 | Remote Services: SMB/Windows Admin Shares | `02_Initial_Access/Impacket_Exec.md`（§4 psexec / §5 smbexec — ADMIN$ / IPC$ 経由）|
 | T1021.006 | Remote Services: Windows Remote Management | `02_Initial_Access/WinRM.md`（§1〜§10 バナー〜認証確認〜evil-winrm 対話シェル〜Windows ネイティブ PSRemoting〜Lateral Movement〜認証スプレー〜Persistence〜既知 CVE / NTLM Relay / COM Abuse） |
 | T1550.002 | Use Alternate Authentication Material: Pass the Hash | `04_Post_Access_Windows_AD/Credential_Dumping.md` |
-| T1550.003 | Use Alternate Authentication Material: Pass the Ticket | `04_Post_Access_Windows_AD/Kerberos_Attacks/Pass_The_Ticket.md` / `04_Post_Access_Windows_AD/Delegation_Attacks/RBCD.md`（S4U チケット偽造） |
+| T1550.003 | Use Alternate Authentication Material: Pass the Ticket | `04_Post_Access_Windows_AD/Kerberos_Attacks/Pass_The_Ticket.md` / `04_Post_Access_Windows_AD/Delegation_Attacks/RBCD.md`（S4U チケット偽造） / `02_Initial_Access/Impacket_Exec.md`（§9 KRB5CCNAME 経由の .ccache インポート + `-k -no-pass` で各 exec ツール起動） |
 | T1570 | Lateral Tool Transfer | `05_Tools_Reference/Impacket_Suite.md` / `03_Post_Access_Linux/Kernel_Exploits.md`（python3 -m http.server） |
 
 ---

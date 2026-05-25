@@ -123,7 +123,7 @@ IPだけ渡された状態からゴール（権限昇格・機密情報取得）
 | Linuxシェルを取った直後 | `03_Post_Access_Linux/Enumeration_Checklist.md` |
 | Windows ADシェルを取った直後 | `04_Post_Access_Windows_AD/Enumeration_Checklist.md` |
 | Windows 認証情報を取得し WinRM (5985/5986) が開いている | `02_Initial_Access/WinRM.md` |
-| 管理者認証情報があるが WinRM (5985/5986) が閉じている | `02_Initial_Access/Protocol_Exploitation.md`（Impacket exec ツール群セクション） |
+| 管理者認証情報があるが WinRM (5985/5986) が閉じている | `02_Initial_Access/Impacket_Exec.md` |
 | BloodHoundで権限が判明した | `04_Post_Access_Windows_AD/ACE_Abuse/` |
 | 内部 VLAN に接続済み（認証情報あり・なし問わず、内部 LAN 攻撃の全体フローを確認したい） | `00_Playbook/Internal_LAN_Pentest_Flow.md` |
 | コマンドのオプションを忘れた | `05_Tools_Reference/` |

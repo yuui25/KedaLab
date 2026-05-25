@@ -579,5 +579,5 @@ ssh [USER]@[INTERNAL_TARGET_IP]
 - 後：§12 SOCKS pivot 経由の内部ネットワーク列挙 → `../00_Playbook/Internal_LAN_Pentest_Flow.md`
 - 後：§13 agent ハイジャックで取得した鍵による他ホスト連鎖侵入 → 本ファイル §5（取得鍵での再ログイン）
 - 前：§11 authorized_keys 書込のための書込権限取得経路 → `FTP.md`（§5 書込判定）/ Redis unauth / PostgreSQL `COPY ... TO PROGRAM` 等の別プロトコル経路
-- 関連：他プロトコルでの認証情報使い回し → `FTP.md` / `Mail_Services.md` / `WinRM.md` / `Protocol_Exploitation.md`（Impacket exec 各セクション）
+- 関連：他プロトコルでの認証情報使い回し → `FTP.md` / `Mail_Services.md` / `WinRM.md` / `Impacket_Exec.md`
 - 関連：TLS バナーと同様の証明書/鍵からの組織推定軸 → `../01_Reconnaissance/TLS_Audit.md`

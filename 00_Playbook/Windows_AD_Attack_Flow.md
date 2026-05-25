@@ -315,7 +315,7 @@ impacket-wmiexec -hashes :[NTLM_HASH] '[DOMAIN]/[USER]@[IP]'
 
 > **[HIGH IMPACT]** `impacket-psexec` は ADMIN$ 共有に実行可能ファイルを書き込むため SIEM/EDR で確実に検知される（Event ID 7045 = サービス作成）。本番では事前合意の上で使う。`impacket-wmiexec` はファイルレスのため検知性が低い。演習環境（HTB / OSCP 等）では制約なし。
 
-→ 詳細（プロトコル選択の判断軸・各ツールの動作・Event ID）: `../02_Initial_Access/Protocol_Exploitation.md`（Impacket exec ツール群セクション）
+→ 詳細（プロトコル選択の判断軸・各ツールの動作・Event ID）: `../02_Initial_Access/Impacket_Exec.md`（§3 wmiexec / §4 psexec / §5 smbexec / §6 atexec / §7 dcomexec の使い分け・§8 スプレー連携・§9 Kerberos 経路）
 → ツールリファレンス: `../05_Tools_Reference/Impacket_Suite.md`（リモート実行）
 
 ### シェル取得後の次ステップ

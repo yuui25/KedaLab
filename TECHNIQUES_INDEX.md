@@ -192,8 +192,15 @@
 | WinRM §10.2 CVE-2021-38647 OMIGOD（Azure OMI Unauth RCE as root・OMI < 1.6.8-1・5985 で Linux OS なら最優先確認） | Initial Access | `02_Initial_Access/WinRM.md` |
 | WinRM §10.3 NTLM Relay to WinRM（Impacket 0.11+ ntlmrelayx wsman:// / HTTP 5985 listener 前提 / mitm6 / Responder 連携 / 緩和 EnableCompatibilityHttpListener=false + EPA） | Initial Access | `02_Initial_Access/WinRM.md` |
 | WinRM §10.4 WSMan.Automation COM Abuse（PowerShell 経路回避・Constrained Language Mode 環境用・SharpWSManWinRM） | Initial Access | `02_Initial_Access/WinRM.md` |
-| Impacket exec ツール群（wmiexec / psexec / smbexec）— WinRM 閉鎖時のシェル取得 | Initial Access | `02_Initial_Access/Protocol_Exploitation.md` |
-| Impacket exec ツール選択（DCERPC+DCOM / SMB / 検知性比較・Event ID 7045）| Initial Access | `02_Initial_Access/Protocol_Exploitation.md` |
+| Impacket exec §1 SMB / DCERPC ポート判定と前提確認（nmap 135/139/445・nxc smb signing/SMBv1/Pwn3d 判定・rpcdump で DCERPC エンドポイント列挙・signing と Relay の関係） | Initial Access | `02_Initial_Access/Impacket_Exec.md` |
+| Impacket exec §2 nxc smb 単一 cred 判定と (Pwn3d!)（パスワード / NTLM ハッシュ / --local-auth / Kerberos --use-kcache・LOCKED_OUT / EXPIRED の分岐） | Initial Access | `02_Initial_Access/Impacket_Exec.md` |
+| Impacket exec §3 wmiexec — WMI/DCOM 経由（最初に試す・ファイルレス・wmiprvse.exe 子プロセス・DCOM 動的ポート 49152-65535・-no-output / -k -no-pass / 半対話シェル制約） | Initial Access | `02_Initial_Access/Impacket_Exec.md` |
+| Impacket exec §4 psexec — SMB+SCM 経由 SYSTEM 取得（HIGH IMPACT・ADMIN$ への PE 書込・Event 7045 / 4697 確実検知・LocalAccountTokenFilterPolicy 罠・-service-name kedalab マーカー・-remote-binary-name で Defender 回避） | Initial Access | `02_Initial_Access/Impacket_Exec.md` |
+| Impacket exec §5 smbexec — SMB+一時サービス代替（バイナリ書込なしだが Event 7045 がコマンドごとに大量発生・stdin 不可・cwd 引継ぎなし） | Initial Access | `02_Initial_Access/Impacket_Exec.md` |
+| Impacket exec §6 atexec — タスクスケジューラ経由（135 のみで通る FW 抜け・非対話 1 コマンド・TaskScheduler Event 106/200/201/141・-task-name kedalab マーカー） | Initial Access | `02_Initial_Access/Impacket_Exec.md` |
+| Impacket exec §7 dcomexec — DCOM オブジェクト経由（defense evasion・MMC20.Application / ShellWindows / ShellBrowserWindow で親プロセス mmc/explorer に偽装・wmiprvse 監視ルール回避・MMC20 は Win10 1803+ で既定無効） | Initial Access | `02_Initial_Access/Impacket_Exec.md` |
+| Impacket exec §8 認証スプレー連携（HIGH IMPACT・nxc smb --continue-on-success で Pwn3d ホスト抽出 → wmiexec 連続実行・ローカル管理者 hash 使い回し検出（--local-auth）は LAPS 未導入の重大 finding・Event 4625 / 4262 source IP 記録） | Initial Access | `02_Initial_Access/Impacket_Exec.md` |
+| Impacket exec §9 Kerberos 経路（NTLM 無効化環境・kinit + KRB5CCNAME + -k -no-pass・SPN プレフィックス cifs/host のツール別差・Pass-The-Ticket / Pass-The-Key (AES) / Overpass-The-Hash・時刻同期必須） | Initial Access | `02_Initial_Access/Impacket_Exec.md` |
 | RPC / rpcclient ユーザー列挙 | Initial Access | `02_Initial_Access/Protocol_Exploitation.md` |
 | impacket-lookupsid による RID bruteforce | Initial Access | `02_Initial_Access/Protocol_Exploitation.md` |
 | MSSQL 列挙・悪用（impacket-mssqlclient / DB列挙・ハッシュ取得） | Initial Access | `02_Initial_Access/MSSQL_Exploitation.md` |
@@ -406,6 +413,7 @@
 | 外部リファレンス集（HackTricks / OWASP / PortSwigger / NIST / ベンダーアドバイザリ / awesome 系 / SecLists 等の参照元目次） | 各サービス・各技術の参照元 | `06_Concepts/External_References.md` |
 | メールプロトコル動作原理（SMTP 対話モデル / EHLO 拡張 / VRFY-EXPN の歴史 / STARTTLS と Implicit TLS / POP3 vs IMAP / SPF-DKIM-DMARC / メールヘッダ / MIME / SASL 認証メカニズム / Open Relay 史） | `02_Initial_Access/Mail_Services.md` | `06_Concepts/Mail_Protocols.md` |
 | WinRM / WS-Management プロトコル動作原理（SOAP over HTTP / http.sys カーネル共有と CVE 波及 / wsmprovhost.exe プロセスモデル・検知シグネチャ / SPNEGO 認証 negotiation / Kerberos SPN HTTP/ プレフィックス / TrustedHosts と NTLM Mutual Auth / 二重ホップ問題と CredSSP/RBCD/PTT / SSH との対比） | `02_Initial_Access/WinRM.md` | `06_Concepts/WinRM_Protocol.md` |
+| Impacket exec ツール群の動作原理（DCERPC 二段接続 135 → 動的ポート / SMB パイプ経由の DCERPC / 5 ツール × DCERPC インターフェース対応 / DCOM Activation と WMI = IWbemServices / SCM svcctl で psexec vs smbexec / atsvc が 445 のみで通る根拠 / プロセスツリー差と検知シグネチャ / Kerberos SPN cifs/ vs host/ のツール別差 / WinRM との対比） | `02_Initial_Access/Impacket_Exec.md` | `06_Concepts/Impacket_Exec_Internals.md` |
 | ペネトレ基礎（攻撃者視点の前提・思考の組み立て方） | 初学者導入 | `06_Concepts/Pentest_Fundamentals.md` |
 | CVSS スコアリング（v3.1 / v4.0 構造差・Worst-case vs Likely-case・Environmental・報告書記載フォーマット） | 報告書作成・CVE 申請 | `06_Concepts/CVSS_Scoring.md` |
 | CVE 研究スターター（起点 CVE 入手元・ライブラリ仕様調査・CWE 選定） | CVE 研究着手 | `06_Concepts/CVE_Research_Starter.md` |

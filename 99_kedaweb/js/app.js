@@ -1471,11 +1471,11 @@
   $("#modalClose").addEventListener("click", closeModal);
   $("#modalBack").addEventListener("click", goBack);
   $("#modalNav").addEventListener("click", () => {
-    const file = docStack[docStack.length - 1];
-    if (!file) return;
+    const entry = docStack[docStack.length - 1];
+    if (!entry) return;
     closeModal();
     enterNavMode();
-    setTimeout(() => setNavFocus(file), 200);
+    setTimeout(() => setNavFocus(entry.file), 200);
   });
 
   function wireSearchClear(inputId, clearId) {
@@ -1509,7 +1509,7 @@
     if (docStack.length <= 1) return;
     docStack.pop();
     const prev = docStack[docStack.length - 1];
-    openMD(prev, true);
+    openMD(prev.file, true, prev.scrollTop || 0);
   }
 
   function closeModal() {
@@ -1519,10 +1519,13 @@
     updateBackButton();
   }
 
-  async function openMD(file, isBack = false) {
+  async function openMD(file, isBack = false, restoreScroll = 0) {
     if (!file) return;
     modal.classList.add("open");
-    if (!isBack) docStack.push(file);
+    if (!isBack) {
+      if (docStack.length > 0) docStack[docStack.length - 1].scrollTop = modalBody.scrollTop;
+      docStack.push({ file, scrollTop: 0 });
+    }
     updateBackButton();
     const navBtn = $("#modalNav");
     if (navBtn) navBtn.hidden = !D.techniques.some(t => t.f === file);
@@ -1557,7 +1560,7 @@
       if (!res.ok) throw new Error("HTTP " + res.status);
       const text = await res.text();
       modalBody.innerHTML = `<div class="md">${markdown(text)}</div>`;
-      modalBody.scrollTop = 0;
+      modalBody.scrollTop = restoreScroll;
       const baseDir = file.split("/").slice(0, -1).join("/");
       // linkify plain-text .md paths in the body (tables, code, sentences)
       linkifyMdPaths(modalBody, baseDir);

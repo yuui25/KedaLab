@@ -215,12 +215,12 @@ Kerberos の committee 設計：
 
 | 状況 | 確認ポイント | 関連手順 |
 |---|---|---|
-| NTLM 無効化環境 | `evil-winrm -u -p` で `NTLM is disabled`。Kerberos 経路に切替 | WinRM.md §2 / §4 |
-| ドメイン未参加攻撃端末 | TrustedHosts エラー。HTTPS or 個別登録 | WinRM.md §6 / 本ファイル §4 |
+| NTLM 無効化環境 | `evil-winrm -u -p` で `NTLM is disabled`。Kerberos 経路に切替 | [`../02_Initial_Access/WinRM.md`](../02_Initial_Access/WinRM.md) §2 / §4 |
+| ドメイン未参加攻撃端末 | TrustedHosts エラー。HTTPS or 個別登録 | [`../02_Initial_Access/WinRM.md`](../02_Initial_Access/WinRM.md) §6 / 本ファイル §4 |
 | Kerberos が IP 直打ちで失敗 | `KRB_AP_ERR_MODIFIED`。FQDN 解決を `/etc/hosts` で先に通す | [`Hosts_File_For_AD.md`](Hosts_File_For_AD.md) |
-| 二重ホップで Access Denied | Kerberos delegation 設定確認。CredSSP / RBCD / PTT へ | WinRM.md §7 / 本ファイル §5 |
-| Linux ホストで 5985 が開いている | **Azure OMI Agent の可能性**。OMIGOD（CVE-2021-38647） | WinRM.md §10.2 |
-| HTTPAPI 2.0 が出るが WinRM ではない | IIS / WSDAPI / Windows Update のどれかも http.sys 共有。ポート番号で確定 | WinRM.md §1 |
+| 二重ホップで Access Denied | Kerberos delegation 設定確認。CredSSP / RBCD / PTT へ | [`../02_Initial_Access/WinRM.md`](../02_Initial_Access/WinRM.md) §7 / 本ファイル §5 |
+| Linux ホストで 5985 が開いている | **Azure OMI Agent の可能性**。OMIGOD（CVE-2021-38647） | [`../02_Initial_Access/WinRM.md`](../02_Initial_Access/WinRM.md) §10.2 |
+| HTTPAPI 2.0 が出るが WinRM ではない | IIS / WSDAPI / Windows Update のどれかも http.sys 共有。ポート番号で確定 | [`../02_Initial_Access/WinRM.md`](../02_Initial_Access/WinRM.md) §1 |
 | Server Core / Nano Server | WinRM の設定パスは通常版と同じ。GUI が無いだけ。`winrm` コマンド・`Set-Item WSMan:\...` は同じ | — |
 | Workgroup（スタンドアロン）環境 | Kerberos 不可、NTLM のみ。`--local-auth` フラグが必要 | [`Windows_Standalone_vs_AD.md`](Windows_Standalone_vs_AD.md) |
 
@@ -257,6 +257,7 @@ WinRM は文脈上「Windows 版 SSH」と説明されることが多いが、**
 ## 関連技術
 
 - 関連：[`../02_Initial_Access/WinRM.md`](../02_Initial_Access/WinRM.md)（手順本体）
+- 関連：[`Impacket_Exec_Internals.md`](Impacket_Exec_Internals.md)（WinRM 不可時の代替経路。DCERPC / DCOM / SCM / ATSvc の動作原理・5 ツールのプロセスツリー差・Kerberos SPN cifs/ vs host/ のツール別差）
 - 関連：[`Hosts_File_For_AD.md`](Hosts_File_For_AD.md)（Kerberos SPN 解決のための hosts 登録）
 - 関連：[`Windows_Standalone_vs_AD.md`](Windows_Standalone_vs_AD.md)（Workgroup 環境での WinRM の挙動差）
 - 関連：[`../05_Tools_Reference/Netexec.md`](../05_Tools_Reference/Netexec.md)（`nxc winrm` の `(Pwn3d!)` 判定基準）
