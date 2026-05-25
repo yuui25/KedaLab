@@ -13,7 +13,19 @@
 | 技術名 | カテゴリ | ファイルパス |
 |--------|---------|------------|
 | ポートスキャン（nmap） | Reconnaissance | `01_Reconnaissance/Network_Scanning.md` |
-| DNS調査・IP特定（nslookup・dig・ゾーン転送・サブドメイン列挙） | Reconnaissance | `01_Reconnaissance/DNS_Enumeration.md` |
+| DNS 基本列挙（A / AAAA / MX / NS / TXT / CNAME / PTR / SRV / DNSKEY / CAA レコード解釈・内部 DNS 指定・/etc/hosts 登録）| Reconnaissance | `01_Reconnaissance/DNS_Enumeration.md` |
+| DNS ④ Zone Transfer (AXFR) 試行（dig axfr / fierce / dnsrecon / host -l / 全 NS 自動試行・partial AXFR・IXFR・成功時の悪用方向（内部 IP 抽出・RFC 1918 露出 finding））| Reconnaissance | `01_Reconnaissance/DNS_Enumeration.md` |
+| DNS ⑤ サブドメイン bruteforce（gobuster / ffuf / dnsenum / dnscan・SecLists subdomains-top1million・IPv6 用 dnsdict6） | Reconnaissance | `01_Reconnaissance/DNS_Enumeration.md` |
+| DNS ⑦ Banner Grabbing（version.bind CHAOS TXT / hostname.bind / authors.bind / fpdns で実装 fingerprint / nmap dns-nsid） | Reconnaissance | `01_Reconnaissance/DNS_Enumeration.md` |
+| DNS ⑧ AD SRV レコード列挙（外部から AD 推測：`_ldap._tcp` / `_kerberos._tcp` / `_kpasswd._tcp` / `_gc._tcp` / `_ldap._tcp.dc._msdcs`・nmap dns-srv-enum・外部公開自体が finding）| Reconnaissance | `01_Reconnaissance/DNS_Enumeration.md` |
+| DNS ⑨ 技術スタック特定（TXT / MX / 共通サブドメインから M365 / ProofPoint / Mimecast / Atlassian / DocuSign / Adobe IDP / ServiceNow / Webex / Jamf / Slack / GitHub 検出・dns-triage / DMARC `p=none` finding 化・社会工学への接続） | Reconnaissance | `01_Reconnaissance/DNS_Enumeration.md` |
+| DNS ⑩ Subdomain Takeover 検出（CNAME → GitHub Pages / Heroku / S3 / Azure / CloudFront / Bitbucket / GitBook の廃止リソース・subjack / subzy / 手動 curl 確認・PoC 取得は事前合意必須）| Reconnaissance | `01_Reconnaissance/DNS_Enumeration.md` |
+| DNS ⑪ DNSSEC NSEC walking（nmap dns-nsec-enum / dns-nsec3-enum・dnsrecon zonewalk・ldns-walk で signed zone 全レコード網羅・NSEC3 opt-out / ハッシュ辞書攻撃） | Reconnaissance | `01_Reconnaissance/DNS_Enumeration.md` |
+| DNS ⑫ Cache Snooping（`+norecurse` クエリで組織の解決履歴漏洩・応答時間判定・業務利用サービス推測） | Reconnaissance | `01_Reconnaissance/DNS_Enumeration.md` |
+| DNS ⑬ DDNS Update 書込攻撃（HIGH IMPACT・nsupdate / RFC 2136・TSIG・Windows AD SecureUpdate (Kerberos) / BIND `allow-update` ACL 不備・テスト識別子マーカー方式・原状回復必須） | Reconnaissance | `01_Reconnaissance/DNS_Enumeration.md` |
+| DNS ⑭ DNS Rebinding（TTL 1-3 秒の動的応答で SOP 迂回・rebinder.html / rbndr.us 利用・SSRF / クラウドメタデータ 169.254.169.254 経路・Private Network Access 緩和確認） | Reconnaissance | `01_Reconnaissance/DNS_Enumeration.md` |
+| DNS ⑮ Recursion 開放確認（`ra` flag・権威 vs 公開 resolver 区別・DDoS amplification 踏み台 finding 化のみ） | Reconnaissance | `01_Reconnaissance/DNS_Enumeration.md` |
+| DNS ⑯ Mail to nonexistent → NDN bounce 漏洩（Received: ヘッダー内の内部ホスト名・RFC 1918 IP・MTA バージョン情報抽出・swaks ツール） | Reconnaissance | `01_Reconnaissance/DNS_Enumeration.md` |
 | OS判定（TTL・ポート構成・HTTPヘッダー・SMBバナー・SSH バナー） | Reconnaissance | `00_Playbook/00_OS_Identification.md` |
 | robots.txt からの隠しパス発見 | Reconnaissance | `01_Reconnaissance/Web_Enumeration.md` |
 | サービスバージョン検出 | Reconnaissance | `01_Reconnaissance/Network_Scanning.md` |
