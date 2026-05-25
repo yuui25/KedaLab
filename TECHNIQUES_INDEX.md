@@ -201,8 +201,14 @@
 | Impacket exec §7 dcomexec — DCOM オブジェクト経由（defense evasion・MMC20.Application / ShellWindows / ShellBrowserWindow で親プロセス mmc/explorer に偽装・wmiprvse 監視ルール回避・MMC20 は Win10 1803+ で既定無効） | Initial Access | `02_Initial_Access/Impacket_Exec.md` |
 | Impacket exec §8 認証スプレー連携（HIGH IMPACT・nxc smb --continue-on-success で Pwn3d ホスト抽出 → wmiexec 連続実行・ローカル管理者 hash 使い回し検出（--local-auth）は LAPS 未導入の重大 finding・Event 4625 / 4262 source IP 記録） | Initial Access | `02_Initial_Access/Impacket_Exec.md` |
 | Impacket exec §9 Kerberos 経路（NTLM 無効化環境・kinit + KRB5CCNAME + -k -no-pass・SPN プレフィックス cifs/host のツール別差・Pass-The-Ticket / Pass-The-Key (AES) / Overpass-The-Hash・時刻同期必須） | Initial Access | `02_Initial_Access/Impacket_Exec.md` |
-| RPC / rpcclient ユーザー列挙 | Initial Access | `02_Initial_Access/Protocol_Exploitation.md` |
-| impacket-lookupsid による RID bruteforce | Initial Access | `02_Initial_Access/Protocol_Exploitation.md` |
+| RPC §1 エンドポイントマッピング（impacket-rpcdump で 135 / 593 経由の DCERPC インターフェース列挙・Notable RPC IFs 早見表（lsarpc / samr / atsvc / winreg / svcctl / srvsvc / epmapper の IFID と用途）・MS-SAMR は account lockout policy 無関係に列挙可能・Metasploit auxiliary/scanner/dcerpc/* 代替・IOXIDResolver ServerAlive2 で IPv6 / 内部 IP 取得） | Reconnaissance | `01_Reconnaissance/RPC_Enumeration.md` |
+| RPC §2 rpcclient 匿名バインド試行（null session / `-U ""` vs `-U "%"` 挙動差 / guest 認証 / 139 vs 445 強制） | Reconnaissance | `01_Reconnaissance/RPC_Enumeration.md` |
+| RPC §3 ドメイン情報・パスワードポリシー（querydominfo / getdompwinfo / srvinfo PDC フラグ / lsaquery でドメイン SID 取得） | Reconnaissance | `01_Reconnaissance/RPC_Enumeration.md` |
+| RPC §4 ユーザー・グループ列挙（rpcclient enumdomusers / enumdomgroups / enumalsgroups builtin・nxc --users --groups・enum4linux-ng -A・krbtgt 出現で DC 確定・svc_* で Kerberoast 候補抽出） | Reconnaissance | `01_Reconnaissance/RPC_Enumeration.md` |
+| RPC §5 詳細属性取得（queryuser RID で description 平文パスワード grep・lookupnames / lookupsids / queryusergroups / querygroupmem 0x200 で Domain Admins メンバ・Account Flags UD/NRP/DNE/TS/O 解釈） | Reconnaissance | `01_Reconnaissance/RPC_Enumeration.md` |
+| RPC §6 impacket-lookupsid による RID bruteforce（SAMR 拒否環境で LSAT 経由・SidTypeUser/Group/Computer 解釈・nxc --rid-brute 10000・コンピューターアカウント `$` 抽出） | Reconnaissance | `01_Reconnaissance/RPC_Enumeration.md` |
+| RPC §7 impacket-samrdump 包括列挙（SAMR 経由で getdompwinfo + enumdomusers + queryuser 一括・パスワード履歴長 / 最大年数 / Pwd Last Set でサービスアカウント抽出・139/SMB 経由フォールバック） | Reconnaissance | `01_Reconnaissance/RPC_Enumeration.md` |
+| RPC §8 認証情報取得後の再列挙（匿名→guest→認証ユーザー→管理者の権限段階で diff・rpcclient --pw-nt-hash PTH・Kerberos kinit + -k・nxc --loggedon-users / --shares / --pass-pol） | Reconnaissance | `01_Reconnaissance/RPC_Enumeration.md` |
 | MSSQL 列挙・悪用（impacket-mssqlclient / DB列挙・ハッシュ取得） | Initial Access | `02_Initial_Access/MSSQL_Exploitation.md` |
 | MSSQL ユーザーなりすまし（enum_impersonate / EXECUTE AS LOGIN） | Initial Access | `02_Initial_Access/MSSQL_Exploitation.md` |
 | MSSQL xp_cmdshell による OS コマンド実行 | Initial Access | `02_Initial_Access/MSSQL_Exploitation.md` |
@@ -414,6 +420,7 @@
 | メールプロトコル動作原理（SMTP 対話モデル / EHLO 拡張 / VRFY-EXPN の歴史 / STARTTLS と Implicit TLS / POP3 vs IMAP / SPF-DKIM-DMARC / メールヘッダ / MIME / SASL 認証メカニズム / Open Relay 史） | `02_Initial_Access/Mail_Services.md` | `06_Concepts/Mail_Protocols.md` |
 | WinRM / WS-Management プロトコル動作原理（SOAP over HTTP / http.sys カーネル共有と CVE 波及 / wsmprovhost.exe プロセスモデル・検知シグネチャ / SPNEGO 認証 negotiation / Kerberos SPN HTTP/ プレフィックス / TrustedHosts と NTLM Mutual Auth / 二重ホップ問題と CredSSP/RBCD/PTT / SSH との対比） | `02_Initial_Access/WinRM.md` | `06_Concepts/WinRM_Protocol.md` |
 | Impacket exec ツール群の動作原理（DCERPC 二段接続 135 → 動的ポート / SMB パイプ経由の DCERPC / 5 ツール × DCERPC インターフェース対応 / DCOM Activation と WMI = IWbemServices / SCM svcctl で psexec vs smbexec / atsvc が 445 のみで通る根拠 / プロセスツリー差と検知シグネチャ / Kerberos SPN cifs/ vs host/ のツール別差 / WinRM との対比） | `02_Initial_Access/Impacket_Exec.md` | `06_Concepts/Impacket_Exec_Internals.md` |
+| MSRPC 列挙の動作原理（ncacn_ip_tcp/np/http バインディング / SAMR vs LSAT の役割と権限要件差 / 列挙が AD アカウントロックアウト badPwdCount をバイパスする境界 / RestrictAnonymous / RestrictAnonymousSAM の OS バージョン依存史 / RID 固定値 500/501/502 とドメイン SID 構造 / RID bruteforce が LSAT 単独で成立する根拠 / IOXIDResolver による内部 IP / IPv6 漏洩） | `01_Reconnaissance/RPC_Enumeration.md` / `01_Reconnaissance/LDAP_Enumeration.md` / `02_Initial_Access/Account_Lockout_Recon.md` | `06_Concepts/RPC_Enumeration_Internals.md` |
 | ペネトレ基礎（攻撃者視点の前提・思考の組み立て方） | 初学者導入 | `06_Concepts/Pentest_Fundamentals.md` |
 | CVSS スコアリング（v3.1 / v4.0 構造差・Worst-case vs Likely-case・Environmental・報告書記載フォーマット） | 報告書作成・CVE 申請 | `06_Concepts/CVSS_Scoring.md` |
 | CVE 研究スターター（起点 CVE 入手元・ライブラリ仕様調査・CWE 選定） | CVE 研究着手 | `06_Concepts/CVE_Research_Starter.md` |

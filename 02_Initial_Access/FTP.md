@@ -502,5 +502,5 @@ nmap -b anonymous:anonymous@[FTP_PROXY_IP] -p 80,443,3389 [INTERNAL_TARGET_IP]
 - 後：§5 書込 + Web 経由 webshell 実行 → `./Web_Vulnerabilities/File_Upload.md`
 - 後：§8 で取得した root シェル後の Linux 列挙 → `../03_Post_Access_Linux/Enumeration_Checklist.md`
 - 後：FTPS / AUTH TLS の TLS 構成監査 → `../01_Reconnaissance/TLS_Audit.md`
-- 関連：FTP で取得した cred の他プロトコル使い回し → `SSH.md` / `Mail_Services.md` / `WinRM.md` / `Impacket_Exec.md`（Impacket exec）/ `Protocol_Exploitation.md`（RPC）
+- 関連：FTP で取得した cred の他プロトコル使い回し → `SSH.md` / `Mail_Services.md` / `WinRM.md` / `Impacket_Exec.md`（Impacket exec）/ `../01_Reconnaissance/RPC_Enumeration.md`（RPC §8 認証後再列挙）
 - 関連：PCAP からの認証情報抽出（FTP 単独でなく全プロトコル横断） → `Credential_Discovery.md`

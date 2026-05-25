@@ -115,6 +115,7 @@ Technical Guidelines: http://www.pentest-standard.org/index.php/PTES_Technical_G
 | External Footprinting / Active Reconnaissance / DNS Bruting / Port Scanning / Banner Grabbing | [`00_Playbook/External_Service_Recon_Flow.md`](./00_Playbook/External_Service_Recon_Flow.md) / [`01_Reconnaissance/Network_Scanning.md`](./01_Reconnaissance/Network_Scanning.md) |
 | Internal Footprinting / Ping Sweeps / Port Scanning / SNMP Sweeps | [`00_Playbook/Internal_LAN_Pentest_Flow.md`](./00_Playbook/Internal_LAN_Pentest_Flow.md) / [`01_Reconnaissance/Network_Scanning.md`](./01_Reconnaissance/Network_Scanning.md) / [`01_Reconnaissance/SNMP_Enumeration.md`](./01_Reconnaissance/SNMP_Enumeration.md) |
 | Internal Footprinting / SMB / Zone Transfers | [`01_Reconnaissance/SMB_Enumeration.md`](./01_Reconnaissance/SMB_Enumeration.md) / [`01_Reconnaissance/DNS_Enumeration.md`](./01_Reconnaissance/DNS_Enumeration.md) |
+| Internal Footprinting / RPC / SAMR / LSAT enumeration | [`01_Reconnaissance/RPC_Enumeration.md`](./01_Reconnaissance/RPC_Enumeration.md)（rpcclient / impacket-lookupsid / impacket-samrdump / nxc --rid-brute） |
 
 #### Vulnerability Analysis
 

@@ -124,7 +124,7 @@ ML デプロイ環境で頻出する設定不備：
 
 - 管理 UI の露出が確認できたら、ツール・フレームワークのデフォルト認証情報を試す
 - SSH アクセスが公開されている場合、デフォルト・弱いパスワードでのスプレーが有効
-- パスワードスプレー手順（アカウントロック回避含む）→ `../../02_Initial_Access/Protocol_Exploitation.md`
+- パスワードスプレー手順（アカウントロック回避含む）→ `../../02_Initial_Access/Default_Credentials.md` / `../../02_Initial_Access/Account_Lockout_Recon.md`
 
 ---
 
@@ -141,6 +141,6 @@ ML デプロイ環境で頻出する設定不備：
 
 - LLM 固有の DoS・コスト攻撃（Unbounded Consumption）→ `./Generative_AI/LLM_Attacks.md`（LLM10）
 - ML システムの全体的な攻撃面分類 → `./AI_Red_Teaming_Concepts.md`
-- パスワードスプレー（AD/SMB/SSH 環境） → `../../02_Initial_Access/Protocol_Exploitation.md`
+- パスワードスプレー（AD/SMB/SSH 環境） → `../../02_Initial_Access/Default_Credentials.md` / `../../05_Tools_Reference/Netexec.md`
 - モデル抽出（Model Extraction）→ `./AI_Red_Teaming_Concepts.md`（モデルコンポーネント評価セクション）
 - CI/CD パイプラインの改ざん → `./SAIF.md`（Model Deployment Tampering セクション）

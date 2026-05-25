@@ -302,4 +302,4 @@ echo "# kedalab-[CASE_ID] CVE-2024-21887 test at $(date -Iseconds)" >> /home/[US
 - 後：個別 CVE のペイロード本文・成功シグナル詳細・バージョン対応表 → `../05_Tools_Reference/CVE_Notes.md`
 - 後：PoC スクリプトのローカル検索・GitHub PoC 検索フロー → `../05_Tools_Reference/Searchsploit.md`
 - 後：侵害成功後の装置内設定ファイル / RADIUS / AAA 設定からの認証情報抽出 → `./Credential_Discovery.md`
-- 後：取得した認証情報 / セッショントークンでの SSH / WinRM / 社内サービスへの横展開 → `./SSH.md` / `./WinRM.md` / `./Impacket_Exec.md`（Impacket exec）/ `./Protocol_Exploitation.md`（RPC）
+- 後：取得した認証情報 / セッショントークンでの SSH / WinRM / 社内サービスへの横展開 → `./SSH.md` / `./WinRM.md` / `./Impacket_Exec.md`（Impacket exec）/ `../01_Reconnaissance/RPC_Enumeration.md`（RPC §8 認証後再列挙）

@@ -54,7 +54,7 @@ ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
 | Technique ID | 技術名 | kedalab ファイル |
 |------|-------|--------|
 | T1190 | Exploit Public-Facing Application | `02_Initial_Access/Web_Vulnerabilities/*` / `02_Initial_Access/Edge_Appliance_CVEs.md` |
-| T1133 | External Remote Services | `02_Initial_Access/Protocol_Exploitation.md` / `02_Initial_Access/Edge_Appliance_CVEs.md` |
+| T1133 | External Remote Services | `02_Initial_Access/SSH.md` / `02_Initial_Access/FTP.md` / `02_Initial_Access/Mail_Services.md` / `02_Initial_Access/WinRM.md` / `02_Initial_Access/Impacket_Exec.md` / `02_Initial_Access/Edge_Appliance_CVEs.md` |
 | T1078.001 | Valid Accounts: Default Accounts | `02_Initial_Access/Default_Credentials.md` |
 | T1078.002 | Valid Accounts: Domain Accounts | `02_Initial_Access/Credential_Discovery.md` |
 | T1566 | Phishing（提案・スコープ系） | `02_Initial_Access/Social_Engineering.md` |
@@ -161,11 +161,11 @@ ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
 | T1082 | System Information Discovery | `04_Post_Access_Windows_AD/Enumeration_Checklist.md`（Get-ComputerInfo） |
 | T1033 | System Owner/User Discovery | `03_Post_Access_Linux/Enumeration_Checklist.md`（id） |
 | T1049 | System Network Connections Discovery | `04_Post_Access_Windows_AD/Enumeration_Checklist.md`（netstat -ano） |
-| T1069.002 | Permission Groups Discovery: Domain Groups | `05_Tools_Reference/BloodHound.md` |
-| T1087.002 | Account Discovery: Domain Account | `01_Reconnaissance/LDAP_Enumeration.md` / `05_Tools_Reference/Impacket_Suite.md`（GetADUsers.py） / `05_Tools_Reference/Netexec.md`（RID bruteforce） |
+| T1069.002 | Permission Groups Discovery: Domain Groups | `05_Tools_Reference/BloodHound.md` / `01_Reconnaissance/RPC_Enumeration.md`（§4 enumdomgroups / §5 querygroupmem 0x200 Domain Admins） |
+| T1087.002 | Account Discovery: Domain Account | `01_Reconnaissance/LDAP_Enumeration.md` / `01_Reconnaissance/RPC_Enumeration.md`（§4 rpcclient enumdomusers / §6 impacket-lookupsid RID bruteforce / §7 impacket-samrdump 包括列挙） / `05_Tools_Reference/Impacket_Suite.md`（GetADUsers.py） / `05_Tools_Reference/Netexec.md`（RID bruteforce） |
 | T1135 | Network Share Discovery | `01_Reconnaissance/SMB_Enumeration.md` |
 | T1518 | Software Discovery | `01_Reconnaissance/Web_Enumeration.md`（フレームワーク特定） |
-| T1201 | Password Policy Discovery | `02_Initial_Access/Account_Lockout_Recon.md` |
+| T1201 | Password Policy Discovery | `02_Initial_Access/Account_Lockout_Recon.md` / `01_Reconnaissance/RPC_Enumeration.md`（§3 rpcclient getdompwinfo / §7 impacket-samrdump Password Info） |
 
 ---
 
