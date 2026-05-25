@@ -102,7 +102,7 @@ nmap で 88(Kerberos)・389(LDAP)・3268(Global Catalog) が開いていない�
 | Step 2 | ⚠️ 445(SMB) が開いていれば実施。SYSVOL・GPP の確認は AD 依存のためスキップ |
 | Step 3 | ✅ Web・サービス脆弱性経由の認証情報取得は全部有効 |
 | Step 3.5 | ⚠️ SMB/WinRM が開いていれば有効。ただし `--local-auth` を付ける（ローカルアカウントへのスプレー）|
-| Step 4〜7 | ❌ AD 依存。スタンドアロンではすべてスキップ → `Enumeration_Checklist.md` の侵入後列挙へ進む |
+| Step 4〜7 | ❌ AD 依存。スタンドアロンではすべてスキップ → `../04_Post_Access_Windows_AD/Enumeration_Checklist.md` の侵入後列挙へ進む |
 
 → スタンドアロンでの権限昇格フロー（ローカル CVE・BoF・特権トークン）: `../04_Post_Access_Windows_AD/Enumeration_Checklist.md`
 
@@ -293,7 +293,7 @@ evil-winrm -i [IP] -u [USER] -p '[PASSWORD]'
 evil-winrm -i [IP] -u [USER] -H '[NTLM_HASH]'
 ```
 
-→ 詳細（evil-winrm の使い方・ファイル転送・PoC のアップロード）: `../02_Initial_Access/Protocol_Exploitation.md`（WinRM セクション）
+→ 詳細（evil-winrm の使い方・ファイル転送・PoC のアップロード）: `../02_Initial_Access/WinRM.md`
 
 **WinRM が閉じている場合の代替（SMB / WMI 経由）：**
 
@@ -357,7 +357,7 @@ bloodhound-python -u [USER] -p '[PASSWORD]' -ns [DC_IP] -d [DOMAIN] -c All
 
 BloodHound の「Shortest Paths to Domain Admins」で権限昇格の経路を確認する。
 
-> **このコマンドは Linux（攻撃側）から1回実行すれば十分。** Windows シェル取得後の `Enumeration_Checklist.md` Step 2 でも BloodHound が登場するが、ここで実行済みであれば再実行は不要（同じデータを取得するだけ）。
+> **このコマンドは Linux（攻撃側）から1回実行すれば十分。** Windows シェル取得後の `../04_Post_Access_Windows_AD/Enumeration_Checklist.md` Step 2 でも BloodHound が登場するが、ここで実行済みであれば再実行は不要（同じデータを取得するだけ）。
 
 → 詳細: `../05_Tools_Reference/BloodHound.md`
 

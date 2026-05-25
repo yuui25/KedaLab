@@ -179,8 +179,19 @@
 | Mail §8 POP3 / IMAP 認証突破後のメール本文精査（imaplib / poplib・他システム cred 抽出）| Initial Access | `02_Initial_Access/Mail_Services.md` |
 | Mail §9.1 Exchange ProxyLogon (CVE-2021-26855) / ProxyShell (CVE-2021-34473) / ProxyNotShell (CVE-2022-41040 / 41082) | Initial Access | `02_Initial_Access/Mail_Services.md` |
 | Mail §9.2 Exim CVE-2019-10149 (Return of the WIZard) — Exim 4.87〜4.91 の SMTP RCE | Initial Access | `02_Initial_Access/Mail_Services.md` |
-| WinRM (evil-winrm) | Initial Access | `02_Initial_Access/Protocol_Exploitation.md` |
-| WinRM Pass-The-Hash | Initial Access | `02_Initial_Access/Protocol_Exploitation.md` |
+| WinRM §1 バナー観察 / ポート判定（5985 HTTP / 5986 HTTPS・nmap -sV / nmap http-wsman-info / http-winrm-enum / curl /wsman 401 / Shodan dork） | Initial Access | `02_Initial_Access/WinRM.md` |
+| WinRM §2 認証方式の確認（WWW-Authenticate: Negotiate / Kerberos / Basic / CredSSP・kinit + -k --spn Kerberos 経路） | Initial Access | `02_Initial_Access/WinRM.md` |
+| WinRM §3 nxc / crackmapexec winrm 認証確認・(Pwn3d!) 判定（Remote Management Users / Administrators 権限差・-x / -X コマンド実行） | Initial Access | `02_Initial_Access/WinRM.md` |
+| WinRM §4 evil-winrm 対話シェル取得（password / NTLM PTH / -S SSL 5986 / -k --spn Kerberos / 証明書 --cert-pem / -L セッションログ / -N path 補完無効 / IPv6 経由 / pypsrp / pywinrm / Docker クライアント代替） | Initial Access | `02_Initial_Access/WinRM.md` |
+| WinRM §5 evil-winrm 接続後の制約とファイル転送（cwd Documents 罠 / upload / download / Invoke-Binary / menu / Bypass-4MSI / wsmprovhost.exe プロセス） | Initial Access | `02_Initial_Access/WinRM.md` |
+| WinRM §6 Windows ネイティブ PSRemoting 経路（Test-WSMan / Invoke-Command / Enter-PSSession / New-PSSession 再利用 / Exit-PSSession バックグラウンド / winrs.exe / TrustedHosts エラー対処） | Initial Access | `02_Initial_Access/WinRM.md` |
+| WinRM §7 Lateral Movement（Invoke-Command -ComputerName で AD 内他ホストへ連鎖侵入・二重ホップ問題と CredSSP / RBCD / PTT による回避） | Initial Access | `02_Initial_Access/WinRM.md` |
+| WinRM §8 認証スプレー（nxc / crackmapexec winrm --continue-on-success・AD ロックアウト共通カウンタ前提・Event 4262 source IP 記録） | Initial Access | `02_Initial_Access/WinRM.md` |
+| WinRM §9 WinRM 強制有効化 / Persistence（HIGH IMPACT・Enable-PSRemoting / wmic / PsExec 経由 / Remote Management Users へのユーザー追加バックドア・原状回復必須） | Initial Access | `02_Initial_Access/WinRM.md` |
+| WinRM §10.1 CVE-2021-31166（HTTP Protocol Stack RCE）バージョン判定（Win10 / Server 2004 / 20H2 / 21H1・公開 PoC は BSOD のみ） | Initial Access | `02_Initial_Access/WinRM.md` |
+| WinRM §10.2 CVE-2021-38647 OMIGOD（Azure OMI Unauth RCE as root・OMI < 1.6.8-1・5985 で Linux OS なら最優先確認） | Initial Access | `02_Initial_Access/WinRM.md` |
+| WinRM §10.3 NTLM Relay to WinRM（Impacket 0.11+ ntlmrelayx wsman:// / HTTP 5985 listener 前提 / mitm6 / Responder 連携 / 緩和 EnableCompatibilityHttpListener=false + EPA） | Initial Access | `02_Initial_Access/WinRM.md` |
+| WinRM §10.4 WSMan.Automation COM Abuse（PowerShell 経路回避・Constrained Language Mode 環境用・SharpWSManWinRM） | Initial Access | `02_Initial_Access/WinRM.md` |
 | Impacket exec ツール群（wmiexec / psexec / smbexec）— WinRM 閉鎖時のシェル取得 | Initial Access | `02_Initial_Access/Protocol_Exploitation.md` |
 | Impacket exec ツール選択（DCERPC+DCOM / SMB / 検知性比較・Event ID 7045）| Initial Access | `02_Initial_Access/Protocol_Exploitation.md` |
 | RPC / rpcclient ユーザー列挙 | Initial Access | `02_Initial_Access/Protocol_Exploitation.md` |

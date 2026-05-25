@@ -592,7 +592,7 @@ $etwpatch = [System.Runtime.InteropServices.Marshal]
 ---
 
 ## 関連技術
-- 前：WinRM シェルの取得 → `../02_Initial_Access/Protocol_Exploitation.md`（WinRMセクション）
+- 前：WinRM シェルの取得 → `../02_Initial_Access/WinRM.md`
 - 前：パスワードスプレーで初期シェル取得 → `../00_Playbook/Windows_AD_Attack_Flow.md`（Step 3.5）
 - 後：BloodHound で GenericAll が判明 → `./ACE_Abuse/GenericAll.md`
 - 後：BloodHound で GenericWrite が判明 → `./ACE_Abuse/GenericWrite.md`

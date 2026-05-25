@@ -84,8 +84,9 @@ ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
 
 | Technique ID | 技術名 | kedalab ファイル |
 |------|-------|--------|
-| T1098 | Account Manipulation | `04_Post_Access_Windows_AD/ACE_Abuse/ForcePasswordChange.md` / `04_Post_Access_Windows_AD/ACE_Abuse/WriteDACL.md` |
+| T1098 | Account Manipulation | `04_Post_Access_Windows_AD/ACE_Abuse/ForcePasswordChange.md` / `04_Post_Access_Windows_AD/ACE_Abuse/WriteDACL.md` / `02_Initial_Access/WinRM.md`（§9.3 Remote Management Users / Administrators グループ追加） |
 | T1098.005 | Account Manipulation: Device Registration（Shadow Credentials） | `04_Post_Access_Windows_AD/ACE_Abuse/GenericAll.md` |
+| T1136.001 | Create Account: Local Account | `02_Initial_Access/WinRM.md`（§9.3 net user /add によるバックドア用ローカルアカウント追加） |
 | T1136.002 | Create Account: Domain Account | `04_Post_Access_Windows_AD/Delegation_Attacks/Unconstrained.md`（マシンアカウント作成） |
 | T1505.003 | Server Software Component: Web Shell | `02_Initial_Access/Web_Vulnerabilities/File_Upload.md` |
 | T1037.003 | Boot or Logon Initialization Scripts: Network Logon Script | `01_Reconnaissance/SMB_Enumeration.md`（NETLOGON 列挙視点） / `04_Post_Access_Windows_AD/ACE_Abuse/GenericWrite.md`（logon script 設定） |
@@ -113,7 +114,7 @@ ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
 | T1685 | Disable or Modify Tools | `04_Post_Access_Windows_AD/Enumeration_Checklist.md`（Step 8 AMSI バイパス） / `04_Post_Access_Windows_AD/BYOVD.md`（BYOVD で EDR Kernel Callback 削除） |
 | T1027 | Obfuscated Files or Information | `02_Initial_Access/Web_Vulnerabilities/JS_Obfuscation.md` |
 | T1140 | Deobfuscate/Decode Files or Information | `02_Initial_Access/Web_Vulnerabilities/JS_Obfuscation.md` / `02_Initial_Access/Binary_Analysis.md` |
-| T1550.002 | Use Alternate Authentication Material: Pass the Hash | `04_Post_Access_Windows_AD/Credential_Dumping.md` / `02_Initial_Access/Protocol_Exploitation.md`（WinRM PTH） |
+| T1550.002 | Use Alternate Authentication Material: Pass the Hash | `04_Post_Access_Windows_AD/Credential_Dumping.md` / `02_Initial_Access/WinRM.md`（§4 evil-winrm -H） / `02_Initial_Access/Protocol_Exploitation.md`（Impacket exec PTH） |
 
 ---
 
@@ -126,7 +127,7 @@ ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
 | T1003.003 | OS Credential Dumping: NTDS | `04_Post_Access_Windows_AD/Credential_Dumping.md` |
 | T1003.006 | OS Credential Dumping: DCSync | `04_Post_Access_Windows_AD/Credential_Dumping.md` |
 | T1110.002 | Brute Force: Password Cracking | `05_Tools_Reference/Hashcat.md` |
-| T1110.003 | Brute Force: Password Spraying | `05_Tools_Reference/Netexec.md` / `02_Initial_Access/Account_Lockout_Recon.md` |
+| T1110.003 | Brute Force: Password Spraying | `05_Tools_Reference/Netexec.md` / `02_Initial_Access/Account_Lockout_Recon.md` / `02_Initial_Access/WinRM.md`（§6 nxc winrm --continue-on-success） |
 | T1110.001 | Brute Force: Password Guessing | `02_Initial_Access/Default_Credentials.md`（hydra / medusa） / `01_Reconnaissance/SNMP_Enumeration.md`（コミュニティ文字列ブルート） |
 | T1558.001 | Steal or Forge Kerberos Tickets: Golden Ticket | `04_Post_Access_Windows_AD/Kerberos_Attacks/Pass_The_Ticket.md` |
 | T1558.002 | Steal or Forge Kerberos Tickets: Silver Ticket | `04_Post_Access_Windows_AD/Kerberos_Attacks/Pass_The_Ticket.md` |
@@ -171,7 +172,7 @@ ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
 |------|-------|--------|
 | T1021.001 | Remote Services: Remote Desktop Protocol | `04_Post_Access_Windows_AD/Enumeration_Checklist.md` |
 | T1021.002 | Remote Services: SMB/Windows Admin Shares | `02_Initial_Access/Protocol_Exploitation.md`（psexec/smbexec） |
-| T1021.006 | Remote Services: Windows Remote Management | `02_Initial_Access/Protocol_Exploitation.md`（evil-winrm） |
+| T1021.006 | Remote Services: Windows Remote Management | `02_Initial_Access/WinRM.md`（§1〜§10 バナー〜認証確認〜evil-winrm 対話シェル〜Windows ネイティブ PSRemoting〜Lateral Movement〜認証スプレー〜Persistence〜既知 CVE / NTLM Relay / COM Abuse） |
 | T1550.002 | Use Alternate Authentication Material: Pass the Hash | `04_Post_Access_Windows_AD/Credential_Dumping.md` |
 | T1550.003 | Use Alternate Authentication Material: Pass the Ticket | `04_Post_Access_Windows_AD/Kerberos_Attacks/Pass_The_Ticket.md` / `04_Post_Access_Windows_AD/Delegation_Attacks/RBCD.md`（S4U チケット偽造） |
 | T1570 | Lateral Tool Transfer | `05_Tools_Reference/Impacket_Suite.md` / `03_Post_Access_Linux/Kernel_Exploits.md`（python3 -m http.server） |

@@ -195,7 +195,7 @@ nxc smb [IP] -u [USER] -p '[PASSWORD]' --rid-brute \
 - 前：認証情報の発見 → `../02_Initial_Access/Credential_Discovery.md`
 - 前：MSSQL 経由の認証情報・ユーザー取得 → `../02_Initial_Access/MSSQL_Exploitation.md`
 - 前：`../02_Initial_Access/Account_Lockout_Recon.md`（`--pass-pol` でロックアウトポリシーを取得し、スプレーの試行設計に反映）
-- 後：WinRM シェル取得 → `../02_Initial_Access/Protocol_Exploitation.md`（WinRMセクション）
+- 後：WinRM シェル取得 → `../02_Initial_Access/WinRM.md`
 - 後：取得した認証情報での AD 侵入・権限昇格 → `../00_Playbook/Windows_AD_Attack_Flow.md`
 - 後：`../02_Initial_Access/Default_Credentials.md`（SMB / WinRM / MSSQL の管理者デフォルト試行と組合せ）
 - 後：`../02_Initial_Access/Account_Lockout_Recon.md`（複数パスワードスプレーの sleep 設計・継続試行検知の回避）

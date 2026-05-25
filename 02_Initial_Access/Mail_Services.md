@@ -582,7 +582,7 @@ searchsploit -m [EDB-ID]
 - 前：製品出荷時のデフォルト認証情報試行 → `Default_Credentials.md`
 - 前：ドメイン情報・DNS レコード取得（SPF/DKIM/DMARC 確認の前段）→ `../01_Reconnaissance/DNS_Enumeration.md`
 - 後：§3 で取得したユーザー一覧で AD 列挙 → `../01_Reconnaissance/LDAP_Enumeration.md`
-- 後：§8 で取得した他システム cred を SSH / WinRM 等に使い回し → `SSH.md` / `Protocol_Exploitation.md`（WinRM / Impacket exec 各セクション）
+- 後：§8 で取得した他システム cred を SSH / WinRM 等に使い回し → `SSH.md` / `WinRM.md` / `Protocol_Exploitation.md`（Impacket exec 各セクション）
 - 後：§8 で取得したバイナリ・添付の解析 → `Binary_Analysis.md` / `../01_Reconnaissance/Metadata_Analysis.md`
 - 後：§9.1 で取得した webshell 経由のシェル取得 → `./Web_Vulnerabilities/File_Upload.md`
 - 関連：SMTP / IMAP / POP の TLS 構成詳細監査 → `../01_Reconnaissance/TLS_Audit.md`

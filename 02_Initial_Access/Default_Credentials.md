@@ -325,7 +325,7 @@ nuclei -t default-logins/jenkins/ -t default-logins/grafana/ -t default-logins/t
 - 前：試行前にロックアウト閾値を必ず確認 → `./Account_Lockout_Recon.md`
 - 後：SSH に通った認証情報での本格的アクセス → `./SSH.md`
 - 後：FTP に通った認証情報での本格的アクセス → `./FTP.md`
-- 後：WinRM に通った認証情報での本格的アクセス → `./Protocol_Exploitation.md`
+- 後：WinRM に通った認証情報での本格的アクセス → `./WinRM.md`
 - 後：`sa` 通過後の `xp_cmdshell` / ユーザーなりすまし → `./MSSQL_Exploitation.md`
 - 後：通過した管理画面から保存されている他システムの認証情報を抽出 → `./Credential_Discovery.md`
 - 後：SMB / WinRM / MSSQL のスプレー詳細 → `../05_Tools_Reference/Netexec.md`
