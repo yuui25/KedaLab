@@ -109,7 +109,7 @@ Step 2 で CVE が見つかった場合はそこに集中し、Step 3〜6 は後
 | 445 / 139（SMB） | `../01_Reconnaissance/SMB_Enumeration.md` | 外部公開は稀。匿名共有 / EternalBlue 等 |
 | 389 / 636（LDAP / LDAPS） | `../01_Reconnaissance/LDAP_Enumeration.md` | 外部公開は稀。匿名バインド確認 |
 | 1433（MSSQL） | `../02_Initial_Access/MSSQL_Exploitation.md` | 認証スプレー → xp_cmdshell / Linked Server |
-| 3389（RDP） | 専用ファイル未作成（候補）。当面は `../02_Initial_Access/Default_Credentials.md`（cred 試行）+ `../05_Tools_Reference/Searchsploit.md`（BlueKeep / DejaBlue CVE 検索） | fastpentest §4 で優先 2 番目に位置付け |
+| 3389（RDP） | `../02_Initial_Access/RDP.md` | バナー・NLA 判定〜証明書〜直接接続〜リダイレクト悪用（クリップボード / ドライブ hijack）〜認証スプレー（cred reuse 検出）〜PTH Restricted Admin〜セッションハイジャック（tscon）〜BlueKeep (CVE-2019-0708) / DejaBlue (CVE-2019-1181 系) 版数判定〜PyRDP MitM まで |
 | 3306 / 5432 / 6379 / 27017 / 9200（DB 系：MySQL / PostgreSQL / Redis / MongoDB / Elasticsearch） | 専用ファイル未作成。当面は `../02_Initial_Access/Default_Credentials.md` + `../05_Tools_Reference/Searchsploit.md` | fastpentest §4 で優先 3 番目（Redis unauth / PostgreSQL COPY FROM PROGRAM / Elasticsearch CVE-2014-3120 等が高影響） |
 | 23（Telnet） / 5900-5903（VNC） / 873（rsync） / 2049（NFS） | 専用ファイル未作成。当面は `../02_Initial_Access/Default_Credentials.md` | fastpentest §4 で「稀だが見つけたら即取得系」グループとして位置付け |
 

@@ -79,7 +79,7 @@ python3 IOXIDResolver.py -t [TARGET_IP]
 | `Protocol: [MS-RPCE]: Remote Procedure Call Protocol Extensions` のみ | 一般的な MSRPC のみ・列挙価値の高い IF なし | §2 で直接 SAMR バインドを試す |
 | IOXIDResolver で IPv4 と異なる IPv6 アドレスが返る | ターゲットが IPv6 NIC を持つ・内部ネットワーク露出 | IPv6 経路で再列挙（Windows は IPv6 が IPv4 より優先される場合あり） |
 
-**Notable RPC interfaces 早見表（HackTricks / MS-* 仕様の主要 IF を抜粋）:**
+**主要 RPC インターフェース早見表（HackTricks / MS-* 仕様から抜粋）:**
 
 | 名前付きパイプ | IFID | 用途・列挙価値 |
 |---|---|---|

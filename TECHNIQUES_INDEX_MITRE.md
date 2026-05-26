@@ -54,7 +54,7 @@ ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
 | Technique ID | 技術名 | kedalab ファイル |
 |------|-------|--------|
 | T1190 | Exploit Public-Facing Application | `02_Initial_Access/Web_Vulnerabilities/*` / `02_Initial_Access/Edge_Appliance_CVEs.md` |
-| T1133 | External Remote Services | `02_Initial_Access/SSH.md` / `02_Initial_Access/FTP.md` / `02_Initial_Access/Mail_Services.md` / `02_Initial_Access/WinRM.md` / `02_Initial_Access/Impacket_Exec.md` / `02_Initial_Access/Edge_Appliance_CVEs.md` |
+| T1133 | External Remote Services | `02_Initial_Access/SSH.md` / `02_Initial_Access/FTP.md` / `02_Initial_Access/Mail_Services.md` / `02_Initial_Access/WinRM.md` / `02_Initial_Access/Impacket_Exec.md` / `02_Initial_Access/Edge_Appliance_CVEs.md` / `02_Initial_Access/RDP.md` |
 | T1078.001 | Valid Accounts: Default Accounts | `02_Initial_Access/Default_Credentials.md` |
 | T1078.002 | Valid Accounts: Domain Accounts | `02_Initial_Access/Credential_Discovery.md` |
 | T1566 | Phishing（提案・スコープ系） | `02_Initial_Access/Social_Engineering.md` |
@@ -117,7 +117,7 @@ ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
 | T1685 | Disable or Modify Tools | `04_Post_Access_Windows_AD/Enumeration_Checklist.md`（Step 8 AMSI バイパス） / `04_Post_Access_Windows_AD/BYOVD.md`（BYOVD で EDR Kernel Callback 削除） |
 | T1027 | Obfuscated Files or Information | `02_Initial_Access/Web_Vulnerabilities/JS_Obfuscation.md` |
 | T1140 | Deobfuscate/Decode Files or Information | `02_Initial_Access/Web_Vulnerabilities/JS_Obfuscation.md` / `02_Initial_Access/Binary_Analysis.md` |
-| T1550.002 | Use Alternate Authentication Material: Pass the Hash | `04_Post_Access_Windows_AD/Credential_Dumping.md` / `02_Initial_Access/WinRM.md`（§4 evil-winrm -H） / `02_Initial_Access/Impacket_Exec.md`（§3〜§7 全 exec ツールで `-hashes :[NTLM]` 経路） |
+| T1550.002 | Use Alternate Authentication Material: Pass the Hash | `04_Post_Access_Windows_AD/Credential_Dumping.md` / `02_Initial_Access/WinRM.md`（§4 evil-winrm -H） / `02_Initial_Access/Impacket_Exec.md`（§3〜§7 全 exec ツールで `-hashes :[NTLM]` 経路） / `02_Initial_Access/RDP.md`（§7 Restricted Admin Mode・xfreerdp /pth / mstsc /restrictedadmin） |
 
 ---
 
@@ -130,8 +130,8 @@ ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
 | T1003.003 | OS Credential Dumping: NTDS | `04_Post_Access_Windows_AD/Credential_Dumping.md` |
 | T1003.006 | OS Credential Dumping: DCSync | `04_Post_Access_Windows_AD/Credential_Dumping.md` |
 | T1110.002 | Brute Force: Password Cracking | `05_Tools_Reference/Hashcat.md` |
-| T1110.003 | Brute Force: Password Spraying | `05_Tools_Reference/Netexec.md` / `02_Initial_Access/Account_Lockout_Recon.md` / `02_Initial_Access/WinRM.md`（§6 nxc winrm --continue-on-success） / `02_Initial_Access/Impacket_Exec.md`（§8 nxc smb --continue-on-success → wmiexec 連続実行・ローカル管理者 hash 使い回し検出 with `--local-auth`） |
-| T1110.001 | Brute Force: Password Guessing | `02_Initial_Access/Default_Credentials.md`（hydra / medusa） / `01_Reconnaissance/SNMP_Enumeration.md`（コミュニティ文字列ブルート） |
+| T1110.003 | Brute Force: Password Spraying | `05_Tools_Reference/Netexec.md` / `02_Initial_Access/Account_Lockout_Recon.md` / `02_Initial_Access/WinRM.md`（§6 nxc winrm --continue-on-success） / `02_Initial_Access/Impacket_Exec.md`（§8 nxc smb --continue-on-success → wmiexec 連続実行・ローカル管理者 hash 使い回し検出 with `--local-auth`） / `02_Initial_Access/RDP.md`（§6 nxc rdp --continue-on-success・targets.txt で cred reuse 検出） |
+| T1110.001 | Brute Force: Password Guessing | `02_Initial_Access/Default_Credentials.md`（hydra / medusa） / `01_Reconnaissance/SNMP_Enumeration.md`（コミュニティ文字列ブルート） / `02_Initial_Access/RDP.md`（§6 crowbar / hydra rdp / ncrack） |
 | T1558.001 | Steal or Forge Kerberos Tickets: Golden Ticket | `04_Post_Access_Windows_AD/Kerberos_Attacks/Pass_The_Ticket.md` |
 | T1558.002 | Steal or Forge Kerberos Tickets: Silver Ticket | `04_Post_Access_Windows_AD/Kerberos_Attacks/Pass_The_Ticket.md` |
 | T1558.003 | Steal or Forge Kerberos Tickets: Kerberoasting | `04_Post_Access_Windows_AD/Kerberos_Attacks/Kerberoasting.md` / `04_Post_Access_Windows_AD/ACE_Abuse/GenericWrite.md`（Targeted） |
@@ -173,11 +173,13 @@ ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
 
 | Technique ID | 技術名 | kedalab ファイル |
 |------|-------|--------|
-| T1021.001 | Remote Services: Remote Desktop Protocol | `04_Post_Access_Windows_AD/Enumeration_Checklist.md` |
+| T1021.001 | Remote Services: Remote Desktop Protocol | `02_Initial_Access/RDP.md`（§1〜§11 バナー〜NLA 判定〜証明書〜直接接続〜リダイレクト悪用〜スプレー〜PTH Restricted Admin〜セッションハイジャック〜BlueKeep / DejaBlue〜PyRDP MitM） / `04_Post_Access_Windows_AD/Enumeration_Checklist.md` |
 | T1021.002 | Remote Services: SMB/Windows Admin Shares | `02_Initial_Access/Impacket_Exec.md`（§4 psexec / §5 smbexec — ADMIN$ / IPC$ 経由）|
 | T1021.006 | Remote Services: Windows Remote Management | `02_Initial_Access/WinRM.md`（§1〜§10 バナー〜認証確認〜evil-winrm 対話シェル〜Windows ネイティブ PSRemoting〜Lateral Movement〜認証スプレー〜Persistence〜既知 CVE / NTLM Relay / COM Abuse） |
-| T1550.002 | Use Alternate Authentication Material: Pass the Hash | `04_Post_Access_Windows_AD/Credential_Dumping.md` |
+| T1210 | Exploitation of Remote Services | `02_Initial_Access/RDP.md`（§9 BlueKeep CVE-2019-0708 / §10 DejaBlue CVE-2019-1181 系 / §11 PyRDP MitM） |
+| T1550.002 | Use Alternate Authentication Material: Pass the Hash | `04_Post_Access_Windows_AD/Credential_Dumping.md` / `02_Initial_Access/RDP.md`（§7 Restricted Admin Mode） |
 | T1550.003 | Use Alternate Authentication Material: Pass the Ticket | `04_Post_Access_Windows_AD/Kerberos_Attacks/Pass_The_Ticket.md` / `04_Post_Access_Windows_AD/Delegation_Attacks/RBCD.md`（S4U チケット偽造） / `02_Initial_Access/Impacket_Exec.md`（§9 KRB5CCNAME 経由の .ccache インポート + `-k -no-pass` で各 exec ツール起動） |
+| T1563.002 | Remote Service Session Hijacking: RDP Hijacking | `02_Initial_Access/RDP.md`（§8 tscon /dest:rdp-tcp#N・SYSTEM 経由無認証ハイジャック・PsExec -s / sc.exe create 経路） |
 | T1570 | Lateral Tool Transfer | `05_Tools_Reference/Impacket_Suite.md` / `03_Post_Access_Linux/Kernel_Exploits.md`（python3 -m http.server） |
 
 ---

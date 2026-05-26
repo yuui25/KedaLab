@@ -213,7 +213,7 @@
 | Impacket exec §7 dcomexec — DCOM オブジェクト経由（defense evasion・MMC20.Application / ShellWindows / ShellBrowserWindow で親プロセス mmc/explorer に偽装・wmiprvse 監視ルール回避・MMC20 は Win10 1803+ で既定無効） | Initial Access | `02_Initial_Access/Impacket_Exec.md` |
 | Impacket exec §8 認証スプレー連携（HIGH IMPACT・nxc smb --continue-on-success で Pwn3d ホスト抽出 → wmiexec 連続実行・ローカル管理者 hash 使い回し検出（--local-auth）は LAPS 未導入の重大 finding・Event 4625 / 4262 source IP 記録） | Initial Access | `02_Initial_Access/Impacket_Exec.md` |
 | Impacket exec §9 Kerberos 経路（NTLM 無効化環境・kinit + KRB5CCNAME + -k -no-pass・SPN プレフィックス cifs/host のツール別差・Pass-The-Ticket / Pass-The-Key (AES) / Overpass-The-Hash・時刻同期必須） | Initial Access | `02_Initial_Access/Impacket_Exec.md` |
-| RPC §1 エンドポイントマッピング（impacket-rpcdump で 135 / 593 経由の DCERPC インターフェース列挙・Notable RPC IFs 早見表（lsarpc / samr / atsvc / winreg / svcctl / srvsvc / epmapper の IFID と用途）・MS-SAMR は account lockout policy 無関係に列挙可能・Metasploit auxiliary/scanner/dcerpc/* 代替・IOXIDResolver ServerAlive2 で IPv6 / 内部 IP 取得） | Reconnaissance | `01_Reconnaissance/RPC_Enumeration.md` |
+| RPC §1 エンドポイントマッピング（impacket-rpcdump で 135 / 593 経由の DCERPC インターフェース列挙・主要 RPC IFs 早見表（lsarpc / samr / atsvc / winreg / svcctl / srvsvc / epmapper の IFID と用途）・MS-SAMR は account lockout policy 無関係に列挙可能・Metasploit auxiliary/scanner/dcerpc/* 代替・IOXIDResolver ServerAlive2 で IPv6 / 内部 IP 取得） | Reconnaissance | `01_Reconnaissance/RPC_Enumeration.md` |
 | RPC §2 rpcclient 匿名バインド試行（null session / `-U ""` vs `-U "%"` 挙動差 / guest 認証 / 139 vs 445 強制） | Reconnaissance | `01_Reconnaissance/RPC_Enumeration.md` |
 | RPC §3 ドメイン情報・パスワードポリシー（querydominfo / getdompwinfo / srvinfo PDC フラグ / lsaquery でドメイン SID 取得） | Reconnaissance | `01_Reconnaissance/RPC_Enumeration.md` |
 | RPC §4 ユーザー・グループ列挙（rpcclient enumdomusers / enumdomgroups / enumalsgroups builtin・nxc --users --groups・enum4linux-ng -A・krbtgt 出現で DC 確定・svc_* で Kerberoast 候補抽出） | Reconnaissance | `01_Reconnaissance/RPC_Enumeration.md` |
@@ -251,6 +251,17 @@
 | nuclei によるアプライアンス CVE 一括スキャン（-tags citrix / fortinet / ivanti / panos / f5）| Initial Access | `02_Initial_Access/Edge_Appliance_CVEs.md` |
 | PoC リポジトリ選定基準（Rapid7 / Mandiant / Horizon3 / Bishop Fox 優先・バックドア入り PoC の識別）| Initial Access | `02_Initial_Access/Edge_Appliance_CVEs.md` |
 | 成功シグナルの段階的確認（到達性 → 脆弱版数 → 読み取り系 PoC → RCE 承認後のみ）| Initial Access | `02_Initial_Access/Edge_Appliance_CVEs.md` |
+| RDP §1 バナー観察 / バージョン判定 / 暗号化レベル（nmap rdp-enum-encryption・Native RDP / CredSSP / SSL 層判定・Native RDP 単独許容はハードニング不足 finding） | Initial Access | `02_Initial_Access/RDP.md` |
+| RDP §2 NLA 有無判定 / Pre-Auth 情報漏洩（nmap rdp-ntlm-info で NetBIOS / DNS / Product_Version 取得・xfreerdp の挙動で代替判定・ロックアウトカウンタを進めない pre-auth 列挙） | Initial Access | `02_Initial_Access/RDP.md` |
+| RDP §3 RDP 証明書からの組織・ホスト名取得（openssl s_client / nmap ssl-cert・AD CS Issuer 判定で ESC 候補連携） | Initial Access | `02_Initial_Access/RDP.md` |
+| RDP §4 認証情報での直接接続（xfreerdp / rdesktop / remmina / mstsc・/cert:ignore のリスク・LOGON_TYPE_NOT_GRANTED / ACCOUNT_RESTRICTION 分岐） | Initial Access | `02_Initial_Access/RDP.md` |
+| RDP §5 リダイレクト悪用 / クリップボード hijack（xfreerdp /drive / +clipboard / /printer / /usb 経由のファイル exfil・tsclient シグネチャ DLP 監視前提） | Initial Access | `02_Initial_Access/RDP.md` |
+| RDP §6 認証スプレー / 辞書攻撃 / cred reuse 検出（nxc rdp / crowbar / hydra rdp / ncrack・AD ロックアウト共通カウンタ前提・Event 4625 Type 10 / 4771 / 4776 検知・LAPS 未導入の cred 使い回し finding） | Initial Access | `02_Initial_Access/RDP.md` |
+| RDP §7 Pass-the-Hash for RDP（Restricted Admin Mode・xfreerdp /pth / mstsc /restrictedadmin・DisableRestrictedAdmin レジストリ前提・NETWORK logon session の制約） | Initial Access | `02_Initial_Access/RDP.md` |
+| RDP §8 セッションハイジャック（tscon /dest:rdp-tcp#N・SYSTEM 経由無認証ハイジャック・PsExec -s / sc.exe create 経路・Event 4778 / 4779 / 7045・原状回復不可） | Initial Access | `02_Initial_Access/RDP.md` |
+| RDP §9 BlueKeep バージョン判定（CVE-2019-0708・XP / 2003 / Vista / 2008 / Win7 / 2008R2・nmap rdp-vuln / Metasploit cve_2019_0708 scanner・NLA で緩和・target mismatch で BSOD 高確率） | Initial Access | `02_Initial_Access/RDP.md` |
+| RDP §10 DejaBlue バージョン判定（CVE-2019-1181 / 1182 / 1222 / 1226・Win7 SP1〜Win10 1903・公開安定 PoC 限定・個人 GitHub PoC のバックドア混入リスク） | Initial Access | `02_Initial_Access/RDP.md` |
+| RDP §11 RDP MitM（PyRDP・ARP / DNS poisoning 経路・NLA 強制で阻止・録画と GDPR / プライバシー法配慮） | Initial Access | `02_Initial_Access/RDP.md` |
 
 ---
 
