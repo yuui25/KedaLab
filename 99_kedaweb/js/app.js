@@ -1719,14 +1719,37 @@
     src = src.replace(/^>\s?(.*)$/gm, (m, c) => "<blockquote>" + inline(c) + "</blockquote>");
 
     // lists
-    src = src.replace(/(?:^[ \t]*[-*]\s+.*\n?)+/gm, block => {
-      const items = block.trim().split("\n").map(l => l.replace(/^[ \t]*[-*]\s+/, ""));
-      return "<ul>" + items.map(i => `<li>${inline(i)}</li>`).join("") + "</ul>\n";
-    });
-    src = src.replace(/(?:^[ \t]*\d+\.\s+.*\n?)+/gm, block => {
-      const items = block.trim().split("\n").map(l => l.replace(/^[ \t]*\d+\.\s+/, ""));
-      return "<ol>" + items.map(i => `<li>${inline(i)}</li>`).join("") + "</ol>\n";
-    });
+    // Captures bullet lines + any indented (>= 1 space) continuation lines.
+    // CommonMark treats `  (example...)` directly under `- bullet` as part of
+    // the bullet's paragraph. Without merging here, the continuation became
+    // orphan text between </ul> and <ul>, losing inline() processing — so
+    // backticks showed as literal characters and tables/lists got fragmented.
+    function joinListItems(block, isOrdered) {
+      const markerRe = isOrdered ? /^[ \t]*\d+\.\s+(.*)$/ : /^[ \t]*[-*]\s+(.*)$/;
+      const items = [];
+      let current = null;
+      for (const line of block.split("\n")) {
+        if (!line.length) continue;
+        const m = line.match(markerRe);
+        if (m) {
+          if (current !== null) items.push(current);
+          current = m[1];
+        } else if (current !== null && /^[ \t]+\S/.test(line)) {
+          current += " " + line.trim();
+        }
+      }
+      if (current !== null) items.push(current);
+      const tag = isOrdered ? "ol" : "ul";
+      return `<${tag}>` + items.map(i => `<li>${inline(i)}</li>`).join("") + `</${tag}>\n`;
+    }
+    src = src.replace(
+      /(?:^[ \t]*[-*]\s+[^\n]*(?:\n[ \t]+(?![-*]\s|\d+\.\s)[^\n]*)*\n?)+/gm,
+      block => joinListItems(block, false)
+    );
+    src = src.replace(
+      /(?:^[ \t]*\d+\.\s+[^\n]*(?:\n[ \t]+(?![-*]\s|\d+\.\s)[^\n]*)*\n?)+/gm,
+      block => joinListItems(block, true)
+    );
 
     // paragraphs — split on blank lines, wrap non-block lines
     const html = src.split(/\n{2,}/).map(chunk => {

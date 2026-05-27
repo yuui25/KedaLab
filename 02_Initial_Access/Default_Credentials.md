@@ -16,7 +16,7 @@
 
 - 管理画面・ログインフォーム・Basic 認証プロンプトが見えており、**製品名・ベンダー名が特定できている**
 - 証明書 Issuer / Server ヘッダー / favicon ハッシュ / HTML タイトル等から **アプライアンス・ミドルウェア製品名が判明** している
-  （例：`Issuer: Fortinet` / `Server: Apache-Coyote/1.1`（Tomcat）/ `<title>JBoss EAP` / `<title>Jenkins` 等）
+  （例：`Issuer: Fortinet` / `Server: Apache-Coyote/1.1`（Tomcat）/ HTML title が `JBoss EAP` / `Jenkins` 等）
 - ポートスキャンで **製品が暗黙のうちに分かるポート** が開いている
   （例：`623/udp` IPMI / `9100/tcp` プリンタ JetDirect / `554/tcp` RTSP（IP カメラ）/ `8443/tcp` 多くのアプライアンス管理）
 - バージョン情報も取れているが **CVE が無い・パッチ適用済み** の場合に、認証回りに切り替える
@@ -56,10 +56,10 @@
 | サーブレットコンテナ管理画面 | Tomcat manager / Tomcat host-manager | `/manager/html` で 401 + `Server: Apache-Coyote` | `tomcat/tomcat` / `admin/admin` / `manager/manager` / `admin/[空]` |
 | Java EE 管理コンソール | JBoss / WildFly / Weblogic | `/jmx-console/` / `/web-console/` / `/console/` / `:7001` の Weblogic | JBoss: `admin/admin` / Weblogic: `weblogic/weblogic` / `weblogic/welcome1` / `system/manager` |
 | CI / CD | Jenkins / GitLab Omnibus | `/login` に Jenkins ロゴ、`X-Jenkins:` ヘッダー | Jenkins: 初期セットアップ未完了状態の `/script` 直叩き、または `admin/[インストール時自動生成]` / GitLab: `root/5iveL!fe`（旧版） |
-| 監視 / 可視化 UI | Grafana / Kibana / Prometheus | `<title>Grafana` / `kbn-xsrf` ヘッダー / `Server: Werkzeug` 系 | Grafana: `admin/admin` （初回後にパスワード変更要求あり） / Kibana: 認証無し or `elastic/changeme`（旧 X-Pack デフォルト） |
+| 監視 / 可視化 UI | Grafana / Kibana / Prometheus | HTML title が `Grafana` / `kbn-xsrf` ヘッダー / `Server: Werkzeug` 系 | Grafana: `admin/admin` （初回後にパスワード変更要求あり） / Kibana: 認証無し or `elastic/changeme`（旧 X-Pack デフォルト） |
 | データベース | MSSQL / MySQL / PostgreSQL / MongoDB / Redis / ElasticSearch | 1433 / 3306 / 5432 / 27017 / 6379 / 9200 各ポート | MSSQL: `sa/[空]` / `sa/sa` / MySQL: `root/[空]` / `root/root` / PostgreSQL: `postgres/postgres` / MongoDB: 認証無し（27017 直結）/ Redis: 認証無し（6379 直結 → `INFO`）/ ElasticSearch: 認証無し（旧版） |
 | プリンタ管理 Web UI | HP / Canon / Ricoh / Xerox / Brother | `9100/tcp` 開放、`80/443` で製品名タイトル | HP: `admin/[空]` / Canon: `7654321/[空]`（旧モデル）/ Xerox: `admin/1111` / 多くは `[空]` で入れる |
-| IP カメラ・NVR | Hikvision / Dahua / Axis / 各 OEM | `554/tcp` RTSP 開放、`80` で `<title>WEB SERVICE` 等 | Hikvision: `admin/12345`（古典）/ Dahua: `admin/admin` / Axis: `root/pass`（初期化要）/ ONVIF: `admin/[空]` |
+| IP カメラ・NVR | Hikvision / Dahua / Axis / 各 OEM | `554/tcp` RTSP 開放、`80` で HTML title が `WEB SERVICE` 等 | Hikvision: `admin/12345`（古典）/ Dahua: `admin/admin` / Axis: `root/pass`（初期化要）/ ONVIF: `admin/[空]` |
 | VPN アプライアンス管理 | OpenVPN AS / SoftEther / WireGuard 管理 UI | 943/443 で管理ポータル | OpenVPN AS: `openvpn/[インストール時生成]` / 各ベンダーは `admin/admin` を試す |
 | KVM-over-IP / Console Server | Lantronix / Avocent / Raritan | `5900/5901` VNC、`23/tcp` Telnet | Lantronix: `Admin/PASS`（大文字注意）/ Raritan: `admin/raritan` / VNC: 認証無し（パスフレーズ未設定） |
 | 産業系 / SCADA / PLC | Siemens / Schneider / Rockwell | `102/tcp` S7 / `502/tcp` Modbus / `44818` EthernetIP | 多くは認証機構自体が無い。あっても `ALL/12345` 等。**業務影響大。試行可否は事前合意必須** |

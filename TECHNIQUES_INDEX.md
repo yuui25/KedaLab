@@ -227,6 +227,17 @@
 | MSSQL Linked Server 列挙・悪用（enum_links / EXECUTE AT / openquery による権限昇格） | Initial Access | `02_Initial_Access/MSSQL_Exploitation.md` |
 | MSSQL Linked Server 経由の xp_cmdshell 遠隔有効化（多段チェーン・impacket-mssqlclient / PowerUpSQL 使い分け） | Initial Access | `02_Initial_Access/MSSQL_Exploitation.md` |
 | MSSQL xp_dirtree による NTLM 強制認証（Linked Server 経由 → Responder / ntlmrelayx への誘導） | Initial Access | `02_Initial_Access/MSSQL_Exploitation.md` |
+| MySQL §1 バナー観察 / バージョン判定（nmap mysql-info・MySQL / MariaDB / Percona 区別・version_comment 偽装注意・Auth Plugin Name 取得） | Initial Access | `02_Initial_Access/MySQL_Exploitation.md` |
+| MySQL §2 匿名・空パスワードログイン試行（root / mysql / 匿名ユーザー・nmap mysql-empty-password・nxc mysql） | Initial Access | `02_Initial_Access/MySQL_Exploitation.md` |
+| MySQL §3 認証情報での直接接続 + 権限確認（USER() / CURRENT_USER() / SHOW GRANTS / @@secure_file_priv / @@plugin_dir 確認・GRANT FILE 有無で攻撃面分岐） | Initial Access | `02_Initial_Access/MySQL_Exploitation.md` |
+| MySQL §4 データベース・テーブル列挙とデータ抽出（SHOW DATABASES / TABLES / information_schema.columns 横断検索 / mysqldump --all-databases） | Initial Access | `02_Initial_Access/MySQL_Exploitation.md` |
+| MySQL §5 認証スプレー / 辞書攻撃（HIGH IMPACT・nxc mysql / hydra / medusa / ncrack / nmap mysql-brute・max_connect_errors per-host throttle 注意） | Initial Access | `02_Initial_Access/MySQL_Exploitation.md` |
+| MySQL §6 mysql.user ハッシュ取得 + クラック（mysql_native_password mode 300 / caching_sha2_password mode 7401 / sha256_password mode 7400 / mysql_old_password mode 200・auth_socket / unix_socket 判別） | Initial Access | `02_Initial_Access/MySQL_Exploitation.md` |
+| MySQL §7 FILE 権限経由のファイル読み書き（LOAD_FILE / SELECT ... INTO OUTFILE / INTO DUMPFILE・secure_file_priv 制限・既存ファイル上書き不可制約・Windows MySQL 限定 OOB DNS exfil（UNC パス + CHAR(92)・53/UDP 経由でデータ流出）） | Initial Access | `02_Initial_Access/MySQL_Exploitation.md` |
+| MySQL §8 UDF (User Defined Function) RCE（HIGH IMPACT・sqlmap lib_mysqludf_sys.so XOR デコード / plugin_dir 書込 / CREATE FUNCTION sys_exec・sys_eval・super 権限必須・mysql.func 永続化・原状回復必須） | Initial Access | `02_Initial_Access/MySQL_Exploitation.md` |
+| MySQL §9 authorized_keys 書込（HIGH IMPACT・INTO OUTFILE 経由・mysql ユーザー所有による StrictModes 拒否罠・SSH §11 と連動・原状回復必須） | Initial Access | `02_Initial_Access/MySQL_Exploitation.md` |
+| MySQL §10 CVE-2012-2122 認証バイパス（古典・MariaDB 5.1-5.5 / MySQL 5.1-5.5 限定・memcmp int 戻り値問題で約 1/256 確率認証成立・Metasploit mysql_authbypass_hashdump） | Initial Access | `02_Initial_Access/MySQL_Exploitation.md` |
+| MySQL §11 Rogue MySQL Server による LOAD DATA LOCAL INFILE クライアント側ファイル吸い出し（HIGH IMPACT・MySQL プロトコル仕様・クライアント LOCAL_INFILE 有効環境・MySQL 8.0+ クライアント default OFF・監視ツール / 接続テストツール経由誘導・攻撃方向はサーバ→クライアント） | Initial Access | `02_Initial_Access/MySQL_Exploitation.md` |
 | Java デシリアライズ allowlist バイパス（resolveProxyClass 経由） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/Java_Deserialization_Bypass.md` |
 | Electron アプリ XSS → RCE エスカレーション（nodeIntegration:true + contextIsolation:false） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/Electron_XSS_RCE.md` |
 | 製品デフォルト認証情報試行（製品カテゴリ別の出荷時組合せ早見表・SecLists Default-Credentials/ 利用） | Initial Access | `02_Initial_Access/Default_Credentials.md` |

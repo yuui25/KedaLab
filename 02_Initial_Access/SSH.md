@@ -368,6 +368,7 @@ ls rsa/2048/*.pub | head -n 100 | xargs -P 8 -I {} sh -c '
 - SMB 共有の書込権限
 - Redis unauth + `CONFIG SET dir`/`dbfilename` 経由（古典的経路）
 - PostgreSQL `COPY ... TO PROGRAM` / `lo_export` 経由
+- MySQL `SELECT ... INTO OUTFILE` 経由（`MySQL_Exploitation.md` §9 を参照。書込ファイルが `mysql:mysql` 所有になるため StrictModes 拒否の罠あり）
 - LFI / RFI + 任意ファイル書込脆弱性
 - Web シェル取得済みで該当ユーザー権限がある
 - 既存 SSH シェル取得済みで persistence を仕掛けたい
@@ -578,6 +579,6 @@ ssh [USER]@[INTERNAL_TARGET_IP]
 - 後：シェル取得後の Linux 列挙・権限昇格・横展開 → `../03_Post_Access_Linux/Enumeration_Checklist.md`
 - 後：§12 SOCKS pivot 経由の内部ネットワーク列挙 → `../00_Playbook/Internal_LAN_Pentest_Flow.md`
 - 後：§13 agent ハイジャックで取得した鍵による他ホスト連鎖侵入 → 本ファイル §5（取得鍵での再ログイン）
-- 前：§11 authorized_keys 書込のための書込権限取得経路 → `FTP.md`（§5 書込判定）/ Redis unauth / PostgreSQL `COPY ... TO PROGRAM` 等の別プロトコル経路
-- 関連：他プロトコルでの認証情報使い回し → `FTP.md` / `Mail_Services.md` / `WinRM.md` / `Impacket_Exec.md`
+- 前：§11 authorized_keys 書込のための書込権限取得経路 → `FTP.md`（§5 書込判定）/ Redis unauth / PostgreSQL `COPY ... TO PROGRAM` / `MySQL_Exploitation.md`（§9 `INTO OUTFILE` 経由・`mysql:mysql` 所有者罠あり）等の別プロトコル経路
+- 関連：他プロトコルでの認証情報使い回し → `FTP.md` / `Mail_Services.md` / `WinRM.md` / `Impacket_Exec.md` / `MySQL_Exploitation.md`（§6 mysql.user ハッシュクラック後の cred 使い回し）
 - 関連：TLS バナーと同様の証明書/鍵からの組織推定軸 → `../01_Reconnaissance/TLS_Audit.md`

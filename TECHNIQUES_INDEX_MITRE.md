@@ -53,9 +53,9 @@ ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
 
 | Technique ID | 技術名 | kedalab ファイル |
 |------|-------|--------|
-| T1190 | Exploit Public-Facing Application | `02_Initial_Access/Web_Vulnerabilities/*` / `02_Initial_Access/Edge_Appliance_CVEs.md` |
-| T1133 | External Remote Services | `02_Initial_Access/SSH.md` / `02_Initial_Access/FTP.md` / `02_Initial_Access/Mail_Services.md` / `02_Initial_Access/WinRM.md` / `02_Initial_Access/Impacket_Exec.md` / `02_Initial_Access/Edge_Appliance_CVEs.md` / `02_Initial_Access/RDP.md` |
-| T1078.001 | Valid Accounts: Default Accounts | `02_Initial_Access/Default_Credentials.md` |
+| T1190 | Exploit Public-Facing Application | `02_Initial_Access/Web_Vulnerabilities/*` / `02_Initial_Access/Edge_Appliance_CVEs.md` / `02_Initial_Access/MySQL_Exploitation.md`（§10 CVE-2012-2122 認証バイパス） |
+| T1133 | External Remote Services | `02_Initial_Access/SSH.md` / `02_Initial_Access/FTP.md` / `02_Initial_Access/Mail_Services.md` / `02_Initial_Access/WinRM.md` / `02_Initial_Access/Impacket_Exec.md` / `02_Initial_Access/Edge_Appliance_CVEs.md` / `02_Initial_Access/RDP.md` / `02_Initial_Access/MySQL_Exploitation.md`（外部公開 3306 への認証突破） |
+| T1078.001 | Valid Accounts: Default Accounts | `02_Initial_Access/Default_Credentials.md` / `02_Initial_Access/MySQL_Exploitation.md`（§2 root 空パスワード・anonymous ユーザー） |
 | T1078.002 | Valid Accounts: Domain Accounts | `02_Initial_Access/Credential_Discovery.md` |
 | T1566 | Phishing（提案・スコープ系） | `02_Initial_Access/Social_Engineering.md` |
 | T1566.001 | Phishing: Spearphishing Attachment | `02_Initial_Access/Social_Engineering.md` |
@@ -70,8 +70,8 @@ ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
 | Technique ID | 技術名 | kedalab ファイル |
 |------|-------|--------|
 | T1059.001 | Command and Scripting Interpreter: PowerShell | `04_Post_Access_Windows_AD/Enumeration_Checklist.md` 等 AD 全般 |
-| T1059.003 | Command and Scripting Interpreter: Windows Command Shell | `04_Post_Access_Windows_AD/Enumeration_Checklist.md` |
-| T1059.004 | Command and Scripting Interpreter: Unix Shell | `03_Post_Access_Linux/Shell_Stabilization.md` |
+| T1059.003 | Command and Scripting Interpreter: Windows Command Shell | `04_Post_Access_Windows_AD/Enumeration_Checklist.md` / `02_Initial_Access/MySQL_Exploitation.md`（§8 UDF RCE Windows 経路・lib_mysqludf_sys.dll） |
+| T1059.004 | Command and Scripting Interpreter: Unix Shell | `03_Post_Access_Linux/Shell_Stabilization.md` / `02_Initial_Access/MySQL_Exploitation.md`（§8 UDF RCE Linux 経路・lib_mysqludf_sys.so） |
 | T1059.006 | Command and Scripting Interpreter: Python | `02_Initial_Access/Web_Vulnerabilities/Command_Injection.md` |
 | T1203 | Exploitation for Client Execution | `02_Initial_Access/Web_Vulnerabilities/Electron_XSS_RCE.md` |
 | T1569.002 | System Services: Service Execution | `02_Initial_Access/Impacket_Exec.md`（§4 psexec / §5 smbexec — SCM 経由のサービス作成・Event 7045） |
@@ -88,6 +88,7 @@ ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
 | Technique ID | 技術名 | kedalab ファイル |
 |------|-------|--------|
 | T1098 | Account Manipulation | `04_Post_Access_Windows_AD/ACE_Abuse/ForcePasswordChange.md` / `04_Post_Access_Windows_AD/ACE_Abuse/WriteDACL.md` / `02_Initial_Access/WinRM.md`（§9.3 Remote Management Users / Administrators グループ追加） |
+| T1098.004 | Account Manipulation: SSH Authorized Keys | `02_Initial_Access/SSH.md`（§11 authorized_keys 書込・FTP / Redis / PostgreSQL / MySQL 各書込経路 + persistence） / `02_Initial_Access/MySQL_Exploitation.md`（§9 INTO OUTFILE 経由・`mysql:mysql` 所有者罠あり） |
 | T1098.005 | Account Manipulation: Device Registration（Shadow Credentials） | `04_Post_Access_Windows_AD/ACE_Abuse/GenericAll.md` |
 | T1136.001 | Create Account: Local Account | `02_Initial_Access/WinRM.md`（§9.3 net user /add によるバックドア用ローカルアカウント追加） |
 | T1136.002 | Create Account: Domain Account | `04_Post_Access_Windows_AD/Delegation_Attacks/Unconstrained.md`（マシンアカウント作成） |
@@ -130,23 +131,24 @@ ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
 | T1003.003 | OS Credential Dumping: NTDS | `04_Post_Access_Windows_AD/Credential_Dumping.md` |
 | T1003.006 | OS Credential Dumping: DCSync | `04_Post_Access_Windows_AD/Credential_Dumping.md` |
 | T1110.002 | Brute Force: Password Cracking | `05_Tools_Reference/Hashcat.md` |
-| T1110.003 | Brute Force: Password Spraying | `05_Tools_Reference/Netexec.md` / `02_Initial_Access/Account_Lockout_Recon.md` / `02_Initial_Access/WinRM.md`（§6 nxc winrm --continue-on-success） / `02_Initial_Access/Impacket_Exec.md`（§8 nxc smb --continue-on-success → wmiexec 連続実行・ローカル管理者 hash 使い回し検出 with `--local-auth`） / `02_Initial_Access/RDP.md`（§6 nxc rdp --continue-on-success・targets.txt で cred reuse 検出） |
-| T1110.001 | Brute Force: Password Guessing | `02_Initial_Access/Default_Credentials.md`（hydra / medusa） / `01_Reconnaissance/SNMP_Enumeration.md`（コミュニティ文字列ブルート） / `02_Initial_Access/RDP.md`（§6 crowbar / hydra rdp / ncrack） |
+| T1110.003 | Brute Force: Password Spraying | `05_Tools_Reference/Netexec.md` / `02_Initial_Access/Account_Lockout_Recon.md` / `02_Initial_Access/WinRM.md`（§6 nxc winrm --continue-on-success） / `02_Initial_Access/Impacket_Exec.md`（§8 nxc smb --continue-on-success → wmiexec 連続実行・ローカル管理者 hash 使い回し検出 with `--local-auth`） / `02_Initial_Access/RDP.md`（§6 nxc rdp --continue-on-success・targets.txt で cred reuse 検出） / `02_Initial_Access/MySQL_Exploitation.md`（§5 nxc mysql --continue-on-success・targets.txt で cred reuse 検出） |
+| T1110.001 | Brute Force: Password Guessing | `02_Initial_Access/Default_Credentials.md`（hydra / medusa） / `01_Reconnaissance/SNMP_Enumeration.md`（コミュニティ文字列ブルート） / `02_Initial_Access/RDP.md`（§6 crowbar / hydra rdp / ncrack） / `02_Initial_Access/MySQL_Exploitation.md`（§5 hydra mysql / medusa / ncrack / nmap mysql-brute） |
 | T1558.001 | Steal or Forge Kerberos Tickets: Golden Ticket | `04_Post_Access_Windows_AD/Kerberos_Attacks/Pass_The_Ticket.md` |
 | T1558.002 | Steal or Forge Kerberos Tickets: Silver Ticket | `04_Post_Access_Windows_AD/Kerberos_Attacks/Pass_The_Ticket.md` |
 | T1558.003 | Steal or Forge Kerberos Tickets: Kerberoasting | `04_Post_Access_Windows_AD/Kerberos_Attacks/Kerberoasting.md` / `04_Post_Access_Windows_AD/ACE_Abuse/GenericWrite.md`（Targeted） |
 | T1558.004 | Steal or Forge Kerberos Tickets: AS-REP Roasting | `04_Post_Access_Windows_AD/Kerberos_Attacks/ASREPRoasting.md` |
 | T1187 | Forced Authentication | `04_Post_Access_Windows_AD/NTLM_Relay/Coerce.md` / `02_Initial_Access/MSSQL_Exploitation.md`（xp_dirtree） |
+| T1555 | Credentials from Password Stores | `02_Initial_Access/MySQL_Exploitation.md`（§6 mysql.user テーブルからのハッシュ取得・mysql_native_password / caching_sha2_password / sha256_password / mysql_old_password 形式） |
 | T1555.003 | Credentials from Password Stores: Web Browsers | `04_Post_Access_Windows_AD/DPAPI_Browser_Creds.md` |
 | T1555.004 | Credentials from Password Stores: Windows Credential Manager | `04_Post_Access_Windows_AD/DPAPI_Browser_Creds.md` |
 | T1555.005 | Credentials from Password Stores: Password Managers | `02_Initial_Access/Credential_Discovery.md`（KeePass） |
-| T1552.001 | Unsecured Credentials: Credentials In Files | `02_Initial_Access/Credential_Discovery.md`（.env / スクリプト埋め込み） |
-| T1552.004 | Unsecured Credentials: Private Keys | `02_Initial_Access/Credential_Discovery.md` / `02_Initial_Access/SSH.md`（§5 鍵接続 / §8 ssh2john パスフレーズクラック / §10 Debian PRNG 弱鍵） |
+| T1552.001 | Unsecured Credentials: Credentials In Files | `02_Initial_Access/Credential_Discovery.md`（.env / スクリプト埋め込み） / `02_Initial_Access/MySQL_Exploitation.md`（§7 LOAD_FILE で /var/www/html/config.php / wp-config.php 等の設定ファイル読取） |
+| T1552.004 | Unsecured Credentials: Private Keys | `02_Initial_Access/Credential_Discovery.md` / `02_Initial_Access/SSH.md`（§5 鍵接続 / §8 ssh2john パスフレーズクラック / §10 Debian PRNG 弱鍵） / `02_Initial_Access/MySQL_Exploitation.md`（§7 LOAD_FILE で /home/[USER]/.ssh/id_rsa 取得） |
 | T1552.006 | Unsecured Credentials: Group Policy Preferences | `01_Reconnaissance/SMB_Enumeration.md` / `02_Initial_Access/Credential_Discovery.md` |
 | T1557.001 | Adversary-in-the-Middle: LLMNR/NBT-NS Poisoning and SMB Relay | `04_Post_Access_Windows_AD/NTLM_Relay/Responder.md` / `04_Post_Access_Windows_AD/NTLM_Relay/ntlmrelayx.md` |
 | T1557.003 | Adversary-in-the-Middle: DHCP Spoofing | `04_Post_Access_Windows_AD/NTLM_Relay/mitm6.md` |
 | T1649 | Steal or Forge Authentication Certificates | `04_Post_Access_Windows_AD/AD_CS/*`（ESC1〜15 全般） |
-| T1212 | Exploitation for Credential Access | `02_Initial_Access/SSH.md`（§9 CVE-2018-15473 ユーザー列挙） |
+| T1212 | Exploitation for Credential Access | `02_Initial_Access/SSH.md`（§9 CVE-2018-15473 ユーザー列挙） / `02_Initial_Access/MySQL_Exploitation.md`（§10 CVE-2012-2122 認証バイパス → mysql.user 全 hash ダンプ） |
 
 ---
 
@@ -190,7 +192,7 @@ ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
 |------|-------|--------|
 | T1005 | Data from Local System | `03_Post_Access_Linux/Enumeration_Checklist.md` / `04_Post_Access_Windows_AD/Enumeration_Checklist.md` |
 | T1039 | Data from Network Shared Drive | `01_Reconnaissance/SMB_Enumeration.md` |
-| T1213 | Data from Information Repositories | `01_Reconnaissance/Exposed_Files.md` |
+| T1213 | Data from Information Repositories | `01_Reconnaissance/Exposed_Files.md` / `02_Initial_Access/MySQL_Exploitation.md`（§4 mysqldump --all-databases / information_schema.columns 横断検索でアプリ DB データ抽出） |
 | T1602.001 | Data from Configuration Repository: SNMP (MIB Dump) | `01_Reconnaissance/SNMP_Enumeration.md` |
 
 ---
