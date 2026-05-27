@@ -122,19 +122,25 @@
 | SSRF defense bypass：IPv4-mapped IPv6 (`::ffff:127.0.0.1`)（Python 3.11.9 / 3.12.4 未満限定） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/SSRF.md` |
 | XXE（XML外部エンティティインジェクション） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/XXE.md` |
 | XSLTインジェクション（プロセッサフィンガープリント・XXE-via-XSLT・PHP拡張・Java拡張） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/XSLT_Injection.md` |
-| JWT alg:none 攻撃（署名検証スキップ） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/JWT_Attacks.md` |
-| JWT 弱い秘密鍵ブルートフォース（hashcat mode 16500） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/JWT_Attacks.md` |
-| JWT RS256→HS256 アルゴリズム切り替え攻撃（公開鍵を HMAC 秘密鍵として悪用） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/JWT_Attacks.md` |
-| JWT kid パラメータインジェクション（SQLi / パストラバーサル） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/JWT_Attacks.md` |
-| JWT jku / x5u 鍵 URL 差し替え（攻撃者 JWKS への誘導） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/JWT_Attacks.md` |
+| JWT 未検証署名（Accepting Arbitrary Signatures：alg はそのまま署名部のみデタラメに書き換えても通る最 Basic な実装ミス） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/JWT_Attacks.md` |
+| JWT alg:none 攻撃（署名検証スキップ・大文字小文字バリエーション含む） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/JWT_Attacks.md` |
+| JWT 弱い秘密鍵ブルートフォース（hashcat mode 16500 / john HMAC-SHA256 / sample key リスト） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/JWT_Attacks.md` |
 | JWT jwk ヘッダーインジェクション（攻撃者公開鍵の埋め込み） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/JWT_Attacks.md` |
-| OAuth redirect_uri 検証バイパス（サブストリングマッチ / Path Traversal / Open Redirect 連鎖 / HPP / IDN）→ 被害者 code 奪取 → アカウント乗っ取り | Initial Access | `02_Initial_Access/Web_Vulnerabilities/OAuth_Attacks.md` |
+| JWT jku / x5u 鍵 URL 差し替え（攻撃者 JWKS への誘導・URL parsing bug 経由の同一オリジン制約迂回） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/JWT_Attacks.md` |
+| JWT kid パラメータインジェクション（SQLi / パストラバーサルで `/dev/null` を秘密鍵化） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/JWT_Attacks.md` |
+| JWT RS256→HS256 アルゴリズム混乱攻撃（公開鍵を HMAC 秘密鍵として悪用） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/JWT_Attacks.md` |
+| JWT RS256→HS256 公開鍵非公開時の n 導出（`portswigger/sig2n` Docker で既存トークン2つから RSA modulus を復元） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/JWT_Attacks.md` |
+| JWT Claims 検証不備（exp / iss / aud / nbf 未検証 → トークン長期流用・別テナント token 流用） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/JWT_Attacks.md` |
+| OAuth redirect_uri 検証バイパス（サブストリングマッチ / Path Traversal / userinfo `@` / Open Redirect 連鎖 / HPP / IDN）→ 被害者 code 奪取 → アカウント乗っ取り | Initial Access | `02_Initial_Access/Web_Vulnerabilities/OAuth_Attacks.md` |
 | OAuth state 欠落・固定による CSRF → 既存アカウントに攻撃者 IdP 連携を強制（アカウント連携乗っ取り） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/OAuth_Attacks.md` |
-| OAuth Implicit Flow Token Leakage（URL fragment の access_token → Referer / 履歴 / JS 経由漏洩） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/OAuth_Attacks.md` |
-| OpenID Connect id_token 検証バイパス（iss / aud / azp / nonce / exp 検証ミス・JWT 攻撃と併用） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/OAuth_Attacks.md` |
-| OAuth email / sub 信頼性攻撃（federated identity confusion / `email_verified` 不検証 → 既存アカウント乗っ取り） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/OAuth_Attacks.md` |
+| OAuth Implicit Flow Token Leakage（URL fragment の access_token → Referer / 履歴 / JS / postMessage 経由漏洩） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/OAuth_Attacks.md` |
+| OAuth Scope 拡大（Scope Upgrade：token 交換時 / userinfo に追加 scope を通して user 未同意リソースに到達） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/OAuth_Attacks.md` |
 | OAuth PKCE 欠落・downgrade（`code_challenge_method=plain` 許容 → モバイル app / public client の code 横取り成立） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/OAuth_Attacks.md` |
+| OAuth email / sub 信頼性攻撃（federated identity confusion / `email_verified` 不検証 / nOAuth 型の email 改変 → 既存アカウント乗っ取り） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/OAuth_Attacks.md` |
+| OpenID Connect id_token 検証バイパス（iss / aud / azp / nonce / exp 検証ミス・JWT 攻撃と併用） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/OAuth_Attacks.md` |
 | OAuth client_secret 漏洩悪用（モバイル app バンドル / SPA / GitHub 由来 → confidential client なりすまし） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/OAuth_Attacks.md` |
+| OIDC Dynamic Client Registration の悪用（`/connect/register` が認証なしで開いている → 攻撃者制御 redirect_uri を持つ client 登録 → code 横取り） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/OAuth_Attacks.md` |
+| OIDC `request_uri` 経由の SSRF・認可リクエスト改ざん（外部 URL から request object JWT を fetch → 内部 URL で SSRF、認可パラメータ動的差し替えで scope/redirect 改変） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/OAuth_Attacks.md` |
 | Open Redirect バイパス各種（プロトコル相対 `//` / userinfo `@` / バックスラッシュ・多重スラッシュ / URL エンコード / IDN・Punycode） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/Open_Redirect.md` |
 | Open Redirect `javascript:` スキーム経由 XSS 化（DOM ベース `location.href = userInput` 系で成立） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/Open_Redirect.md` |
 | Open Redirect 経由の SSRF 防御回避（攻撃者ホスト → 302 で内部 IP / メタデータ API へ転送） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/Open_Redirect.md` |
