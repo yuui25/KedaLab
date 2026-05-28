@@ -14,9 +14,11 @@
 
 | パターン | 難読化形式 | 対処 |
 |---------|----------|------|
-| `eval(function(p,a,c,k,e,d){...})` | Dean Edward's Packer | evalをconsole.logに置換 or de4js |
-| `atob('...')` 内の長い文字列 | Base64埋め込みコード | `atob(...)` をConsoleで実行 |
-| 意味不明な変数名（`_0x1a2b` 等） | 変数名難読化 | beautifier.io + 目視 |
+| `eval(function(p,a,c,k,e,d){...})` | Dean Edward's Packer | eval を console.log に置換 or de4js |
+| `atob('...')` 内の長い文字列 | Base64 埋め込みコード | `atob(...)` を Console で実行 |
+| 意味不明な変数名（`_0x1a2b` 等）+ 文字列配列 + 難読化ループ | **obfuscator.io 系**（最も広く使われる現代的難読化）| eval 置換では元に戻らない → `synchrony` または `de4js` を使う（下記）|
+| `_0x` 変数名 + string array shuffle + control-flow flattening | obfuscator.io の高強度設定 | `synchrony deobfuscate` が最も対応範囲広い |
+| `__p_5765267__` / `_$_` 等の連続記号系変数名 | 独自 obfuscator | eval 置換 → beautifier → 手動解析 |
 
 **デコード後に確認すべきこと：**
 
@@ -26,6 +28,39 @@
 - 別のAPIを呼び出す関数の存在
 
 ## 手順
+
+## 方法0: ソースマップ（`.js.map`）の確認（**最優先・特効薬**）
+
+難読化 / minify された JS を解読する前に、**ソースマップが公開されていないか**を確認する。ソースマップがあれば元の TypeScript / ES2019+ コードが**そのまま**手に入り、難読化解析の手間が一切かからない。
+
+```bash
+# [Attacker] JS ファイルの末尾コメントでソースマップ参照を確認
+curl -s https://[TARGET]/js/app.min.js | tail -5
+# 出力例: //# sourceMappingURL=app.min.js.map
+
+# [Attacker] .map ファイルを直接取得
+curl -s https://[TARGET]/js/app.min.js.map -o app.min.js.map
+
+# [Attacker] .map が存在しない場合でも URL を変えて探す
+curl -s https://[TARGET]/js/app.min.js.map
+curl -s https://[TARGET]/static/js/main.chunk.js.map
+curl -s https://[TARGET]/assets/js/bundle.js.map
+
+# [Attacker] sourcemap ファイルから元ソースを取り出す
+# python3 -m pip install sourcemapper
+sourcemapper -url https://[TARGET]/js/app.min.js.map -output ./extracted_src/
+# または手動: .map の `sources` 配列と `sourcesContent` 配列が元ファイルパスと内容
+python3 -c "
+import json; m = json.load(open('app.min.js.map'))
+for p, c in zip(m['sources'], m.get('sourcesContent', [])):
+    print(f'=== {p} ===')
+    print(c[:200])
+"
+```
+
+> **ブラウザでの確認:** DevTools → Sources → 「webpack://」「ng://」等のツリーが現れていればソースマップが自動ロードされている。コード補完や元のファイル名で検索できる状態になっていれば、そのまま Source タブで読める。
+
+---
 
 ## 方法1: ブラウザのDevTools（最も手早い）
 
@@ -45,10 +80,29 @@ console.log(function(p,a,c,k,e,d){...}('...', 24, 24, '...'.split('|'), 0, {}))
 // → デコードされたJSがConsoleに出力される
 ```
 
-## 方法3: オンラインツール
+## 方法3: obfuscator.io 系 / 現代難読化ツール
 
-- [de4js](https://de4js.kshift.me/) — Dean Edward's Packer 専用、そのまま貼り付けるだけ
-- [beautifier.io](https://beautifier.io/) — 汎用コード整形
+`eval → console.log` 置換が効かない `_0x` 系（obfuscator.io 形式）は専用ツールを使う:
+
+```bash
+# [Attacker] synchrony — 最も対応範囲が広い（obfuscator.io 系の事実上標準デオブファスケーター）
+npx synchrony deobfuscate obfuscated.js
+npx synchrony deobfuscate obfuscated.js --output clean.js
+
+# [Attacker] de4js — Web UI + CLI（Dean Edward's Packer / obfuscator.io 系対応）
+npx de4js obfuscated.js
+# または Web UI: https://de4js.kshift.me/ に貼り付け
+
+# [Attacker] js-deobfuscator（synchrony が刺さらない場合の代替）
+npm install -g js-deobfuscator
+js-deobfuscator --input obfuscated.js --output clean.js
+```
+
+## 方法4: オンラインツール
+
+- **synchrony** — `npx synchrony deobfuscate` （obfuscator.io 系の第一候補）
+- [de4js](https://de4js.kshift.me/) — Dean Edward's Packer 専用 + 汎用対応、そのまま貼り付けるだけ
+- [beautifier.io](https://beautifier.io/) — 汎用コード整形（可読化のみ・難読化の解除には非対応）
 
 ## APIレスポンスのエンコーディング確認
 
@@ -85,7 +139,7 @@ echo "NkZQQjAtTFc4SkYtR0VZMlAtTzE5WEQ=" | base64 -d
 - `eval` を `console.log` に置き換えるだけで読める場合がほとんどだが、多段階難読化の場合は段階ごとにデコードが必要
 - デコードされたJSに新たなAPIエンドポイント（`/api/v1/...`）が含まれる場合、そのエンドポイントを直接叩くのが次の手
 - レスポンスの `enctype` が `ROT13` の場合、デコードするとさらに「次のAPIエンドポイントに POST せよ」という指示が出ることがある。指示に従って POST リクエストを送る
-- ブラウザのConsoleはページのドメインに紐付いているため、難読化JSをConsoleに直接貼り付けて実行しても安全に動作する（外部サイトへのリクエストはCORSで制限される）
+- **ブラウザ Console の「安全」は誤解を招く表現:** Console に JS を貼り付けて実行すると、**そのページのドメインの権限**で動作する。外部サイトへのリクエストは CORS でブロックされるが、**ターゲットページ自身の API 呼び出し・Cookie アクセス・DOM 操作はそのまま実行できる**。つまり、ターゲットページの Console で `fetch('/api/admin/users')` を貼り付けると、そのページのセッションで管理 API を叩ける。「安全に動作する」ではなく「**外部への CORS 制限はかかるが、ターゲット自身への操作は完全に可能**」が正確な表現。
 
 ---
 

