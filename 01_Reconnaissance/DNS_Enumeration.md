@@ -1,6 +1,6 @@
 ﻿# DNS 調査（ドメインが渡された場合の起点）
 
-> **スコープ**: 53/tcp・53/udp（標準 DNS）/ 5353/udp（mDNS）/ 593/tcp（言及範囲外）から、ドメインの基本レコード列挙・サブドメイン発見・AD 環境推測・技術スタック特定・既知の DNS 攻撃面（Zone Transfer / Subdomain Takeover / NSEC walking / Cache Snooping / DDNS Update / DNS Rebinding / Recursion 開放 / NDN bounce 漏洩）を扱う。**DNS C2 / DNS tunneling は post-access の通信経路で本ファイル対象外**。**Cache Poisoning（Kaminsky 型）は現代では実用度低く参考言及のみ**。**DNS amplification DDoS は kedalab スコープ外**（本番禁止）。
+> **スコープ**: 53/tcp・53/udp（標準 DNS）/ 5353/udp（mDNS）から、ドメインの基本レコード列挙・サブドメイン発見・AD 環境推測・技術スタック特定・既知の DNS 攻撃面（Zone Transfer / Subdomain Takeover / NSEC walking / Cache Snooping / DDNS Update / DNS Rebinding / Recursion 開放 / NDN bounce 漏洩）を扱う。**DoT (853/tcp) / DoH (443/tcp 上の HTTPS) は暗号化 DNS で本ファイル対象外**（recon としては別経路：TLS スキャン側で扱う）。**DNS C2 / DNS tunneling は post-access の通信経路で本ファイル対象外**。**Cache Poisoning（Kaminsky 型）は現代では実用度低く参考言及のみ**。**DNS amplification DDoS は kedalab スコープ外**（本番禁止）。
 
 ## 着火条件
 - テスト開始時にドメイン名のみ渡され、IP が不明な状態
@@ -9,7 +9,7 @@
 
 ## 環境前提
 - 実行環境: テスター端末
-- 必要なツール: `nslookup` / `dig` / `host`（標準同梱）、`gobuster` / `ffuf` / `dnsenum` / `dnsrecon` / `dnscan` / `fierce`（ペネトレ用 Linux ディストリ標準搭載）、`fpdns`（要インストール: `apt install fpdns` or git clone）、`subjack` / `subzy`（Subdomain Takeover 検出・要インストール: `go install` / `pipx install`）、`dns-triage`（BHIS 公開ツール、要 git clone + `pip3 install`）、`ldns-walk`（`apt install ldnsutils`）、`nsupdate`（`bind-utils` / `bind9utils` 同梱）、`swaks`（メール送信、`apt install swaks`）
+- 必要なツール: `nslookup` / `dig` / `host`（標準同梱）、`nmap`（PTR 一括逆引き `-sL`）、`gobuster` / `ffuf` / `dnsenum` / `dnsrecon` / `dnscan` / `fierce`（ペネトレ用 Linux ディストリ標準搭載）、`subfinder`（パッシブ列挙ファーストチョイス・ProjectDiscovery、`go install` or `apt install subfinder`）、`amass`（パッシブ + アクティブ統合）、`nuclei`（Subdomain Takeover 検出ファーストチョイス・`go install` or `apt install nuclei` + `nuclei -update-templates`）、`subzy`（Takeover 補完・`go install`）、`fpdns`（要インストール: `apt install fpdns` or git clone）、`subjack`（メンテ停止・参考扱い）、`dns-triage`（BHIS 公開ツール、要 git clone + `pip3 install`）、`ldns-walk`（`apt install ldnsutils`）、`nsupdate`（`bind-utils` / `bind9utils` 同梱）、`swaks`（メール送信、`apt install swaks`）
 - インターネットアクセス: 外部DNSに問い合わせる場合は必要。内部 DNS サーバー指定なら不要
 
 ## 先に確認すること
@@ -49,7 +49,7 @@ dig [DOMAIN] AAAA +short
 | AAAA レコードあり（IPv6） | IPv6 経路も有効 | IPv6 経由でのアクセス・別経路スキャンを試行（IPv6 が IPv4 より緩い設定の場合あり） |
 | 解決失敗（`NXDOMAIN`） | ドメイン不存在 / 内部限定 | §2 内部 DNS 指定経路へ / typo の可能性 / `dig @8.8.8.8` で外部 DNS でも確認 |
 | `SERVFAIL` | DNS サーバー側のエラー | 別 DNS サーバーで再試行（`@1.1.1.1` / `@9.9.9.9`） |
-| CDN ホスト名（`*.cloudfront.net` / `*.akamai.net` / `*.fastly.net`）が返る | CDN 経由 | オリジン IP は別途特定が必要（証明書透明性ログ・履歴 DNS DB・SSRF 経由） |
+| CDN ホスト名（`*.cloudfront.net` / `*.akamai.net` / `*.fastly.net`）が返る | CDN 経由 | オリジン IP は別途特定が必要：(a) 証明書透明性ログ `crt.sh`、(b) Shodan / Censys で対象組織の証明書 CN/SAN 検索、(c) 過去 DNS 履歴 DB（SecurityTrails / DNSDB / VirusTotal）、(d) サブドメインの直接 A レコード（CDN 前段になっていない `dev.*` / `staging.*` から漏れることが多い）、(e) SSRF 経由でアプリから直接接続させる |
 
 **nslookup の出力例と読み方：**
 
@@ -153,6 +153,39 @@ dig default._domainkey.[DOMAIN] TXT   # DKIM（セレクター名は組織依存
 | DNSKEY / DS / NSEC / NSEC3 | DNSSEC 関連 | NSEC walking で全レコード列挙が可能な場合あり（→ §11） |
 | CAA | 証明書発行ポリシー | `issue` / `issuewild` の許可範囲過大は finding 候補。crt.sh と組み合わせて発行履歴を確認 |
 
+### 3.1 逆引き（PTR）と権威連鎖の追跡
+
+A レコードで取得した IP から組織保有の周辺ホストを推定する。**所有 IP レンジが分かれば PTR スキャンで未公開ホスト名が一括取得できる**ことがある。
+
+**コマンド:**
+
+```bash
+# [Attacker] 単一 IP の逆引き
+dig -x [TARGET_IP] +short
+nslookup [TARGET_IP]
+
+# [Attacker] サブネット全体の PTR を一括取得（nmap のリストスキャン・ポートは叩かない）
+nmap -sL [SUBNET]/24 | grep "(" | awk '{print $5, $6}'
+
+# [Attacker] 大きいレンジを並列に逆引き
+for i in $(seq 1 254); do dig -x [SUBNET].$i +short +time=1 +tries=1 | grep -v '^$' & done; wait
+
+# [Attacker] 権威の連鎖を root から辿る（委任ミス・DNSSEC 検証ミスの観察）
+dig [DOMAIN] +trace
+dig [DOMAIN] +trace +dnssec        # DNSSEC chain も同時表示
+```
+
+**観測される出力 → 次のアクション:**
+
+| 出力 | 示唆 | 次のアクション |
+|---|---|---|
+| PTR が `*.internal.[DOMAIN]` 等の内部命名 | 内部ホスト命名規則の漏洩 | 内部 DNS 経路がインターネット側に出ている（**finding**） |
+| PTR が組織関連ホスト名を多数返す（同一サブネット内）| 所有 IP レンジが連続割当 | 周辺 IP もスキャン対象に追加 |
+| `+trace` で途中の NS が `SERVFAIL` | 権威 NS の一部が応答しない | 残る NS だけで構成されていれば DoS 耐性低 finding |
+| `+trace +dnssec` で `ad` フラグなし | DNSSEC validation 未設定 / 鍵不整合 | キャッシュポイズニング耐性が低い finding |
+
+> **注意:** `nmap -sL` は **ポートを一切送信しない**（PTR クエリのみ）ため検知性は低いが、それでも大量 PTR クエリは DNS サーバー側でレート異常として観察される。本番では `/24` 単位までに留める。
+
 ---
 
 ## 4. ゾーン転送を試みる（NS が判明した場合）
@@ -201,7 +234,7 @@ done
 - 全 A / AAAA レコードを抽出 → スキャン対象 IP リストの母集合確定
 - 内部サブドメイン（`internal.*` / `staging.*` / `dev.*` / `vpn.*` / `mail.*` / `*-test.*`）を優先 → 設定が緩い可能性
 - HINFO / TXT レコード内に内部情報・バージョン情報の漏洩がないか grep
-- 取得した内部 IP レンジが RFC 1918（10.0.0.0/8 / 172.16.0.0/12 / 192.0.2.0/24 等）なら内部 DNS が外部に晒されている = **重大 finding**
+- 取得した内部 IP レンジが RFC 1918 私設アドレス空間（`10.0.0.0/8` / `172.16.0.0/12` / `192.168.0.0/16`）なら内部 DNS が外部に晒されている = **重大 finding**（※ ドキュメント例示用の `192.0.2.0/24` (TEST-NET-1, RFC 5737) と混同しない）
 
 > **注意:** AXFR の試行は受動的だが、NS のアクセスログに `xfer-out` 記録が残る。本番で大量繰り返しは避ける。**情報漏洩 finding として 1 回成功すれば十分**で、複数 NS への試行も 1-2 回に絞る。
 
@@ -228,13 +261,19 @@ dnscan -d [DOMAIN] -r -w /usr/share/seclists/Discovery/DNS/subdomains-top1millio
 # [Attacker] IPv6 サブドメイン bruteforce
 dnsdict6 -s -t [DOMAIN]
 
-# [Attacker] パッシブ列挙（証明書透明性ログ・公開 DB から）
+# [Attacker] パッシブ列挙ファーストチョイス — subfinder（高速・低ノイズ・複数ソース統合）
+# https://github.com/projectdiscovery/subfinder
+subfinder -d [DOMAIN] -all -silent -o subdomains_passive.txt
+
+# [Attacker] 証明書透明性ログを直接叩く（subfinder のソースに含まれるが、結果検証用に単独実行も有用）
 # https://crt.sh/?q=%25.[DOMAIN]&output=json
 curl -s "https://crt.sh/?q=%25.[DOMAIN]&output=json" | jq -r '.[].name_value' | sort -u
 
-# [Attacker] amass（パッシブ + アクティブ統合）
+# [Attacker] amass（パッシブ + アクティブ統合・より時間がかかる）
 amass enum -d [DOMAIN]
 ```
+
+> **パッシブ列挙の順序:** **`subfinder` を最初に回す**のが現在の定石（複数のパッシブソース＝crt.sh / VirusTotal / SecurityTrails / Shodan 等を内部で統合し、API キー無しでもデフォルトソースで成果が出る）。`amass` は時間がかかる分カバレッジが広く、subfinder で取り切れない場合の二段目。`crt.sh` 直叩きは結果の検証・特定ドメインの履歴確認用。
 
 **観測される出力 → 次のアクション:**
 
@@ -443,17 +482,23 @@ for sub in $(cat subdomains.txt); do
   dig CNAME "$sub" +short
 done
 
-# [Attacker] subjack — 専用ツール（fingerprint DB 内蔵）
-# https://github.com/haccer/subjack
-subjack -w subdomains.txt -t 100 -timeout 30 -ssl -c fingerprints.json -v
+# [Attacker] nuclei takeovers テンプレート — 現在の業界標準（テンプレートが頻繁に更新される）
+# https://github.com/projectdiscovery/nuclei-templates
+nuclei -l subdomains.txt -t http/takeovers/ -severity high,critical -o takeover_findings.txt
 
-# [Attacker] subzy — 別ツール（よりメンテされている）
+# [Attacker] subzy — fingerprint DB をメンテし続けている専用ツール（nuclei の補完）
 # https://github.com/PentestPad/subzy
 subzy run --targets subdomains.txt
+
+# [Attacker] subjack — 古くからある定番だが現在メンテほぼ停止。誤検知・検知漏れ多
+# https://github.com/haccer/subjack
+subjack -w subdomains.txt -t 100 -timeout 30 -ssl -c fingerprints.json -v
 
 # [Attacker] 手動確認 — CNAME 先に HTTP 接続して特定エラー文を観察
 curl -sI https://[SUBDOMAIN]/
 ```
+
+> **ツール選択:** **`nuclei -t http/takeovers/` を一次手段にする**（テンプレートが日次で追加・修正される）。`subzy` で fingerprint 多様性を補完。`subjack` はメンテ停止状態で誤検知・検知漏れが目立つため参考扱い。最終確認は必ず手動 `curl` で当該エラー文を観察してから finding 化する。
 
 **観測される出力 → 次のアクション:**
 
@@ -531,11 +576,13 @@ dig [DOMAIN] @[TARGET_DNS_IP] +norecurse +stats | grep "Query time"
 
 | 出力 | 示唆 | 次のアクション |
 |---|---|---|
-| `ANSWER SECTION` にレコードが返る + `flags:` に `ra` あり | キャッシュヒット = 過去に組織内で解決された | 組織が利用しているサービスの推測材料 |
+| `ANSWER SECTION` にレコードが返る + `flags:` に `aa` 無し | キャッシュヒット = 過去に組織内で解決された（非権威・既キャッシュ応答） | 組織が利用しているサービスの推測材料 |
 | `ANSWER SECTION` 空 + `AUTHORITY SECTION` のみ | キャッシュミス = 解決履歴なし | 別ドメインを試行 |
 | `REFUSED` rcode | 非再帰クエリも拒否（適切な設定）| Cache Snooping 不可、次の手法へ |
 | `Query time: 0 msec` | キャッシュヒット（応答時間ベース判定） | 同上、組織利用サービスの推測材料 |
 | `Query time: 100+ msec` | キャッシュミス（外部問い合わせ発生）| 同上、未利用と推定 |
+
+> **flags の読み方（誤読しやすい）:** dig 応答の `flags: qr rd ra` は **クエリの結果ではなくサーバー側の能力**を示す。`rd` は **リクエスト側のビットがエコーされて返ってくる**だけで、`+norecurse` を投げたかどうかとは独立。`ra` は **サーバーが再帰を許可しているか**であって、このクエリで再帰が起きたかではない。**Cache snooping の判定は `aa` 無し + ANSWER に値が入っているか**（非権威応答=キャッシュ済み）と Query time で行う。`+norecurse` を使う意義は「キャッシュ外を再帰解決させてしまう副作用を防ぐ」点にあり、応答の flags 解釈とは別軸。
 
 > **使い道:** 業務利用サービスの推測（社会工学・ピンポイント攻撃の前提条件作り）。本番では低優先度の finding だが、競合分析・社内サービス推定の補助になる。
 

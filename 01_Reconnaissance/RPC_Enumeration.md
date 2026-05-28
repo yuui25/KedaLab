@@ -91,6 +91,11 @@ python3 IOXIDResolver.py -t [TARGET_IP]
 | `\pipe\svcctl` | `367abb81-9844-35f1-ad32-98f038001003` | MS-SCMR — サービスマネージャ（psexec / smbexec の経路） |
 | `\pipe\srvsvc` | `4b324fc8-1670-01d3-1278-5a47bf6ee188` | MS-SRVS — 共有列挙・セッション列挙 |
 | `\pipe\epmapper` | `4d9f4ab8-7d1c-11cf-861e-0020af6e7c57` | DCOM 経由のオブジェクトアクティベーション（dcomexec） |
+| `\pipe\netlogon` | `12345678-1234-abcd-ef00-01234567cffb` | MS-NRPC — Netlogon。**ZeroLogon (CVE-2020-1472)** のエンドポイント（`NetrServerAuthenticate3` でゼロ認証バイパス） |
+| `\pipe\efsrpc` / `\pipe\lsarpc` | `c681d488-d850-11d0-8c52-00c04fd90f7e` | MS-EFSR — **PetitPotam** で `EfsRpcOpenFileRaw` / `EfsRpcEncryptFileSrv` を呼んで NTLM 認証強制 |
+| `\pipe\netdfs` | `4fc742e0-4a10-11cf-8273-00aa004ae673` | MS-DFSNM — **DFSCoerce** で `NetrDfsAddRootTarget` / `NetrDfsRemoveRootTarget` を呼んで NTLM 認証強制 |
+| `\pipe\spoolss` | `12345678-1234-abcd-ef00-0123456789ab` | MS-RPRN — Print Spooler。**PrinterBug (SpoolSample)** で `RpcRemoteFindFirstPrinterChangeNotificationEx` を呼んで NTLM 認証強制 |
+| `\pipe\eventlog` | `82273fdc-e32a-18c3-3f78-827929dc23ea` | MS-EVEN6 — リモートイベントログ読取（権限あれば監査ログ列挙）|
 
 > **MS-SAMR の重要な性質**: SAMR インターフェース経由のユーザー名・グループ列挙は **AD の account lockout policy をバイパスする**（列挙は認証失敗カウンタに加算されない）。これは「lockout が有効でもスプレー可能」という意味ではなく「**列挙だけは lockout を恐れず網羅実行できる**」という意味。後段のパスワードスプレー（[`../02_Initial_Access/Default_Credentials.md`](../02_Initial_Access/Default_Credentials.md)）は別途 lockout 閾値に従う必要がある。
 
@@ -101,6 +106,7 @@ python3 IOXIDResolver.py -t [TARGET_IP]
 - 古い Samba (3.x 系) は DCERPC エンドポイントマッパーの実装が貧弱で、本コマンドが空に近い結果を返すことがある → Samba 確定なら本ブロックスキップして §2 へ
 - **IOXIDResolver は認証不要・135 経由で動く** ため、ターゲットが NAT 越し・複数 NIC 構成でも内部 IP / IPv6 アドレスを暴露する。NMap でも見えないアドレスが出ることがあり、内部ネットワークマップ作成の起点になる
 - **Port 593（RPC over HTTP）** は Exchange 環境で Outlook Anywhere 用に露出することがある。発見したら Exchange バージョン特定 → ProxyLogon / ProxyShell の CVE 照合（[`../02_Initial_Access/Mail_Services.md`](../02_Initial_Access/Mail_Services.md) §8）へ
+- **コアーション系（NTLM 認証強制攻撃）の起点 IF**: 上表の `\pipe\netlogon`（ZeroLogon）/ `\pipe\efsrpc`（PetitPotam）/ `\pipe\netdfs`（DFSCoerce）/ `\pipe\spoolss`（PrinterBug）は **rpcdump で見えれば該当攻撃の起点候補**。本ファイルは列挙のみなので実行手順は [`../04_Post_Access_Windows_AD/NTLM_Relay/Coerce.md`](../04_Post_Access_Windows_AD/NTLM_Relay/Coerce.md)（PetitPotam / DFSCoerce / PrinterBug の `coercer` ツール / `petitpotam.py` / `dfscoerce.py` / `printerbug.py`）と [`../04_Post_Access_Windows_AD/NTLM_Relay/ntlmrelayx.md`](../04_Post_Access_Windows_AD/NTLM_Relay/ntlmrelayx.md) を参照
 
 ---
 
@@ -279,11 +285,10 @@ done
 | 出力 | 示唆 | 次のアクション |
 |---|---|---|
 | `queryuser` の `Description` フィールドに「初期パスワード: ...」「Pwd: ...」等の文字列 | **運用ミスで平文パスワード露出** | 即座にそのパスワードで `nxc smb` 認証確認 → ヒットすればフラッグ的 finding |
-| `Account Flags: [UD]` / `[NORMAL_ACCOUNT]` | 通常ユーザー | スプレー対象 |
-| `Account Flags: [DD]` / `Account disabled` | 無効アカウント | スプレー対象外（時間節約）|
-| `Account Flags: [NRP]` / `Password never required` | パスワード不要アカウント | **空パスワードで認証試行**（[`../02_Initial_Access/Default_Credentials.md`](../02_Initial_Access/Default_Credentials.md)）|
-| `Account Flags: [DNE]` / `Don't expire password` | パスワード期限なし | サービスアカウント候補（変更されないので長期 valid） |
-| `Account Flags: [TS]` / `Trusted for Delegation` | 委任有効 | `../04_Post_Access_Windows_AD/Delegation_Attacks/` 参照（Unconstrained / Constrained）|
+| `Account Flags: [U          ]` 等 `U` 含む | 通常ユーザー（active） | スプレー対象 |
+| `Account Flags: [D          ]` 等 `D` 含む | 無効アカウント（disabled） | スプレー対象外（時間節約）|
+| `Account Flags: [N          ]` 等 `N` 含む | パスワード不要（PASSWD_NOTREQD） | **空パスワードで認証試行**（[`../02_Initial_Access/Default_Credentials.md`](../02_Initial_Access/Default_Credentials.md)）|
+| `Account Flags: [X          ]` 等 `X` 含む | パスワード無期限（DONT_EXPIRE_PASSWD） | サービスアカウント候補（変更されないので長期 valid） |
 | `Bad Password Count: [N]` (queryuser) | 直近の認証失敗回数 | スプレー設計の余裕計算に使う（閾値 - N の回数だけ試行可能）|
 | `querygroupmem 0x200` でユーザー RID 一覧 | Domain Admins メンバ確定 | 当該ユーザーを優先ターゲット化（cred 取れれば即 DA）|
 | `queryaliasmem builtin 0x220` でユーザー一覧 | ローカル Administrators 相当 | LM_HASH 取得 / SAM dump の候補 |
@@ -292,14 +297,26 @@ done
 
 - **`Description` フィールドの平文パスワード**は **非常に頻繁に出現する** finding。新人作成時の初期パスワードを書きっぱなしのケースや、運用上のメモを残したケースが典型。**1 ユーザーずつ全部 grep する価値がある**
 - RID は **16 進・10 進どちらでも受け付ける** が、`queryuser` の RID 引数表記はバージョン依存。両方試す
-- `Account Flags` の略号一覧:
+- `Account Flags` の略号一覧（Samba `rpcclient` の `pretty_print_acb_mask` ベース・rpcclient のバージョンで揺れあり）:
   - `U` Account active / `D` Account disabled
-  - `N` Password not required / `D` Password doesn't expire
-  - `M` Machine account / `T` Temp duplicate account
-  - `S` MNS logon account / `K` Smartcard required
-  - `R` Server trust account / `L` Workstation trust account
-  - `W` Interdomain trust account / `P` Use DES key only
-  - `O` Don't require pre-auth ← **AS-REP Roastable 候補**（[`../04_Post_Access_Windows_AD/Kerberos_Attacks/ASREProast.md`](../04_Post_Access_Windows_AD/Kerberos_Attacks/ASREProast.md) があれば参照）
+  - `N` Password not required (PASSWD_NOTREQD) / `X` Password doesn't expire (DONT_EXPIRE_PASSWD)
+  - `M` MNS logon account / `T` Temp duplicate account (**ACB_TEMPDUP**)
+  - `L` Auto-locked account / `K` Smartcard required
+  - `W` Workstation trust account / `S` Server trust account / `I` Interdomain trust account
+  - `R` Use DES key only / `H` Home dir required
+  - `O` Account **Not Delegated**（ACB_NOT_DELEGATED — 委任拒否フラグ。**「Don't require pre-auth」ではない**ので AS-REP Roastable とは無関係）
+- **AS-REP Roastable（DONT_REQ_PREAUTH, UAC 0x400000）の判定は rpcclient の短縮文字に明確な単一文字割当が無い**（Samba のバージョン依存・出力にすら現れない場合あり）。**確実に判定するなら LDAP の `userAccountControl` 数値ビットを見る**:
+  ```bash
+  nxc ldap [TARGET_IP] -u [USER] -p [PASS] --asreproast asrep.txt   # 直接 hash 取得まで
+  ldapsearch -x -H ldap://[TARGET_IP] -b 'DC=[DOMAIN],DC=[TLD]' \
+    '(&(objectClass=user)(userAccountControl:1.2.840.113556.1.4.803:=4194304))' samAccountName
+  ```
+  → 該当者がいれば [`../04_Post_Access_Windows_AD/Kerberos_Attacks/ASREPRoasting.md`](../04_Post_Access_Windows_AD/Kerberos_Attacks/ASREPRoasting.md)
+- **Trusted for Delegation** の判定も同様に rpcclient フラグでは出ない。LDAP `userAccountControl` の `TRUSTED_FOR_DELEGATION` (0x80000) / `TRUSTED_TO_AUTH_FOR_DELEGATION` (0x1000000) ビットで判定:
+  ```bash
+  nxc ldap [TARGET_IP] -u [USER] -p [PASS] --trusted-for-delegation
+  ```
+  → 該当者がいれば Unconstrained → [`../04_Post_Access_Windows_AD/Delegation_Attacks/Unconstrained.md`](../04_Post_Access_Windows_AD/Delegation_Attacks/Unconstrained.md) / RBCD → [`../04_Post_Access_Windows_AD/Delegation_Attacks/RBCD.md`](../04_Post_Access_Windows_AD/Delegation_Attacks/RBCD.md)
 
 ---
 
@@ -453,7 +470,7 @@ nxc smb [TARGET_IP] -u '[USER]' -p '[PASSWORD]' --users --groups --pass-pol --lo
 
 | 状況 | 推定原因 | 代替手段 |
 |---|---|---|
-| `rpcclient -U "" -N` が `LOGON_FAILURE` で即拒否 | Server 2012 R2+ の既定で匿名無効 / `RestrictAnonymous=1` | guest 試行 / 認証取得経路に戻る（[`../02_Initial_Access/Default_Credentials.md`](../02_Initial_Access/Default_Credentials.md) のスプレー） |
+| `rpcclient -U "" -N` が `LOGON_FAILURE` で即拒否 | Server 2012 R2+ の既定で匿名無効 / `RestrictAnonymous=1` | **(a) SMB 層 / RPC 層どちらで拒否されているか切り分け** → `smbclient //[TARGET_IP]/IPC$ -U "" -N`（SMB null session が通れば RPC 層拒否、SMB から弾かれれば SMB 全面拒否）。(b) `nxc smb [TARGET_IP] -u '' -p '' --shares` で匿名共有列挙の可否確認（SYSVOL / NETLOGON が匿名読取可なら別経路で GPO / login script 漁り可能）。(c) guest 試行（[`../02_Initial_Access/Default_Credentials.md`](../02_Initial_Access/Default_Credentials.md) のスプレー） |
 | プロンプトは出るが `enumdomusers` で `ACCESS_DENIED` | bind は通るが SAMR 操作拒否 | §6 lookupsid（LSAT 経由）に切替 |
 | `enumdomusers` も `lookupsid` も拒否 | 全面強化 | LDAP 匿名バインド（[`LDAP_Enumeration.md`](LDAP_Enumeration.md)）/ Kerberos username enum（事前認証エラー観察） |
 | 135/139/445 すべて FW でブロック | 外部から RPC 不可 | Port 593（RPC over HTTP, `impacket-rpcdump -p 593`）を試す / LDAP / Kerberos（389/88）/ HTTP 経由の代替経路を探す |

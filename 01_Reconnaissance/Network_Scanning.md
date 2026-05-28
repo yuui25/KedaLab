@@ -9,7 +9,7 @@
 ## 環境前提
 
 - 実行環境: テスター端末
-- 必要なツール: `nmap`（ペネトレ用 Linux ディストリ標準搭載）/ `searchsploit`（同標準、Exploit-DB ローカル DB 検索）
+- 必要なツール: `nmap`（ペネトレ用 Linux ディストリ標準搭載）/ `searchsploit`（同標準、Exploit-DB ローカル DB 検索）/ `rustscan`（高速ポート発見・`cargo install rustscan` または `apt install rustscan`）/ `masscan`（広域高速スキャン・`apt install masscan`、要 root）/ `udp-proto-scanner`（UDP 高速プロトコル検出・`git clone` で取得）
 - 外部リソース依存: なし（searchsploit のローカル DB は `searchsploit -u` で事前更新、オフラインでも検索可能）
 
 ## 先に確認すること
@@ -27,12 +27,32 @@
 **コマンド:**
 
 ```bash
-# [Attacker] 速度優先の初期スキャン
-nmap -sC -sV -oA nmap_initial [TARGET_IP]
-# -sC : デフォルトスクリプト（バージョン検出・サービス情報の補強）
-# -sV : バージョン検出
-# -oA : 3 形式（.nmap / .gnmap / .xml）で保存。後で searchsploit に XML を流し込むため必須
+# [Attacker] 速度優先の初期スキャン（root 権限あり = SYN スキャン -sS が既定）
+sudo nmap -sC -sV --reason -oA nmap_initial [TARGET_IP]
+# -sC      : デフォルトスクリプト（バージョン検出・サービス情報の補強）
+# -sV      : バージョン検出
+# --reason : 各ポート状態の判定根拠（`syn-ack` / `reset` / `no-response` 等）を表示。filtered の原因切り分けに必須
+# -oA      : 3 形式（.nmap / .gnmap / .xml）で保存。後で searchsploit に XML を流し込むため必須
+
+# [Attacker] 非 root 環境では TCP connect スキャン（-sT）が既定
+nmap -sT -sC -sV --reason -oA nmap_initial [TARGET_IP]
+
+# [Attacker] -A は便利だがノイジー（-sC -sV -O --traceroute 相当）— 偵察初手で許容されるなら
+sudo nmap -A --reason -oA nmap_aggressive [TARGET_IP]
 ```
+
+**スキャン方式の選択（-sS vs -sT / 偵察初手で最も影響が大きい選択）:**
+
+| 方式 | 権限 | 速度 | 検知性 | 何が起きるか | 使い分け |
+|---|---|---|---|---|---|
+| `-sS`（SYN ステルス）| **root 必須**（raw socket） | 速い（接続を完了させない）| **比較的低い**（接続ログに残らないことが多い）| SYN → SYN/ACK を受けたら RST で切断（3-way handshake を完成させない）| **既定の偵察初手**。root があれば常にこれ |
+| `-sT`（TCP connect）| **root 不要**（OS の `connect()` 呼出）| 遅め | **高い**（接続が完了するためアプリ層ログ・接続テーブルに残る）| 通常の 3-way handshake を完了。アプリ側の `accept()` まで到達 | 非 root 環境 / SYN が IPS で弾かれて `filtered` 多発する場合の代替 |
+| `-sA`（ACK スキャン）| root 必須 | 中 | 中 | ACK のみ送って RST 応答を見る。ステートフル FW の検出に使う | ポート開閉ではなく FW ルールの有無判定 |
+| `-sU`（UDP）| root 必須 | **非常に遅い** | 中 | UDP に何か送って ICMP unreachable の有無で判定 | §4 で別途 |
+
+> **`filtered` 多発時の切替判断:** `--reason` 出力で `no-response` が多ければ FW でドロップ → `-sT` への切替で `connection refused` / `connection timed out` 区別が付くようになることがある。SYN だけ落とす ACL を組んでいる FW は `-sT` で抜けられる場合がある。
+
+> **`-A` の扱い:** `-A` は `-sC -sV -O --traceroute` のフルセットで、**OS 推定パケット（特殊な TCP/IP フラグ組み合わせ）と traceroute が混じる**ため検知性は跳ね上がる。本番初手では避け、特定ホストの追加調査で個別に使う。
 
 **観測される出力 → 次のアクション:**
 
@@ -62,10 +82,29 @@ nmap -sC -sV -oA nmap_initial [TARGET_IP]
 
 ```bash
 # [Attacker] 全 65535 ポートを高速スキャン
-nmap -p- --min-rate 5000 -oA nmap_allports [TARGET_IP]
-# -p- : 全 65535 ポート
+sudo nmap -p- --min-rate 5000 --reason -oA nmap_allports [TARGET_IP]
+# -p-             : 全 65535 ポート
 # --min-rate 5000 : スキャン速度を上げる（本番では事前合意による）
+# --reason        : 各判定の根拠を残す（後解析の精度が上がる）
 ```
+
+**RustScan / Masscan → nmap パイプライン（時間制約のある実案件向け）:**
+
+`nmap -p-` は `--min-rate` を上げても全ポート完了に分単位かかる。**先に RustScan / Masscan で open ポートだけ秒〜数十秒で特定し、そのポート群を nmap に渡す**のが現代の定石。
+
+```bash
+# [Attacker] RustScan — Rust 実装で 65535 ポートを数秒〜数十秒で特定。後段に nmap を自動連携
+rustscan -a [TARGET_IP] --ulimit 5000 -- -sC -sV --reason -oA nmap_via_rust
+# `--` 以降は内部で起動される nmap への引数
+
+# [Attacker] Masscan — さらに高速だが認識精度は低い。サブネット全体に有効
+sudo masscan -p1-65535 [TARGET_IP] --rate 10000 -oG masscan.gnmap
+# 検出したポート群を nmap で精査
+ports=$(grep -oE 'Ports: [0-9,]+' masscan.gnmap | grep -oE '[0-9]+' | sort -un | paste -sd,)
+sudo nmap -sC -sV --reason -p $ports -oA nmap_via_masscan [TARGET_IP]
+```
+
+> **使い分け:** 単一ホストなら **`rustscan` が手数最小**（nmap 連携が内蔵）。**`/24` 以上の広域**なら `masscan` で開ポート全体マップを作ってから nmap で精査。`nmap -p-` 直走は単純ホストかつ時間制約が緩いケースに限定。
 
 **観測される出力 → 次のアクション:**
 
@@ -126,6 +165,20 @@ sudo nmap -sU --top-ports 50 --open -oA nmap_udp [TARGET_IP]
 | 何も返らない | ほとんどの UDP サービスは応答しない仕様 | 特定ポートに対して `nmap -sU -sV -p [PORT]` を個別実施 |
 
 **注意:** UDP スキャンは**TCP の数倍〜数十倍遅い**。`--top-ports 50 --open` で時間と出力を絞る。全ポートスキャンを UDP で実施するのは現実的でないため、ターゲット環境で重要そうな UDP ポートを当たる方針を取る。
+
+**UDP スキャンの高速化（時間制約のある実案件向け）:**
+
+```bash
+# [Attacker] udp-proto-scanner — 多数の UDP プロトコル別プローブを並列送信。nmap より圧倒的に速い
+# https://github.com/portcullislabs/udp-proto-scanner
+udp-proto-scanner.pl [TARGET_IP]
+udp-proto-scanner.pl -f targets.txt   # サブネット一括
+
+# [Attacker] unicornscan の UDP モード（Kali 標準にあれば）
+unicornscan -mU -v [TARGET_IP]:1-65535
+```
+
+> **使い分け:** `nmap -sU` は OS / バージョン推定の質が高いが遅い。**先に `udp-proto-scanner` で「何が応答するか」を高速確認**してから、応答ポートに `nmap -sU -sV -p [PORT]` を当てるのが効率的。
 
 ---
 
@@ -189,7 +242,7 @@ searchsploit --nmap nmap_allports.xml
 
 | 観測される症状 | 推定原因 | 代替手段 |
 |---|---|---|
-| 全ポートが `filtered` で返る | ファイアウォール / IDS / IPS が SYN スキャンをブロック | `--source-port 53` で送信元ポート偽装、`-T2` でスキャン速度低下、`-sT`（TCP connect）に切替 |
+| 全ポートが `filtered` で返る | ファイアウォール / IDS / IPS が SYN スキャンをブロック | `--reason` で `no-response` / `admin-prohibited` 等を確認 → SYN-only な ACL なら `-sT`（TCP connect）に切替 / `--source-port 53` で送信元ポート偽装 / `-T2` でスキャン速度低下 / フラグ化（`--scanflags FIN,PSH,URG` 等で stealth スキャン） |
 | ping が通らずスキャンが開始されない | ICMP がブロックされている | `-Pn` でホスト発見をスキップ |
 | `-sV` でバージョン情報が取れない | サービスがバナーを返さない / カスタム実装 | `--version-intensity 9` で強化、応答が出ない場合は手動接続（`nc [TARGET_IP] [PORT]` / `curl http://[TARGET_IP]:[PORT]/`）でレスポンス確認 |
 | `-O` で OS が `Too many fingerprints` | TCP/IP スタックが特殊で照合失敗 | HTTP ヘッダー / SMB バナー / SSH バナーから推定 → `../00_Playbook/00_OS_Identification.md` |

