@@ -257,6 +257,8 @@ nuclei -t default-logins/jenkins/ -t default-logins/grafana/ -t default-logins/t
 | Grafana | データソース（MySQL/PostgreSQL/MSSQL）の接続情報を閲覧 → 別 DB への横展開 |
 | Kibana / ElasticSearch | `/_cat/indices` で全インデックス、`_search` で内容取得（クレデンシャル混入有無） |
 | MSSQL `sa` 通過 | `xp_cmdshell` 有効化で OS コマンド実行 → `../02_Initial_Access/MSSQL_Exploitation.md` |
+| MySQL `root` / 空パス通過 | `mysql.user` ハッシュ取得・FILE 権限経由ファイル読み書き・UDF RCE・`INTO OUTFILE` 経由 authorized_keys 書込 → `MySQL_Exploitation.md` |
+| PostgreSQL `postgres/postgres` / trust 通過 | `pg_shadow` ハッシュ取得・`pg_read_file` / `lo_export` 経由ファイル読み書き・`COPY FROM PROGRAM` RCE・PL/PerlU UDF RCE・authorized_keys 書込 → `PostgreSQL_Exploitation.md` |
 | MongoDB / Redis 認証無し | `db.getCollectionNames()` / `KEYS *` で全データ列挙、設定ファイル / セッション / 認証情報の混入確認 |
 | ルータ / スイッチ管理 | 設定 export → 平文・難読化された無線 PSK・SNMP コミュニティ・他機器のクレデンシャルを取得 |
 | IPMI 通過 | 仮想メディアでブート ISO マウント → ホスト OS の単独パスワード変更 / SOL（Serial-over-LAN）でコンソールアクセス（**業務影響大、本番では事前合意必須**） |

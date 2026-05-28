@@ -111,7 +111,8 @@ Step 2 で CVE が見つかった場合はそこに集中し、Step 3〜6 は後
 | 1433（MSSQL） | `../02_Initial_Access/MSSQL_Exploitation.md` | 認証スプレー → xp_cmdshell / Linked Server |
 | 3389（RDP） | `../02_Initial_Access/RDP.md` | バナー・NLA 判定〜証明書〜直接接続〜リダイレクト悪用（クリップボード / ドライブ hijack）〜認証スプレー（cred reuse 検出）〜PTH Restricted Admin〜セッションハイジャック（tscon）〜BlueKeep (CVE-2019-0708) / DejaBlue (CVE-2019-1181 系) 版数判定〜PyRDP MitM まで |
 | 3306（MySQL / MariaDB） | `../02_Initial_Access/MySQL_Exploitation.md` | バナー（MySQL / MariaDB / Percona 区別）〜匿名・空パス〜認証スプレー〜mysql.user ハッシュ取得〜FILE 権限 (LOAD_FILE / INTO OUTFILE + Windows OOB DNS exfil)〜UDF RCE〜authorized_keys 書込〜CVE-2012-2122〜Rogue MySQL Server まで |
-| 5432 / 6379 / 27017 / 9200（PostgreSQL / Redis / MongoDB / Elasticsearch） | 専用ファイル未作成。当面は `../02_Initial_Access/Default_Credentials.md` + `../05_Tools_Reference/Searchsploit.md` | fastpentest §4 で優先 7 番目の残り（Redis unauth / PostgreSQL COPY FROM PROGRAM / Elasticsearch CVE-2014-3120 等が高影響）|
+| 5432（PostgreSQL） | `../02_Initial_Access/PostgreSQL_Exploitation.md` | バナー（psql エラーメッセージからのユーザー / ACL 列挙）〜trust 認証 / 空パス（pg_hba.conf 設定不備）〜認証スプレー（hydra postgres）〜pg_shadow ハッシュ取得（md5 mode 12 / SCRAM-SHA-256 mode 28600・rolreplication = t なら pg_basebackup 経由）〜サーバ側ファイル読み書き (pg_read_file / lo_export / adminpack)〜COPY FROM PROGRAM RCE (CVE-2019-9193 / pg_execute_server_program role)〜PL/PerlU / PL/PythonU UDF RCE〜authorized_keys 書込〜CVE-2018-1058 search_path schema poisoning まで |
+| 6379 / 27017 / 9200（Redis / MongoDB / Elasticsearch） | 専用ファイル未作成。当面は `../02_Initial_Access/Default_Credentials.md` + `../05_Tools_Reference/Searchsploit.md` | fastpentest §4 で優先 7 番目の残り（Redis unauth + CONFIG SET dir で SSH 鍵書込 / Elasticsearch CVE-2014-3120 等が高影響）|
 | 23（Telnet） / 5900-5903（VNC） / 873（rsync） / 2049（NFS） | 専用ファイル未作成。当面は `../02_Initial_Access/Default_Credentials.md` | fastpentest §4 で「稀だが見つけたら即取得系」グループとして位置付け |
 
 ### Step 1b — TLS証明書から製品識別

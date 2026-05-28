@@ -137,4 +137,7 @@ curl -s "http://[TARGET]/[エンドポイント]?[VULN_PARAM]=a,b,1,5))+and+(sel
 - 後：認証情報が取得できた → `../Credential_Discovery.md`
 - 後：MD5+Salt ハッシュのクラック → `../../05_Tools_Reference/Hashcat.md`（mode 20）
 - 後：管理者パネルにアクセスできた → Webアプリ固有の機能を調査。コマンドインジェクション等を試す → `./Command_Injection.md`
+- 後（MySQL バックエンド検出）：MySQL 経由の FILE 権限・UDF RCE・`INTO OUTFILE` 経由攻撃 → `../MySQL_Exploitation.md`
+- 後（PostgreSQL バックエンド検出）：stacked queries で `; COPY ... FROM PROGRAM '...'; --` を注入できる場合は SUPERUSER 経由 OS RCE が可能・`pg_sleep(10)` Time-based blind・PL/PerlU UDF RCE → `../PostgreSQL_Exploitation.md`
+- 後（MSSQL バックエンド検出）：`xp_cmdshell` 有効化・Linked Server 悪用 → `../MSSQL_Exploitation.md`
 - 関連：XSS（同じ入力フィールドの脆弱性） → `./XSS.md`

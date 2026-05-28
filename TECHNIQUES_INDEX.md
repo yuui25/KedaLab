@@ -244,6 +244,17 @@
 | MySQL §9 authorized_keys 書込（HIGH IMPACT・INTO OUTFILE 経由・mysql ユーザー所有による StrictModes 拒否罠・SSH §11 と連動・原状回復必須） | Initial Access | `02_Initial_Access/MySQL_Exploitation.md` |
 | MySQL §10 CVE-2012-2122 認証バイパス（古典・MariaDB 5.1-5.5 / MySQL 5.1-5.5 限定・memcmp int 戻り値問題で約 1/256 確率認証成立・Metasploit mysql_authbypass_hashdump） | Initial Access | `02_Initial_Access/MySQL_Exploitation.md` |
 | MySQL §11 Rogue MySQL Server による LOAD DATA LOCAL INFILE クライアント側ファイル吸い出し（HIGH IMPACT・MySQL プロトコル仕様・クライアント LOCAL_INFILE 有効環境・MySQL 8.0+ クライアント default OFF・監視ツール / 接続テストツール経由誘導・攻撃方向はサーバ→クライアント） | Initial Access | `02_Initial_Access/MySQL_Exploitation.md` |
+| PostgreSQL §1 バナー観察 / バージョン判定（nmap pgsql-brute・psql エラーメッセージから pg_hba.conf entry 有無 / ユーザー存在判別・SCRAM-SHA-256 デフォルト判定） | Initial Access | `02_Initial_Access/PostgreSQL_Exploitation.md` |
+| PostgreSQL §2 trust 認証 / 空パスワード / デフォルトログイン試行（postgres/postgres・nmap pgsql-brute・プロンプト末尾 # / > で SUPERUSER 判定の小ワザ） | Initial Access | `02_Initial_Access/PostgreSQL_Exploitation.md` |
+| PostgreSQL §3 認証情報での直接接続 + 権限確認（PGPASSWORD / .pgpass mode 600 / 接続文字列・rolsuper / rolreplication / predefined role (pg_read_server_files / pg_write_server_files / pg_execute_server_program) 確認・pg_basebackup 経路で SUPERUSER 不要の全 hash 取得） | Initial Access | `02_Initial_Access/PostgreSQL_Exploitation.md` |
+| PostgreSQL §4 データベース・テーブル列挙とデータ抽出（\l / \dt / information_schema.columns 横断検索 / pg_dump / pg_dumpall --globals-only で pg_authid 取得・pg_stat_activity でリアルタイムクエリ漏洩確認） | Initial Access | `02_Initial_Access/PostgreSQL_Exploitation.md` |
+| PostgreSQL §5 認証スプレー / 辞書攻撃（HIGH IMPACT・hydra postgres / medusa / nmap pgsql-brute・ユーザー存在有無でエラーメッセージ分岐するためユーザー列挙容易・auth_delay 拡張による遅延注意） | Initial Access | `02_Initial_Access/PostgreSQL_Exploitation.md` |
+| PostgreSQL §6 pg_shadow ハッシュ取得 + クラック（md5 mode 12 / SCRAM-SHA-256 mode 28600・pg_authid 直接・rolreplication = t なら pg_basebackup 経路で SUPERUSER 不要・md5 は md5(password \|\| username) hex 化でユーザー名がソルト相当） | Initial Access | `02_Initial_Access/PostgreSQL_Exploitation.md` |
+| PostgreSQL §7 サーバ側ファイル読み書き（pg_read_file / pg_read_binary_file / lo_import / lo_export / adminpack pg_file_write・PostgreSQL 11 で SUPERUSER 必須から pg_read_server_files / pg_write_server_files 付与可能に変更・adminpack は PostgreSQL 13 で関数削除） | Initial Access | `02_Initial_Access/PostgreSQL_Exploitation.md` |
+| PostgreSQL §8 COPY FROM/TO PROGRAM 経由 RCE (CVE-2019-9193) （HIGH IMPACT・PostgreSQL 9.3+ で SUPERUSER または pg_execute_server_program role 必須・MITRE DISPUTED 状態・PostgreSQL 公式は意図された機能と表明・CREATE TABLE cmd_exec; COPY ... FROM PROGRAM 'id'; パターン） | Initial Access | `02_Initial_Access/PostgreSQL_Exploitation.md` |
+| PostgreSQL §9 PL/PerlU / PL/PythonU 経由 UDF RCE（HIGH IMPACT・SUPERUSER + postgresql-plperl / postgresql-plpython3 パッケージ必須・「U」suffix が untrusted variant で sandbox 無し・CREATE FUNCTION 永続化 pg_proc・LOAD 経由 .so 読込も古典・原状回復必須） | Initial Access | `02_Initial_Access/PostgreSQL_Exploitation.md` |
+| PostgreSQL §10 authorized_keys 書込（HIGH IMPACT・lo_export / COPY TO / COPY ... FROM PROGRAM chown 経由・postgres ユーザー所有による StrictModes 拒否罠・SSH §11 と連動・原状回復必須） | Initial Access | `02_Initial_Access/PostgreSQL_Exploitation.md` |
+| PostgreSQL §11 search_path schema poisoning (CVE-2018-1058) （HIGH IMPACT・PostgreSQL の設定パターン問題として公式整理・public スキーマの CREATE 権限デフォルト・組込関数同名上書きで SUPERUSER 操作時に攻撃者関数が SUPERUSER 権限で実行・PostgreSQL 14 / 15 で緩和強化） | Initial Access | `02_Initial_Access/PostgreSQL_Exploitation.md` |
 | Java デシリアライズ allowlist バイパス（resolveProxyClass 経由） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/Java_Deserialization_Bypass.md` |
 | Electron アプリ XSS → RCE エスカレーション（nodeIntegration:true + contextIsolation:false） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/Electron_XSS_RCE.md` |
 | 製品デフォルト認証情報試行（製品カテゴリ別の出荷時組合せ早見表・SecLists Default-Credentials/ 利用） | Initial Access | `02_Initial_Access/Default_Credentials.md` |
@@ -416,6 +427,7 @@
 | pspy（procfs ポーリング型プロセス観察ツール・短命 root プロセス検出） | `05_Tools_Reference/pspy.md` |
 | Certipy（AD CS 列挙・証明書申請・PKINIT 認証・CA 管理の統合ツール。find / req / auth / ca / template / forge / relay） | `05_Tools_Reference/Certipy.md` |
 | GOAD（AD攻撃練習ラボ）の構築（VMware Workstation + WSL / Vagrant + ansible。host-only vmnet 手動IP・WSL1・version選択等の注意点） | `05_Tools_Reference/GOAD_Lab_Setup.md` |
+| Linux ペネトレ用ワンライナー集（テキスト処理 grep/awk/sed・ファイル検索 find -perm・プロセス/ネット観察 ss/ps・文字列/バイナリ調査 strings/xxd・エンコード base64/openssl・ファイル転送 HTTP/nc//dev/tcp/base64・リスナー受信 python3/nc/socat） | `05_Tools_Reference/Linux_Pentest_OneLiners.md` |
 
 ---
 

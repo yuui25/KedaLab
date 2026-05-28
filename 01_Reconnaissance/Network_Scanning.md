@@ -44,7 +44,9 @@ nmap -sC -sV -oA nmap_initial [TARGET_IP]
 | `445/tcp open microsoft-ds` / `139/tcp open netbios-ssn` | SMB | `./SMB_Enumeration.md` |
 | `389/tcp open ldap` / `636/tcp open ldaps` | LDAP | `./LDAP_Enumeration.md` |
 | `2049/tcp open nfs` | NFS（共有が直接マウントできる可能性） | `showmount -e [TARGET_IP]` |
-| `1433` / `3306` / `5432` が外に出ている | DB ポート外部露出（誤公開の可能性） | デフォルト認証情報試行 → `../02_Initial_Access/Default_Credentials.md` |
+| `1433` が外に出ている | MSSQL 外部露出 | `../02_Initial_Access/MSSQL_Exploitation.md` |
+| `3306` が外に出ている | MySQL / MariaDB 外部露出（誤公開の可能性） | `../02_Initial_Access/MySQL_Exploitation.md` |
+| `5432` が外に出ている | PostgreSQL 外部露出（`listen_addresses = '*'` の設定不備シグナル） | `../02_Initial_Access/PostgreSQL_Exploitation.md` |
 | `8080` / `8443` / `8888` 等の非標準 HTTP | 開発用管理パネル / API | まず `/` にアクセスしてフレームワーク・バージョンを特定 |
 | `-sC` の HTTP スクリプト出力に `Location: http://[DOMAIN]/` やホスト名らしき文字列 | vhost ベースの Web アプリ（IP 直打ちでは 302 リダイレクトや別画面）| **`/etc/hosts` に `[TARGET_IP] [DOMAIN]` を追記してから**ブラウザ・curl でアクセス → `../06_Concepts/Hosts_File_For_AD.md` |
 | ポートセットが偏っている（例: 22+80 のみ / 88+389+445+5985 揃い）| 環境タイプの推定材料 | §6 ポート構成 / IP レンジからの環境推定へ |
