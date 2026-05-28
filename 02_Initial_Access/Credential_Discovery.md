@@ -161,6 +161,8 @@ sqlite3 grafana.db "SELECT id, name, login, email, password, salt FROM user;"
 > **GUI ツールを使う場合：** `sqlitebrowser`（DB Browser for SQLite）でも同様にデータを確認できる。Table: `user` を開き Browse Data タブで全カラムを表示する（`sqlitebrowser` は別途インストールが必要；ペネトレ用Linuxディストリ非標準）。オフライン環境では `sqlite3` CLI を使う。
 
 > **`rands` カラムについて：** Grafana の user テーブルには `password`（HEXハッシュ）・`salt`・`rands` の 3 カラムがある。PBKDF2-HMAC-SHA256 の変換には `password`（HEX）と `salt` のみ使用する。`rands` は別用途（セッション関連）のため Hashcat 変換には不要。
+>
+> **Grafana 9.x 以降の注意：** `password` フィールドの先頭が `$2a$` / `$2b$` で始まる場合は bcrypt ハッシュ（hashcat mode 3200）。PBKDF2 ハッシュは hex 文字列で始まる。`password` フィールドの prefix で判断してから変換式を選ぶ。
 
 取得したハッシュを Hashcat (mode 10900) 形式に変換する：
 
@@ -254,7 +256,7 @@ ls -la /var/www/html/
 DB_HOST=127.0.0.1
 DB_DATABASE=app_prod
 DB_USERNAME=admin
-DB_PASSWORD=passowrd    ← これがOSユーザーでも使われている可能性
+DB_PASSWORD=[PASSWORD]  ← これが OS ユーザーでも使われている可能性（タイポのある弱パスワードが設定されているケースも実際には多い）
 APP_KEY=base64:...               ← アプリの暗号化キー
 ```
 
@@ -411,7 +413,9 @@ cat keepass_hash.txt
 
 ```bash
 # [Attacker] hashcat（GPU使用、高速）
-# mode 13400 = KeePass
+# mode 13400 = KeePass（KDBX 3.1 / 4.0 両対応。4.0 系は AES-256 + HMAC-SHA256 構成で
+# 同じ 13400 モードで扱えることが多いが、バージョンによって挙動差があるため
+# keepass2john の出力 prefix（$keepass$*2* = 3.1 / $keepass$*4* = 4.0）で確認する）
 hashcat -m 13400 keepass_hash.txt /usr/share/wordlists/rockyou.txt
 
 # [Attacker] john（CPU使用）

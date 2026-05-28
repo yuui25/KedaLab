@@ -341,7 +341,7 @@ nmap -p 21 --script ftp-libopie [TARGET_IP]                    # FreeBSD ftpd OP
 
 ### 8.1 vsftpd 2.3.4 backdoor (CVE-2011-2523)
 
-**背景:** 2011 年に vsftpd 2.3.4 の公式配布物に **数日間バックドアが混入していた**。ユーザー名末尾に `:)`（スマイリー）を含めて `USER` コマンドを送ると、TCP/6200 にバインドされた root シェルが起動する。
+**背景:** 2011 年に vsftpd 2.3.4 の公式配布物に **数日間バックドアが混入していた**。ユーザー名中に `:)`（スマイリー）が**含まれている**と TCP/6200 にバインドされた root シェルが起動する（末尾限定ではなくユーザー名のどこかに含まれていれば発火）。
 
 **コマンド:**
 
@@ -371,7 +371,7 @@ msfconsole -q -x "use exploit/unix/ftp/vsftpd_234_backdoor; \
 
 ### 8.2 ProFTPD 1.3.5 mod_copy (CVE-2015-3306)
 
-**背景:** ProFTPD 1.3.5 の `mod_copy` モジュールが有効な場合、未認証で `SITE CPFR` / `SITE CPTO` コマンドを使って **任意ファイルのコピーが可能**。Web DocumentRoot に webshell をコピーする、または `/etc/passwd` を書換可能な場所にコピーして読み出す等の経路が成立する。
+**背景:** ProFTPD **1.3.5**（1.3.5a で修正済み）の `mod_copy` モジュールが有効な場合、未認証で `SITE CPFR` / `SITE CPTO` コマンドを使って **任意ファイルのコピーが可能**。Web DocumentRoot に webshell をコピーする、または `/etc/passwd` を書換可能な場所にコピーして読み出す等の経路が成立する。
 
 **コマンド:**
 
@@ -425,7 +425,7 @@ searchsploit -m [EDB-ID]
 - **source port 20 偽装**: bounce で発出される TCP の送信元ポートは 20（FTP-DATA）。古い FW では 20 番からの戻り通信を無条件許可している設定があり、これを抜けるのに使える
 - **任意プロトコルへのデータ injection**: `STOR` で配置したコマンド列ファイルを `RETR` で別ホスト・別ポートに流し、SMTP / NNTP / HTTP 等の生プロトコルへ任意コマンドを投入（Hobbit "The FTP Bounce Attack" 1995 で詳述）
 
-現代のサーバは大半が `PORT` 宛先を制御接続元 IP に限定しているため成立しないが、組み込み機器・古い NAS・レガシー FTP サーバで残存することがある。
+この問題は **RFC 2577（FTP Security Considerations、1999 年）** で勧告化され、`PORT` 宛先を制御接続元 IP に限定する実装が標準化された。現代のサーバは大半がこの対策済みだが、組み込み機器・古い NAS・レガシー FTP サーバで残存することがある。
 
 **コマンド:**
 

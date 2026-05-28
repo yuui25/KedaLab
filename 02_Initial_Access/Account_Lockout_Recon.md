@@ -26,7 +26,7 @@
 - 必要なツール：
   - `nxc`（NetExec の CLI ラッパー、ペネトレ用 Linux ディストリ標準。`--pass-pol` で AD のドメインポリシーを取得。詳細は `../05_Tools_Reference/Netexec.md`）
   - `rpcclient`（Samba スイート同梱、ペネトレ用 Linux ディストリ標準。`getdompwinfo` でパスワードポリシー確認）
-  - `samrdump.py` / `policies.py`（Impacket スイート同梱、ペネトレ用 Linux ディストリ標準）
+  - `samrdump.py`（Impacket スイート同梱、ペネトレ用 Linux ディストリ標準。SAMR 経由でパスワードポリシーを取得）
   - `ldapsearch`（OpenLDAP クライアント、標準搭載。AD の `lockoutThreshold` / `lockoutDuration` 属性を取得）
   - `curl` / `wget`（標準搭載。Web フォームの応答差分観察）
   - **ターゲット側で実行する場合**：`net accounts`（Windows 標準）/ `chage` / `passwd -S`（Linux 標準）
@@ -51,7 +51,7 @@
 |----|----------|-----|--------------|
 | ロックアウト閾値 | `lockoutThreshold` | 連続失敗が何回でロックされるか | 1 アカウントあたりの試行は (閾値 - 1) 回までに留める |
 | ロックアウト期間 | `lockoutDuration` | ロック後何分で自動解除されるか | 0 分 = 管理者解除のみ。1 分以上 = 待てば次サイクルで再試行可能 |
-| 観察期間（リセットタイマー） | `lockoutObservationWindow` | 失敗カウンタが何分でゼロに戻るか | この時間以上の試行間隔を空ければ閾値超過しない |
+| 観察期間（リセットタイマー） | `lockOutObservationWindow` | 失敗カウンタが何分でゼロに戻るか | この時間以上の試行間隔を空ければ閾値超過しない |
 | 失敗カウンタ | （状態） | 現在の失敗回数 | アカウントごとに別カウント。スプレーが 1 アカウント 1 回なら閾値到達しにくい |
 
 **シグナルの読み方：**
@@ -109,11 +109,11 @@ rpcclient $> querydominfo
 
 # [Attacker] Impacket samrdump（SAMR プロトコル経由で password policy を取得）
 impacket-samrdump '[DOMAIN]/[USER]:[PASSWORD]@[TARGET]'   # [Attacker]
-# 出力末尾に Password Policy セクションが出る
+# 出力末尾に Password Policy セクションが出る（Lockout Threshold / Duration も含む）
 
-# [Attacker] policies.py（より詳細。Impacket）
-impacket-policies '[DOMAIN]/[USER]:[PASSWORD]@[TARGET]'   # [Attacker]
-# Account Lockout Threshold / Duration / Observation Window を網羅
+# [Attacker] PowerView Get-DomainPolicy（ドメイン参加 Windows またはシェル取得後）
+# PowerShell: (Get-DomainPolicy)."system access"   # 要 PowerView
+# Get-ADDefaultDomainPasswordPolicy でも取得可（RSAT 必要）
 ```
 
 #### LDAP 経由（認証情報必須）
@@ -125,8 +125,8 @@ ldapsearch -x -H ldap://[TARGET] -D "[USER]@[DOMAIN]" -w '[PASSWORD]' \
   lockoutThreshold lockoutDuration lockOutObservationWindow   # [Attacker]
 # 出力例:
 #   lockoutThreshold: 5
-#   lockoutDuration: -18000000000      ← 100 ナノ秒単位の負数。30 分 = -18000000000
-#   lockOutObservationWindow: -18000000000
+#   lockoutDuration: -18000000000         ← 100 ナノ秒単位の負数。30 分 = -18000000000
+#   lockOutObservationWindow: -18000000000  ← 正式スキーマ名は "Out" が大文字
 
 # [Attacker] LDAP 値の単位変換: lockoutDuration の絶対値 / 10000000 / 60 = 分
 # 例: 18000000000 / 10000000 / 60 = 30 分
@@ -142,8 +142,10 @@ ldapsearch -x -H ldap://[TARGET] -D "[USER]@[DOMAIN]" -w '[PASSWORD]' \
   -b "DC=[DOMAIN_DC],DC=[TLD]" "(sAMAccountName=[TARGET_USER])" \
   badPwdCount lockoutTime userAccountControl   # [Attacker]
 # badPwdCount: 現在の失敗回数（観察期間内の累積）
-# lockoutTime: 0 ならロックされていない、それ以外ならロックされた時刻（FILETIME）
-# userAccountControl bit 0x10 (16) が立っている場合は LOCKOUT
+# lockoutTime: 0 ならロックされていない、0 以外ならロックされた時刻（FILETIME 形式）
+#   → 現代 AD のロック判定は lockoutTime が 0 か否かで行う（これが実運用の正解）
+# userAccountControl の LOCKOUT ビット (0x10): 歴史的経緯で仕様に残るが現代 AD では実質未使用
+#   → ロックしていてもこのビットが立たないケースがあるため判定に使わない
 ```
 
 `badPwdCount` は **DC ごとの値が同期されない**（PDC エミュレータに集約される）。スプレー前後で複数 DC を見ると数字が違うことがある。

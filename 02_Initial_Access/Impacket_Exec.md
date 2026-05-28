@@ -170,7 +170,7 @@ impacket-wmiexec '[DOMAIN]/[USER]:[PASSWORD]@[TARGET_IP]'
 **仕組み（要点）:**
 
 1. クライアント → 445 (SMB) で IPC$ / ADMIN$ にアクセス
-2. **ADMIN$ 共有に PE バイナリ（`RemComSvc.exe` 相当）を書き込む**
+2. **ADMIN$ 共有に PE バイナリ（`RemComSvc.exe`）を書き込む**（Impacket 実装固有の名称。Sysinternals PsExec は `PSEXESVC.exe` を使うが別物）
 3. svcctl (DCERPC) でサービス作成 → 起動依頼
 4. サービスが SYSTEM 権限で起動し、名前付きパイプ経由で stdin/stdout を中継
 5. 切断時にサービス削除・PE 削除（正常終了時のみ）
@@ -272,7 +272,7 @@ impacket-smbexec -share 'C$' '[DOMAIN]/[USER]:[PASSWORD]@[TARGET_IP]'
 
 **仕組み（要点）:**
 
-1. クライアント → 135 (DCERPC) で `IATSvc::NetrJobAdd`（Task Scheduler の旧 AT サービス）または `ITaskSchedulerService` で task 作成
+1. クライアント → 135 (DCERPC) で **`ITaskSchedulerService`**（新 Task Scheduler API）で task 作成（旧 ATSvc/`IATSvc::NetrJobAdd` は Windows Server 2008 R2 で非推奨化済み。Impacket 実装は `ITaskSchedulerService` にフォールバックする形で動作）
 2. task が即実行され、出力は ADMIN$ 上のファイルに書かれる
 3. task は自動削除（**ただし Task Scheduler ログには残る**）
 
@@ -376,7 +376,7 @@ impacket-dcomexec -object MMC20 '[DOMAIN]/[USER]:[PASSWORD]@[TARGET_IP]' \
 > - [x] 業務停止リスク（アカウントロック発動でユーザーがログイン不能に）
 > - [ ] 持続化に該当
 > - [ ] 不可逆な設定変更を含む
-> - [x] SIEM / EDR で確実に検知される（Event ID 4625 大量、Security Event 4262 で source IP も記録、Sysmon の WMI / SCM プロセスチェーン）
+> - [x] SIEM / EDR で確実に検知される（Event ID 4625 大量・4624 の IpAddress フィールドで接続元 IP 記録、Sysmon の WMI / SCM プロセスチェーン）
 >
 > 実施可否は事前合意で明示確認すること。演習環境（HTB / OSCP 等）では制約なし。
 
@@ -418,7 +418,7 @@ nxc smb 192.0.2.0/24 -u Administrator -H '[LOCAL_NTLM_HASH]' --local-auth --cont
 
 - **`-no-output` を必須にする** — スプレー後に多数ホストへ wmiexec を流すとき、各ホストの ADMIN$ への書込痕跡を抑えられる
 - **ローカル管理者 hash の使い回し検出**（`--local-auth`）は AD 環境で最も重要な finding の一つ。LAPS 未導入の組織で典型
-- **検知量**: 100 ホストへスプレー = Event 4625 が ~100 件 + Event 4262 で source IP 記録（2022 年 7 月 CU 以降）
+- **検知量**: 100 ホストへスプレー = Event 4625 が ~100 件。接続元 IP は 4624 の `IpAddress` フィールドや `Microsoft-Windows-SMBServer/Audit` チャネルに記録される
 - **`nxc smb -x` 直接実行**: Impacket exec を経由せず nxc 単独でコマンド実行可能（内部で smbexec 相当 / atexec 相当を呼ぶ）。ホスト数が多いときは nxc -x の方が楽
 
 ---
@@ -548,7 +548,7 @@ Get-NetTCPConnection -State Listen
 > - [x] 業務停止リスク（アカウントロック発動）
 > - [ ] 持続化に該当
 > - [ ] 不可逆な設定変更を含む
-> - [x] SIEM / EDR で確実に検知される（Event 4625 大量、Event 4262 source IP 記録）
+> - [x] SIEM / EDR で確実に検知される（Event 4625 大量・4624 の IpAddress フィールドで接続元 IP 記録）
 >
 > 実施可否は事前合意で明示確認すること。演習環境（HTB / OSCP 等）では制約なし。
 
@@ -559,7 +559,7 @@ Get-NetTCPConnection -State Listen
 - **事前合意の要否**: ★★★（書面承認必須 — §4 psexec / §5 smbexec / §8 スプレー）/ ★★（口頭確認可 — §3 wmiexec / §6 atexec / §7 dcomexec は侵入後シェル取得の起点、cred 委任の影響範囲が広がる）/ ★（§1-§2 のポート判定・(Pwn3d!) 判定は技術的判断のみで実施可だが、対象組織との合意範囲は確認）
 - **想定される SIEM / EDR 検知**:
   - Event ID 4624（LogonType 3 ネットワーク経由）/ Event ID 4625（認証失敗）
-  - Event ID 4262（WinRM/SMB 認証時の source IP 記録・2022 年 7 月 CU 以降）
+  - Event ID 4624 の `IpAddress` フィールド / `Microsoft-Windows-SMBServer/Audit` チャネルでの接続元 IP 記録
   - Event ID 7045（サービスインストール・psexec / smbexec）/ Event ID 4697（同）
   - Sysmon Event ID 1（`wmiprvse.exe` 子プロセス・`mmc.exe` / `explorer.exe` 子プロセス（dcomexec））
   - `Microsoft-Windows-WMI-Activity/Operational`（WMI メソッド呼出）

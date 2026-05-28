@@ -67,13 +67,13 @@
 2. パッチサイクルが **管理者の手作業に依存する** ため、未パッチが残りやすい
 3. 攻撃面が **ベンダーが公開している製品仕様 + 過去脆弱性** に限定されているため、研究者の解析対象として深く掘られている
 
-ただし **同じ理由で SIEM ベンダーと EDR ベンダーも検知シグネチャを作っている**。各 CVE の `nuclei` テンプレート ID を覚えれば、検知側のシグネチャ名も推測しやすい（例：`Suricata rule "ET EXPLOIT Citrix NetScaler CVE-2023-3519"`）。
+ただし **同じ理由で SIEM ベンダーと EDR ベンダーも検知シグネチャを作っている**。各 CVE の `nuclei` テンプレート ID を覚えれば、検知側のシグネチャ名も推測しやすい（例：Suricata ET OPEN では Citrix/Fortinet/Ivanti 系 CVE の検知ルールが整備されている。実際のルール名は ET のルールセットで確認すること — `"ET EXPLOIT"` プレフィックスの具体的な文字列はリリースタイミングにより変化する）。
 
 **製品フィンガープリント早見表（証明書・HTTP・ポートの相関）：**
 
 | ベンダー / 製品 | 証明書（Issuer / SAN） | Server / HTTP ヘッダー | URL / HTML タイトル | favicon ハッシュ（mmh3） | 典型ポート |
 |---------------|--------------------|-----------------------|------------------|------------------------|---------|
-| Citrix NetScaler ADC / Gateway | `CN=NetScaler` / `O=Citrix` 自己署名 | `Server: NetScaler` / `Last-Modified` ヘッダーが固定値 | `/vpn/index.html` / `<title>NetScaler Gateway` / `/logon/LogonPoint/tmindex.html` | `-1292118216`（NetScaler ログイン） | 443, 4443, 8443 |
+| Citrix NetScaler ADC / Gateway | `CN=NetScaler` / `O=Citrix` 自己署名 | `Server: NetScaler` / `Last-Modified` ヘッダーが固定値 | `/vpn/index.html` / `<title>NetScaler Gateway` / `/logon/LogonPoint/tmindex.html` | `-1292118216`（NetScaler ログイン・2024 年時点の代表値。製品アップデートで変わる場合あり） | 443, 4443, 8443 |
 | Fortinet FortiGate / FortiOS | `CN=FortiGate` / `O=Fortinet` 自己署名 | `Server: xxxxxxxx-xxxxx`（数字列）/ `Set-Cookie: SVPNCOOKIE` | `/remote/login` / `<title>Please Login` / `/logindisclaimer` | `945408572`（FortiGate SSL-VPN） | 443, 10443, 8443, 541 |
 | Ivanti Connect Secure / Pulse Secure | `O=Pulse Secure` / `O=Ivanti` 自己署名 | `Server: PSA` / `Set-Cookie: DSID` | `/dana-na/auth/url_default/welcome.cgi` / `<title>Ivanti Connect Secure` | `-1467691705`（Ivanti ログイン） | 443, 8443 |
 | Palo Alto GlobalProtect | `CN=*.[COMPANY]` 公的 CA が多い / `O=Palo Alto Networks` の場合あり | `Server: psgw`（PAN-OS 系） | `/global-protect/login.esp` / `<title>GlobalProtect Portal` | `-1499689981`（GlobalProtect） | 443, 4443 |
