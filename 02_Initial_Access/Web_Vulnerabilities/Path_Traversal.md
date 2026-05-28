@@ -35,7 +35,7 @@ Webアプリケーションがファイルパスのサニタイズを適切に�
 | ホスト情報 | `/etc/hosts` | Docker コンテナかどうかの確認 |
 | OS バージョン | `/etc/os-release` | 環境把握 |
 | Web プロセスの実情報 | `/proc/self/environ` / `/proc/self/cmdline` / `/proc/self/cwd` | プロセスの cwd・環境変数（DB 接続文字列が入っていることが多い） |
-| **`/etc/shadow`（ハッシュ）** | `/etc/shadow` | **mode 640 / root:shadow 所有のため一般ユーザー権限の Web プロセス（`www-data` / `nginx` / `apache` 等）では読めない**。LFI が root 権限プロセス（Webサーバを root で起動・古い CGI・misconfigured Docker）に刺さった場合のみ取得可。読めなかった事実が「Web プロセスは非 root」のシグナル |
+| **`/etc/shadow`（ハッシュ）** | `/etc/shadow` | **パーミッションはディストリで差がある**（Debian / Ubuntu 系は概ね `0640 root:shadow`、RHEL / CentOS / Fedora 系は `0000 root:root` で SELinux / cap でアクセス制御）。**いずれにせよ一般ユーザー権限の Web プロセス（`www-data` / `nginx` / `apache` 等）では読めない**のが共通点。LFI が root 権限プロセス（Webサーバを root で起動・古い CGI・misconfigured Docker）に刺さった場合のみ取得可。読めなかった事実が「Web プロセスは非 root」のシグナル |
 | Windows ホスト基本情報 | `C:\Windows\win.ini` / `C:\Windows\System32\drivers\etc\hosts` | Windows ホストでの傾向確認（テスト用に使える既知の小さなファイル） |
 | アプリの設定ファイル | アプリ依存（後述） | 認証情報・シークレット |
 | アプリのデータベース | アプリ依存（後述） | ユーザー・パスワードハッシュ |

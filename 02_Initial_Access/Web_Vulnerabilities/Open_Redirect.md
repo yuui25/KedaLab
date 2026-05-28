@@ -147,7 +147,7 @@ redirect=////[ATTACKER_DOMAIN]/
 # というアプリ/フレームワーク（または逆）の組合せで通る
 ```
 
-実際にどちらの値が選ばれるかは framework 依存（PHP: 最後、Node.js Express: 配列、Java Servlet: 最初、ASP.NET: カンマ結合、Spring: 最初）。検証と実行で異なる layer がパラメータを処理している環境（front WAF + back app など）でも分裂が起きる。`OAuth_Attacks.md` §1.3 と同じパターンで、redirect/OAuth 共通の bypass 手段。
+実際にどちらの値が選ばれるかは framework / バインディング型依存（PHP: 最後、Node.js Express: 配列、Java Servlet 生 API: 最初、ASP.NET: カンマ結合、Spring MVC: バインディング型依存 — `@RequestParam String foo` は最初の値のみ、`@RequestParam List<String> foo` / `@RequestParam String[] foo` は全件を要素として受け取る）。検証と実行で異なる layer がパラメータを処理している環境（front WAF + back app など）でも分裂が起きる。`OAuth_Attacks.md` §1.3 と同じパターンで、redirect/OAuth 共通の bypass 手段。
 
 #### 1d. URL エンコード / ダブルエンコード
 

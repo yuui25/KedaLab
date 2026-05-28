@@ -197,7 +197,7 @@ curl -X POST https://[AUTH_SERVER]/oauth/token \
 | 認可レスポンスで `invalid_request` | redirect_uri バイパス自体が拒否 | 別バリエーション（2.1 → 2.2 → 2.3 → 2.4）を試す |
 | 認可レスポンスで `access_denied` | user の同意が必要 | victim を踏ませる経路（XSS / 直接リンク / SNS）を準備 |
 
-**注意:** redirect_uri バイパスは大手 IdP でも繰り返し報告されている古典的問題（Microsoft アカウント 2020 等）。**完全一致検証以外は基本的に何らかのバイパス余地がある**前提でバリエーションを総当たりするのが定石。code 1 回消費の制約があるため、被害者が踏むタイミングを管理する必要がある。
+**注意:** redirect_uri バイパスは大手 IdP / 関連サービスでも繰り返し報告されている古典的問題（SharePoint の `appredirect.aspx` の `redirect_uri` パラメータバイパス `CVE-2020-1323`（Detectify Crowdsource 報告、`https://whitelisteddomain.com#@maliciousdomain.com` 型のペイロード）、Azure AD の redirect URI 検証ミス `CVE-2020-26878` 等）。**完全一致検証以外は基本的に何らかのバイパス余地がある**前提でバリエーションを総当たりするのが定石。code 1 回消費の制約があるため、被害者が踏むタイミングを管理する必要がある。
 
 ---
 
@@ -617,13 +617,13 @@ python3 -m http.server 8080 --directory /tmp
 | `invalid request_uri` | request_uri が pre-registered URL に限定 | pre-registered URI のサブストリングマッチを §1.1 同様試す |
 | `request object signing failed` | request object の `alg` 制限あり | `alg:none` 拒否、`JWT_Attacks.md` の HS256 ブルートに切替 |
 
-**注意:** `request_uri` は OIDC Core §6.2 で定義された機能で、本来は client_secret を持たない public client が request object を再利用する用途。**SSRF と認可リクエスト改ざんの 2 つの攻撃面**を持つため、認可サーバ側で pre-registered URL に限定するのが推奨実装。Microsoft Entra ID 等の主要 IdP では既に対策済みだが、自前実装 OIDC では残存することがある。後発の **RFC 9101（JWT-Secured Authorization Request, JAR）** では `request` パラメータ（外部 URL fetch なしの inline JWT）または PAR（RFC 9126, Pushed Authorization Requests）の利用を推奨し、`request_uri` 外部 fetch の利用を縮小する方向。攻撃者視点では、JAR / PAR が導入されている認可サーバでは request object の `alg` 制限（`none` 禁止・登録 alg のみ許容）が厳しいことが多いため、§7 の JWT 攻撃に切り替える判断材料になる。
+**注意:** `request_uri` は OIDC Core §6.2 で定義された機能で、本来は client_secret を持たない public client が request object を再利用する用途。**SSRF と認可リクエスト改ざんの 2 つの攻撃面**を持つため、認可サーバ側で pre-registered URL に限定するのが推奨実装。Microsoft Entra ID 等の主要 IdP では `request_uri` を pre-registered URL に限定する対策が標準化されているが、自前実装 OIDC では残存することがある。後発の **RFC 9101（JWT-Secured Authorization Request, JAR）** では `request` パラメータ（外部 URL fetch なしの inline JWT）または PAR（RFC 9126, Pushed Authorization Requests）の利用を推奨し、`request_uri` 外部 fetch の利用を縮小する方向。攻撃者視点では、JAR / PAR が導入されている認可サーバでは request object の `alg` 制限（`none` 禁止・登録 alg のみ許容）が厳しいことが多いため、§7 の JWT 攻撃に切り替える判断材料になる。
 
 ---
 
 ## 11. Device Code Phishing（OAuth 2.0 Device Authorization Grant の悪用）
 
-**前提:** `device_authorization_endpoint`（RFC 8628 Device Authorization Grant）が discovery JSON で公開されているか、対象組織が Microsoft 365 / GitHub / Google Workspace などの**device code フロー対応 SaaS** を使っていて、攻撃者が user_code をフィッシング経由で被害者に入力させられる場合に成立。**Microsoft / GitHub 等で実害例多数**（Volt Typhoon / Storm-0539 等の APT 攻撃で device code phishing が観測されている）。
+**前提:** `device_authorization_endpoint`（RFC 8628 Device Authorization Grant）が discovery JSON で公開されているか、対象組織が Microsoft 365 / GitHub / Google Workspace などの**device code フロー対応 SaaS** を使っていて、攻撃者が user_code をフィッシング経由で被害者に入力させられる場合に成立。**Microsoft / GitHub 等で実害例あり**（**Storm-2372**（Russia-linked、2024 年 8 月から活動・Microsoft Threat Intelligence が 2025-02-13 に公表）が Microsoft Teams 等の lure で device code phishing を実施し、政府・NGO・IT・防衛・通信・医療・高等教育・エネルギー部門を標的に access/refresh token を取得）。
 
 **攻撃シナリオ:**
 

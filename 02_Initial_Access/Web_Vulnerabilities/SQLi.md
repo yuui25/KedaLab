@@ -587,7 +587,7 @@ sqlmap -u "[URL]" --os-shell --batch
 | WAF が sqlmap User-Agent をブロック | sqlmap の signature 検知 | `--user-agent=` / `--random-agent` で偽装 |
 | 抽出途中で接続切断・IP BAN | レート制限 / DoS 保護 | `--delay=2` / `--threads=1` |
 
-> **注意:** sqlmap の **デフォルトはレベル 1・リスク 1**。検出できない場合は `--level=5 --risk=3` を試すが、payload 数が約 7000 倍に増えるため WAF 検知・サーバー過負荷リスクが高まる。`--batch` を使うと全質問にデフォルト回答するので自動化しやすいが、重要な選択（payload リスクの上昇・OS shell の試行）を見逃すこともある。`--output-dir=./sqlmap_out` で保存しておけば再実行不要。`--os-shell` / `--os-pwn` は stacked queries + DB SUPERUSER 前提で、成功するとサーバ側に **webshell や UDF を設置する**ため、**原状回復 ufdf 削除 / webshell 削除を必ず実施**（詳細は該当 DB ファイル §UDF / §FILE 章）。
+> **注意:** sqlmap の **デフォルトはレベル 1・リスク 1**。検出できない場合は `--level=5 --risk=3` を試すが、1 パラメータあたりの payload 数が桁違いに増える（公開ベンチで概ね 72 → 7,865、**約 109 倍**程度）ため WAF 検知・サーバー過負荷リスクが高まる。`--batch` を使うと全質問にデフォルト回答するので自動化しやすいが、重要な選択（payload リスクの上昇・OS shell の試行）を見逃すこともある。`--output-dir=./sqlmap_out` で保存しておけば再実行不要。`--os-shell` / `--os-pwn` は stacked queries + DB SUPERUSER 前提で、成功するとサーバ側に **webshell や UDF を設置する**ため、**原状回復: UDF 削除 / webshell 削除を必ず実施**（詳細は該当 DB ファイル §UDF / §FILE 章）。
 
 ---
 

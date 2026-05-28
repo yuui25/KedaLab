@@ -5,7 +5,7 @@
 - サーバー側のXMLパーサーが外部エンティティの処理を許可している
 - **XML 直接アップロードが無くても XXE 経路がある**：
   - **SVG ファイルアップロード**（プロフィール画像・チャートのインポート等）→ SVG は XML なので、画像処理ライブラリが DOCTYPE を解釈する実装で XXE が発火
-  - **OOXML（`.xlsx` / `.docx` / `.pptx`）アップロード**（Excel/Word のインポート機能）→ OOXML は ZIP + XML の構造で、Apache POI / docx4j / openpyxl 等のパーサが内部 XML を処理する際に DOCTYPE を解釈する実装で発火（CVE-2014-3529 系の Apache POI XXE が代表例）
+  - **OOXML（`.xlsx` / `.docx` / `.pptx`）アップロード**（Excel/Word のインポート機能）→ OOXML は ZIP + XML の構造で、Apache POI / docx4j / openpyxl 等のパーサが内部 XML を処理する際に DOCTYPE を解釈する実装で発火。代表 CVE: Apache POI 3.10.1 未満の OPC SAX 経由 XXE (CVE-2014-3529)、Apache POI 4.1.0 までの `XSSFExportToXml` 経由 XXE (4.1.1 で修正・CVE-2016-5000 と同系統の経路) など
   - **画像メタデータ系**（SVG / XMP メタデータ）・**RSS / Atom フィードのインポート**・**SAML Response の処理**（IdP-Initiated SSO）も全て XML パーサが裏で動く
 
 ## 環境前提
@@ -210,7 +210,7 @@ Java の XML パーサ（JAXP / Xerces）は **URL handler 経由で多様なプ
 
 **⑩ OOXML（xlsx / docx）経由の XXE**
 
-`.xlsx` / `.docx` / `.pptx` は ZIP アーカイブで、中に `[Content_Types].xml`・`word/document.xml`・`xl/workbook.xml` 等の XML が入っている。アプリが Apache POI / docx4j / openpyxl 等でパースするとき、内部 XML の DOCTYPE が処理される実装で発火（CVE-2014-3529 系・Apache POI 3.10.1 以前など）。
+`.xlsx` / `.docx` / `.pptx` は ZIP アーカイブで、中に `[Content_Types].xml`・`word/document.xml`・`xl/workbook.xml` 等の XML が入っている。アプリが Apache POI / docx4j / openpyxl 等でパースするとき、内部 XML の DOCTYPE が処理される実装で発火（Apache POI 3.10.1 未満の OPC SAX 経由 XXE (CVE-2014-3529)、Apache POI 4.1.0 までの `XSSFExportToXml` 経由 XXE (4.1.1 で修正)、CVE-2016-5000 の XLSX2CSV 経由など）。
 
 ```bash
 # [Attacker] 1. 正規の .xlsx を作って unzip

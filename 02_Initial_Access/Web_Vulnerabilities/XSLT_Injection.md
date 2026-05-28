@@ -202,7 +202,7 @@ Saxon-HE（無償版）には Java 拡張関数は無いが、**Saxon-PE / Saxon
 
 **⑦ libxslt の `exsl:document` / `xsl:result-document` による任意ファイル書込**
 
-EXSLT（`http://exslt.org/common`）拡張がビルドに含まれている古い libxslt（CVE-2012-2436 等）では、`exsl:document` で任意パスにファイルを書き出せる。XSLT 2.0 系（Saxon）では `xsl:result-document` が同等の機能を持つ。書込先に Web ルートを指定すれば webshell 設置が可能。
+EXSLT（`http://exslt.org/common`）拡張がビルドに含まれている libxslt では、**仕様上の機能**として `exsl:document` で任意パスにファイルを書き出せる（脆弱性ではなくドキュメント化された機能）。libxslt 側の security framework で `xsltSetSecurityPrefs()` を使うか、`xsltproc --nowrite` 相当の設定でブロック可能だが、デフォルトで有効なケースや明示的に無効化していないラッパーでは攻撃に使える。XSLT 2.0 系（Saxon）では `xsl:result-document` が同等の機能を持つ。書込先に Web ルートを指定すれば webshell 設置が可能。
 
 ```xml
 <?xml version="1.0"?>

