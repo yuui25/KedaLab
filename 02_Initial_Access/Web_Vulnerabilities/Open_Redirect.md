@@ -137,6 +137,18 @@ redirect=////[ATTACKER_DOMAIN]/
 
 ブラウザ間で挙動が異なる：Chrome / Firefox / Safari それぞれで実際に踏ませて確認する。
 
+#### 1c-2. HTTP Parameter Pollution（HPP）
+
+```
+# [Attacker] redirect_uri / next を 2 つ送る
+?next=https://[VICTIM_DOMAIN]/safe&next=https://[ATTACKER_DOMAIN]/
+?redirect=https://[VICTIM_DOMAIN]/safe&redirect=https://[ATTACKER_DOMAIN]/
+# 検証ロジックが「最初のパラメータ値」を見る ⇔ 実際のリダイレクト処理が「最後のパラメータ値」を使う
+# というアプリ/フレームワーク（または逆）の組合せで通る
+```
+
+実際にどちらの値が選ばれるかは framework 依存（PHP: 最後、Node.js Express: 配列、Java Servlet: 最初、ASP.NET: カンマ結合、Spring: 最初）。検証と実行で異なる layer がパラメータを処理している環境（front WAF + back app など）でも分裂が起きる。`OAuth_Attacks.md` §1.3 と同じパターンで、redirect/OAuth 共通の bypass 手段。
+
 #### 1d. URL エンコード / ダブルエンコード
 
 ```
@@ -289,6 +301,8 @@ python3 -m http.server 8080
 
 - **ブラウザ間の URL parser 差異** → Chrome / Firefox / Safari / Edge で `//` `\\` `@` の解釈が異なる。サーバー側 grep だけで判定せず、実際に**主要ブラウザで踏ませて挙動確認**する
 - **`location.href = userInput` の自動 sanitize** → モダンブラウザは `javascript:` スキームを `location.href` 経由でブロックする実装がある（Chrome 90+ 等）。リンクの `target="_blank"` + `noopener` がない場合は別経路（`window.open`）が通ることがある
+- **Reverse Tabnabbing（`target="_blank"` + `rel="noopener"` 欠落）** → Open Redirect 単体ではなく**併発する関連攻撃**。`<a target="_blank">` リンクで遷移先タブに `rel="noopener"` / `rel="noreferrer"` が付与されていない場合、新しいタブ側から `window.opener.location = 'https://[PHISHING_SITE]'` で**元タブを偽サイトに書き換えられる**。Open Redirect で攻撃者ドメインに遷移させ、攻撃者側ページから window.opener を奪うコンボ攻撃が成立する。**Chrome 88+ / Firefox 79+ ではデフォルトで noopener 相当が付くようになった**が、レガシーブラウザ・古いアプリでは依然残る攻撃面
+- **`Content-Disposition` ヘッダ経由のリダイレクト類似挙動** → サーバが `Content-Disposition: attachment; filename=...` で外部 URL を返す機能や、`<meta http-equiv="refresh">` を動的生成する機能は、Location ヘッダではないが結果的にユーザーを別 URL に向かわせる。URL 検証ロジックが Location 専用に書かれている環境では検証を抜ける
 - **`Referrer-Policy` ヘッダー** → デフォルト挙動はブラウザ・サイトで異なる。最近のブラウザは `strict-origin-when-cross-origin` がデフォルト → クロスオリジン時はパスとクエリが落ちる。Referer 漏洩攻撃（パターン 5）はヘッダー設定次第で不成立
 - **CSRF token を含む URL** → token が URL クエリにあると Referer 漏洩経路で他サイトに漏れる。token は POST body / カスタムヘッダーに入れるのが本来。Open Redirect とは別の発見として報告する
 - **メールフィルタ・URL レピュテーション回避** → Open Redirect は単独でもフィッシング配信の前段で価値がある。`https://[VICTIM_DOMAIN]/redirect?next=https://[PHISH_DOMAIN]` は victim ドメインで始まるため、SafeBrowsing / Defender などが信頼してしまうことがある

