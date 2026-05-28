@@ -111,9 +111,17 @@
 | パストラバーサル（ディレクトリトラバーサル） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/Path_Traversal.md` |
 | Grafana パストラバーサル CVE-2021-43798 | Initial Access | `02_Initial_Access/Web_Vulnerabilities/Path_Traversal.md` |
 | IDOR（連番ID・オブジェクト直接参照） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/IDOR.md` |
-| SQLインジェクション | Initial Access | `02_Initial_Access/Web_Vulnerabilities/SQLi.md` |
-| タイムベースブラインドSQLi（時間遅延オラクル） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/SQLi.md` |
-| CMS Made Simple SQLi（CVE-2019-9053）| Initial Access | `02_Initial_Access/Web_Vulnerabilities/SQLi.md` |
+| SQLi §1 検出（manual probing・single quote / numeric vs string context boolean / time-based confirm / comment-induced behavior change・URL `--+` `-- -` `--%20` 等の末尾コメントエスケープ・WAF で `'` 403 時の `%2527` 二重 URL encode / `0x27` / `CHAR(39)`） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/SQLi.md` |
+| SQLi §2 DB 横断 cheat sheet（comment 記号・文字列連結 (CONCAT / + / \|\|)・version 関数・current_user / current_database・information_schema vs sys.tables vs sqlite_master・SUBSTRING / SUBSTR 比較・ASCII / ORD / UNICODE・stacked queries 既定可否・OOB 経路（LOAD_FILE / xp_dirtree / dblink / UTL_HTTP）・error 誘発関数（EXTRACTVALUE / CONVERT / CAST / XMLType）の MySQL / MSSQL / PostgreSQL / Oracle / SQLite 比較） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/SQLi.md` |
+| SQLi §3 認証バイパス（WHERE 句注入・`admin' --` / `' OR '1'='1' --` / UNION で偽 cred 投影 / コメント記号変種でのWAF回避） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/SQLi.md` |
+| SQLi §4 コンテキスト別注入（ORDER BY 句注入で CASE WHEN blind / LIMIT 句注入 (PROCEDURE ANALYSE error-based) / INSERT VALUES 内 stacked queries / UPDATE SET で is_admin / password 上書き認可昇格 / JSON / XML body 経由の二重 escape 回避） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/SQLi.md` |
+| SQLi §5 UNION 攻撃（カラム数特定 (ORDER BY N / UNION SELECT NULL,NULL,...) → カラム型特定 → 抽出 → information_schema 列挙 (tables / columns) → GROUP_CONCAT / STRING_AGG で複数行集約） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/SQLi.md` |
+| SQLi §6 Error-based 抽出（MySQL EXTRACTVALUE / UPDATEXML で `~` 付き XPATH error / MSSQL CONVERT 型不一致 / PostgreSQL CAST as int / Oracle XMLType / EXTRACTVALUE の 32 文字制限と SUBSTRING 分割） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/SQLi.md` |
+| SQLi §7 Boolean blind 抽出（差分応答・AND 1=1 vs AND 1=2・SUBSTRING + ASCII 二分探索 1 文字 7 リクエスト・char encoding (utf8mb4 vs latin1) で ASCII 比較壊れ対策 HEX() 経由） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/SQLi.md` |
+| SQLi §8 Time-based blind 抽出（MySQL SLEEP / IF / BENCHMARK・MSSQL WAITFOR DELAY（stacked）・PostgreSQL CASE WHEN pg_sleep・抽出優先順位 (salt → username → email → password hash)・CMS Made Simple CVE-2019-9053 雛形・DoS 保護下での time.sleep(0.5) 挿入） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/SQLi.md` |
+| SQLi §9 Out-of-band (OAST) exfil（HIGH IMPACT・Burp Collaborator / interactsh-client・MySQL Windows UNC LOAD_FILE / MSSQL xp_dirtree (NTLMv2 hash steal 副作用) / PostgreSQL COPY TO PROGRAM curl + dblink / Oracle UTL_HTTP / DBMS_LDAP・DNS label 63 文字制限と SUBSTRING 分割・セルフホスト Interactsh 推奨） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/SQLi.md` |
+| SQLi §10 Second-order SQLi（保存時 escape あり / 後続クエリで unescaped 再使用で発火・パスワード変更 / プロフィール表示パターン・unique 制約 escape 差分シグナル・sqlmap --second-order 半自動化） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/SQLi.md` |
+| SQLi §11 sqlmap 自動化（HIGH IMPACT・--technique=BEUSTQ / --dbms / --tamper / --level=5 --risk=3 / -r request.txt / --os-shell (stacked + SUPERUSER 必要)・--user-agent / --random-agent で WAF 偽装・--output-dir 保存） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/SQLi.md` |
 | MD5+Salt ハッシュのクラック（mode 20） | Initial Access | `05_Tools_Reference/Hashcat.md` |
 | ハッシュ形式の特定（hashid / 形式文字列の読み方 / --example-hashes） | Initial Access | `05_Tools_Reference/Hashcat.md` |
 | Flask / Werkzeug PBKDF2 ハッシュのクラック（mode 10000 変換） | Initial Access | `05_Tools_Reference/Hashcat.md` |

@@ -1470,6 +1470,10 @@
   const modalPath = $("#modalPath");
   $("#modalClose").addEventListener("click", closeModal);
   $("#modalBack").addEventListener("click", goBack);
+  $("#modalExpand").addEventListener("click", () => {
+    const on = modal.classList.toggle("expanded");
+    $("#modalExpand").setAttribute("aria-pressed", on ? "true" : "false");
+  });
   $("#modalNav").addEventListener("click", () => {
     const entry = docStack[docStack.length - 1];
     if (!entry) return;
@@ -1514,6 +1518,9 @@
 
   function closeModal() {
     modal.classList.remove("open");
+    modal.classList.remove("expanded");
+    const expBtn = $("#modalExpand");
+    if (expBtn) expBtn.setAttribute("aria-pressed", "false");
     modalBody.innerHTML = "";
     docStack.length = 0;
     updateBackButton();

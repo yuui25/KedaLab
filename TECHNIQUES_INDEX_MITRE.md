@@ -92,7 +92,7 @@ ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
 | T1098.005 | Account Manipulation: Device Registration（Shadow Credentials） | `04_Post_Access_Windows_AD/ACE_Abuse/GenericAll.md` |
 | T1136.001 | Create Account: Local Account | `02_Initial_Access/WinRM.md`（§9.3 net user /add によるバックドア用ローカルアカウント追加） |
 | T1136.002 | Create Account: Domain Account | `04_Post_Access_Windows_AD/Delegation_Attacks/Unconstrained.md`（マシンアカウント作成） |
-| T1505.003 | Server Software Component: Web Shell | `02_Initial_Access/Web_Vulnerabilities/File_Upload.md` / `02_Initial_Access/PostgreSQL_Exploitation.md`（§7 lo_export で Web ルートに .php 書込・shell.php 経由 RCE） |
+| T1505.003 | Server Software Component: Web Shell | `02_Initial_Access/Web_Vulnerabilities/File_Upload.md` / `02_Initial_Access/PostgreSQL_Exploitation.md`（§7 lo_export で Web ルートに .php 書込・shell.php 経由 RCE） / `02_Initial_Access/Web_Vulnerabilities/SQLi.md`（§11 sqlmap --os-shell が内部で xp_cmdshell / COPY FROM PROGRAM / INTO OUTFILE webshell を試行） |
 | T1037.003 | Boot or Logon Initialization Scripts: Network Logon Script | `01_Reconnaissance/SMB_Enumeration.md`（NETLOGON 列挙視点） / `04_Post_Access_Windows_AD/ACE_Abuse/GenericWrite.md`（logon script 設定） |
 
 ---
@@ -137,8 +137,8 @@ ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
 | T1558.002 | Steal or Forge Kerberos Tickets: Silver Ticket | `04_Post_Access_Windows_AD/Kerberos_Attacks/Pass_The_Ticket.md` |
 | T1558.003 | Steal or Forge Kerberos Tickets: Kerberoasting | `04_Post_Access_Windows_AD/Kerberos_Attacks/Kerberoasting.md` / `04_Post_Access_Windows_AD/ACE_Abuse/GenericWrite.md`（Targeted） |
 | T1558.004 | Steal or Forge Kerberos Tickets: AS-REP Roasting | `04_Post_Access_Windows_AD/Kerberos_Attacks/ASREPRoasting.md` |
-| T1187 | Forced Authentication | `04_Post_Access_Windows_AD/NTLM_Relay/Coerce.md` / `02_Initial_Access/MSSQL_Exploitation.md`（xp_dirtree） |
-| T1555 | Credentials from Password Stores | `02_Initial_Access/MySQL_Exploitation.md`（§6 mysql.user テーブルからのハッシュ取得・mysql_native_password / caching_sha2_password / sha256_password / mysql_old_password 形式） / `02_Initial_Access/PostgreSQL_Exploitation.md`（§6 pg_shadow / pg_authid からのハッシュ取得・md5 / SCRAM-SHA-256 形式・rolreplication = t なら pg_basebackup 経由で SUPERUSER 不要） |
+| T1187 | Forced Authentication | `04_Post_Access_Windows_AD/NTLM_Relay/Coerce.md` / `02_Initial_Access/MSSQL_Exploitation.md`（xp_dirtree） / `02_Initial_Access/Web_Vulnerabilities/SQLi.md`（§9 OAST 経由 MSSQL xp_dirtree で NTLMv2 ハッシュ steal） |
+| T1555 | Credentials from Password Stores | `02_Initial_Access/MySQL_Exploitation.md`（§6 mysql.user テーブルからのハッシュ取得・mysql_native_password / caching_sha2_password / sha256_password / mysql_old_password 形式） / `02_Initial_Access/PostgreSQL_Exploitation.md`（§6 pg_shadow / pg_authid からのハッシュ取得・md5 / SCRAM-SHA-256 形式・rolreplication = t なら pg_basebackup 経由で SUPERUSER 不要） / `02_Initial_Access/Web_Vulnerabilities/SQLi.md`（§5 UNION 抽出・§6 Error-based でアプリ users テーブル / mysql.user / pg_shadow からのハッシュ取得） |
 | T1555.003 | Credentials from Password Stores: Web Browsers | `04_Post_Access_Windows_AD/DPAPI_Browser_Creds.md` |
 | T1555.004 | Credentials from Password Stores: Windows Credential Manager | `04_Post_Access_Windows_AD/DPAPI_Browser_Creds.md` |
 | T1555.005 | Credentials from Password Stores: Password Managers | `02_Initial_Access/Credential_Discovery.md`（KeePass） |
@@ -192,7 +192,7 @@ ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
 |------|-------|--------|
 | T1005 | Data from Local System | `03_Post_Access_Linux/Enumeration_Checklist.md` / `04_Post_Access_Windows_AD/Enumeration_Checklist.md` |
 | T1039 | Data from Network Shared Drive | `01_Reconnaissance/SMB_Enumeration.md` |
-| T1213 | Data from Information Repositories | `01_Reconnaissance/Exposed_Files.md` / `02_Initial_Access/MySQL_Exploitation.md`（§4 mysqldump --all-databases / information_schema.columns 横断検索でアプリ DB データ抽出） / `02_Initial_Access/PostgreSQL_Exploitation.md`（§4 pg_dump / pg_dumpall / information_schema.columns 横断検索・pg_stat_activity でリアルタイムクエリ漏洩確認） |
+| T1213 | Data from Information Repositories | `01_Reconnaissance/Exposed_Files.md` / `02_Initial_Access/MySQL_Exploitation.md`（§4 mysqldump --all-databases / information_schema.columns 横断検索でアプリ DB データ抽出） / `02_Initial_Access/PostgreSQL_Exploitation.md`（§4 pg_dump / pg_dumpall / information_schema.columns 横断検索・pg_stat_activity でリアルタイムクエリ漏洩確認） / `02_Initial_Access/Web_Vulnerabilities/SQLi.md`（§5 UNION 抽出 + information_schema 横断列挙 / §11 sqlmap --dump でアプリ DB 全データ抽出） |
 | T1602.001 | Data from Configuration Repository: SNMP (MIB Dump) | `01_Reconnaissance/SNMP_Enumeration.md` |
 
 ---
