@@ -17,7 +17,9 @@
 - 必要なツール:
   - `nmap`（ペネトレ用 Linux ディストリ標準。`--script ssl-enum-ciphers` / `ssl-cert` / 個別 CVE スクリプトで簡易チェック）
   - `openssl s_client`（標準搭載。手動の 1 コマンド確認・証明書取得・プロトコル指定接続）
-  - `testssl.sh`（別途インストール要、bash + openssl 同梱バイナリで動く包括チェッカー。`git clone https://github.com/drwetter/testssl.sh` で取得。インターネット遮断 VLAN では事前にクローン済みのコピーを持ち込む）
+  - `sslscan`（高速一次チェック・単体バイナリ・古プロトコル対応。`apt install sslscan`）
+  - `testssl.sh`（別途インストール要、bash + openssl 同梱バイナリで動く包括チェッカー。`git clone https://github.com/drwetter/testssl.sh` で取得。インターネット遮断 VLAN では事前にクローン済みのコピーを持ち込む。**ディストリ openssl が `-ssl3` 等を無効化していても testssl.sh 同梱の `bin/openssl.Linux.x86_64` で対応可能**）
+  - `pyja3` / `tshark`（JA3 / JA3S フィンガープリント取得・任意）
   - `sslyze`（別途インストール要、`pip install --user sslyze`。JSON 出力で報告書化しやすい）
 - オフライン代替: `testssl.sh` / `sslyze` が無い環境では `nmap --script ssl-enum-ciphers,ssl-cert,ssl-dh-params` + `openssl s_client` の組み合わせでカバーする
 
@@ -77,6 +79,47 @@ nmap --script ssl-ccs-injection -p 443 [TARGET]
 | `ssl-heartbleed` で `VULNERABLE` | OpenSSL < 1.0.1g | §下記注意（メモリダンプ繰り返し禁止）に従い 1 回確認のみ |
 
 **注意:** `ssl-enum-ciphers` は対象のサーバ実装によっては偽の `least strength` を出すことがある。個別スイートの一覧と必ず照合する。
+
+---
+
+## 1.5. sslscan による高速一次チェック（軽量代替）
+
+testssl.sh は包括的だが依存関係が多く実行速度も重い。**sslscan は単体バイナリ + 内蔵 OpenSSL で動き、古いプロトコル（SSLv2 / SSLv3 / TLS1.0 / TLS1.1）にデフォルト対応**しているため、初動の一次チェックに向く。CI / 大量ホストの一括スキャン・コンテナ内偵察にも適する。
+
+**コマンド:**
+
+```bash
+# [Attacker] 単発実行（プロトコル / 暗号 / 証明書を一括）
+sslscan [TARGET]:443
+
+# [Attacker] SNI を明示（バーチャルホスト環境）
+sslscan --sni-name=[DOMAIN] [TARGET]:443
+
+# [Attacker] XML 出力（後段で grep / jq 風の処理を行う場合）
+sslscan --xml=sslscan_out.xml [TARGET]:443
+
+# [Attacker] 古いプロトコルだけ確認したい（速度優先）
+sslscan --ssl3 --tls10 --tls11 --no-tls12 --no-tls13 [TARGET]:443
+
+# [Attacker] STARTTLS 系（メール / IMAP / FTP / LDAP / MySQL / PostgreSQL）
+sslscan --starttls-smtp [TARGET]:25
+sslscan --starttls-imap [TARGET]:143
+sslscan --starttls-ldap [TARGET]:389
+sslscan --starttls-mysql [TARGET]:3306
+sslscan --starttls-psql [TARGET]:5432
+```
+
+**観測される出力 → 次のアクション:**
+
+| 出力 | 示唆 | 次のアクション |
+|---|---|---|
+| `SSLv3   enabled` / `TLSv1.0  enabled` 等が赤で表示 | レガシプロトコル受け入れ | 報告対象（POODLE / BEAST 関連の足掛かり）|
+| `Accepted` 行に `RC4` / `3DES` / `EXPORT` / `NULL` | 弱い暗号スイート | 報告対象 |
+| `Signature Algorithm: sha1WithRSAEncryption` | SHA-1 署名（非推奨） | §5 で記録・PKI 監査項目 |
+| `Heartbleed` セクションが `vulnerable` | OpenSSL < 1.0.1g | testssl.sh で再確認・本番では PoC 取得は 1 回まで |
+| TLS1.3 のみ + `RSA Key Strength: 4096` 等の健全表示 | 比較的健全 | §2 testssl.sh スキップ判断材料 |
+
+> **使い分け:** **初動・大量ホストには `sslscan`**（速い・単体・古プロトコル対応）。**深堀り・報告書用詳細・名前付き脆弱性網羅には `testssl.sh`**。`openssl s_client` が `-ssl3` 等で `unknown option` を返すディストリでも sslscan は内蔵 OpenSSL で対応する。
 
 ---
 
@@ -169,6 +212,13 @@ openssl s_client -cipher 'RC4-SHA' -connect [TARGET]:443
 openssl s_client -connect [TARGET]:443 </dev/null 2>&1 | grep -i "acceptable client certificate"
 ```
 
+> **`-ssl3` / `-tls1` / `-tls1_1` の利用可否（ディストリビルド前提）:** Debian / Ubuntu / RHEL 系の OpenSSL 1.1.1 / 3.x は **`enable-ssl3` / `enable-tls1` / `enable-tls1_1` を無効化してビルドされていることが多い**。手元のコマンドで `unknown option -ssl3` / `-tls1` / `-tls1_1` が返ったらこのケース。fallback 経路:
+>
+> 1. **`nmap --script ssl-enum-ciphers -p 443 [TARGET]`** — プロトコル受け入れ可否を nmap 内部の SSL ライブラリで判定（最も確実）
+> 2. **testssl.sh 同梱 openssl を直叩き** — `testssl.sh` リポジトリの `bin/openssl.Linux.x86_64` は古いプロトコル対応版のため、`./bin/openssl.Linux.x86_64 s_client -ssl3 -connect [TARGET]:443` で確認可能
+> 3. **古い openssl を Docker で持ち込む** — `docker run --rm -it alpine:3.9 sh -c "apk add openssl && openssl s_client -ssl3 -connect [TARGET]:443"` 等で旧版を確保
+> 4. **`sslscan`** — 単体バイナリで古いプロトコルもデフォルトで網羅（後述 §1.5）
+
 **観測される出力 → 次のアクション:**
 
 | 出力 | 示唆 | 次のアクション |
@@ -224,6 +274,33 @@ openssl s_client -connect [TARGET]:443 -servername [DOMAIN] </dev/null 2>/dev/nu
 
 - 証明書の Issuer に社内 CA 名が出ている時は、その文字列を独立した情報として保管する。後続の AD 列挙・Web 列挙で「組織内命名規則」「サブドメイン候補」のヒントになる
 - SAN は SAN ごとに別 FQDN として記録する。1 件の証明書から数十の vhost FQDN が判明することがある（vhost ファジング不要）
+
+---
+
+## 5.5. JA3 / JA3S フィンガープリントによる WAF / CDN / 製品推定
+
+ClientHello（クライアント側）と ServerHello（サーバー側）の TLS ハンドシェイクパラメータを並べて MD5 ハッシュ化したものが JA3 / JA3S。**CDN・WAF・ロードバランサー・各種アプライアンスは自前の TLS スタック実装を持つため、JA3S 値が製品ごとに特徴的**になり、CN / SAN が generic な場合の補助的な製品判定に使える。
+
+**コマンド:**
+
+```bash
+# [Attacker] JA3S 算出 — ssltools / pyja3 / Wireshark の filter で取得可能
+# pyja3（要 `pip install pyja3`）でハンドシェイクをキャプチャ → 内部で JA3S 計算
+sudo python3 -m pyja3 -t [TARGET]:443
+
+# [Attacker] tshark 経由（パケットキャプチャから抽出）
+tshark -i any -Y "tls.handshake.type==2" -T fields -e ip.src -e tls.handshake.ja3s 2>/dev/null
+```
+
+**観測される出力 → 次のアクション:**
+
+| JA3S ハッシュの特徴 | 推定 | 次のアクション |
+|---|---|---|
+| 多数の公開 DB に「Cloudflare」「Akamai」「Fastly」と紐付け | CDN 配下 | オリジン IP は別途特定（`./DNS_Enumeration.md` の CDN オリジン特定経路）|
+| Citrix / F5 / Palo Alto / Fortinet 等のアプライアンス署名と一致 | エッジアプライアンス | バージョン特定 → `../02_Initial_Access/Edge_Appliance_CVEs.md` |
+| Nginx / Apache のデフォルト値と一致 | 一般的な Web サーバー | 製品判定の追加情報は不要 |
+
+> **JA3S DB の参照:** abuse.ch SSL Blacklist の JA3 DB / SalesForce 公開リスト / 個別研究のフィンガープリント集など。**完全一致は判定の信頼性が高いが、ファイアウォール側で JA3 偽装している環境では役に立たない**ことに注意。CN / SAN / Issuer・HTTP ヘッダー（`Server:`）・favicon ハッシュなど他の証拠と組み合わせる。
 
 ---
 

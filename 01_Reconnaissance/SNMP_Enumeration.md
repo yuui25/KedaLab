@@ -19,9 +19,10 @@
 - 実行環境: テスター端末
 - 必要なツール:
   - `onesixtyone`（コミュニティ文字列ブルートフォース。ペネトレ用Linuxディストリ標準搭載）
-  - `snmpwalk`（MIB ツリー再帰取得。net-snmp パッケージ、ペネトレ用Linuxディストリ標準搭載）
+  - `snmpwalk` / `snmpbulkwalk`（MIB ツリー再帰取得。`snmpbulkwalk` は v2c / v3 で GetBulk による高速版。net-snmp パッケージ、ペネトレ用Linuxディストリ標準搭載）
   - `snmpget`（単一 OID 取得。net-snmp パッケージ、標準搭載）
   - `snmp-check`（整形出力での情報取得。ペネトレ用Linuxディストリ標準搭載）
+  - `braa`（大量ホスト × OID 並列取得・要 `apt install braa` または GitHub から）
 - オフライン代替: `nmap --script snmp-brute,snmp-info`（nmap 標準スクリプト）、`python3-pysnmp`（`pip install pysnmp --break-system-packages`）
 
 ---
@@ -59,10 +60,15 @@ Simple Network Management Protocol（シンプルネットワーク管理プロ�
 
 ```bash
 # [Attacker] 対象レンジ全体を UDP 161 でスキャン（--open で開いているものだけ表示）
-sudo nmap -sU -p 161 [IP_RANGE] --open -oG snmp_hosts.txt
+# UDP は応答無しが既定なため --min-rate / --max-retries の併用で実用速度にする（既定のままだと /24 で数十分かかる）
+sudo nmap -sU -p 161 --min-rate 1000 --max-retries 1 [IP_RANGE] --open -oG snmp_hosts.txt
 
 # [Attacker] 開いているホストの IP のみ抽出
 grep "/open/" snmp_hosts.txt | awk '{print $2}' | tee snmp_targets.txt
+
+# [Attacker] IPv6 環境では UDP 161 が IPv6 でのみ応答する SNMP エージェントが内部に潜むことがある
+# `udp6:` 指定で IPv6 側もカバー（snmpwalk 等で取得時も `udp6:[2001:db8::1]:161` 形式）
+sudo nmap -6 -sU -p 161 --min-rate 1000 --max-retries 1 [IPv6_RANGE] --open
 ```
 
 ## Step 2 — コミュニティ文字列のブルートフォース（onesixtyone）
@@ -100,14 +106,35 @@ onesixtyone -c /usr/share/seclists/Discovery/SNMP/common-snmp-community-strings.
 # [Attacker] OID ルートからツリー全体を取得（v2c）
 snmpwalk -v 2c -c [COMMUNITY_STRING] [TARGET_IP]
 
-# [Attacker] v1 を使う場合
+# [Attacker] snmpbulkwalk — v2c / v3 では GetBulk リクエストで圧倒的に高速（ラウンドトリップ激減）
+# 大規模な MIB ツリーで snmpwalk より体感 10 倍程度速い
+snmpbulkwalk -v 2c -c [COMMUNITY_STRING] [TARGET_IP]
+snmpbulkwalk -v 2c -c [COMMUNITY_STRING] [TARGET_IP] 1.3.6.1.2.1.25.4.2   # プロセス一覧を高速取得
+
+# [Attacker] v1 を使う場合（GetBulk 非対応・snmpwalk のみ）
 snmpwalk -v 1 -c [COMMUNITY_STRING] [TARGET_IP]
 
 # [Attacker] 整形出力で一覧確認したい場合（snmp-check）
 snmp-check [TARGET_IP] -c [COMMUNITY_STRING]
+
+# [Attacker] braa — 大量ホスト × 大量 OID の並列高速取得（多数ホストに OID をぶつける場合）
+# https://github.com/mteg/braa
+braa [COMMUNITY_STRING]@[TARGET_IP]:.1.3.6.1.2.1.1.*
 ```
 
-> `snmpwalk` の全量取得は出力が数千行になる。まず `snmp-check` で整形出力を確認し、目当ての情報を OID 指定で絞り込むのが効率的。
+> `snmpwalk` の全量取得は出力が数千行になる。まず `snmp-check` で整形出力を確認し、目当ての情報を OID 指定で絞り込むのが効率的。v2c / v3 が判明したら `snmpbulkwalk` に切替（GetBulk が効くため大幅高速化）。
+
+> **SNMPv3 のユーザー名列挙**: SNMPv3 では認証失敗時のエラー応答コードが **存在ユーザー / 不在ユーザー**で異なることがあり、その差分から**ユーザー名の存在判定**ができる（特に Cisco / Juniper / 古い実装）。`snmpwalk -v 3 -u [USERNAME] -l noAuthNoPriv [TARGET]` の応答を観察:
+> - `Unknown user name` / `usmStatsUnknownUserNames` → ユーザー不在
+> - `Authentication failure` / `usmStatsWrongDigests` → **ユーザー存在**（auth フラグ無しで叩いた / パスワード不一致）
+>
+> ```bash
+> # [Attacker] ユーザー名辞書で総当たり（auth 不要・エラー差分のみで判定）
+> for u in $(cat snmp_users.txt); do
+>   echo -n "$u : "
+>   snmpwalk -v 3 -u "$u" -l noAuthNoPriv [TARGET_IP] 2>&1 | head -1
+> done
+> ```
 
 ## Step 4 — OID を指定した情報の抽出
 

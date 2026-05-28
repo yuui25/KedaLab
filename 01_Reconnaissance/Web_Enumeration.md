@@ -85,10 +85,27 @@ gobuster dir -u http://[IP] -w [WORDLIST] -x php,txt,html,bak -o gobuster_ext.tx
 
 **vhost（仮想ホスト）のファジング**
 ```bash
+# [Attacker] gobuster vhost — v3.6 以降は --append-domain がデフォルト false（明示しないと「ワードリストをそのまま Host: にセット」する挙動になる）
 gobuster vhost -u http://[DOMAIN] -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt \
   --append-domain -o vhost_fuzz.txt
+
+# [Attacker] ffuf 経由（gobuster バージョン差分を回避したい場合の代替）
+ffuf -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt:FUZZ \
+  -u http://[DOMAIN]/ -H "Host: FUZZ.[DOMAIN]" -fs [EXCLUDE_SIZE] -o vhost_fuzz.json -of json
 ```
 → 発見したvhostは `/etc/hosts` に追加して再調査する（原理 → `../06_Concepts/Hosts_File_For_AD.md`）
+
+**feroxbuster（Rust 製・再帰デフォルトの高速代替）**
+```bash
+# [Attacker] feroxbuster は再帰探索がデフォルト・自動拡張子付与・並列度が高い
+feroxbuster -u http://[IP] -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt \
+  -x php,html,bak,txt --depth 4 -o feroxbuster.txt
+
+# [Attacker] ステータスコードフィルタ + 拡張子探索
+feroxbuster -u http://[IP] -w [WORDLIST] -s 200,204,301,302,307,401,403 -x php,asp,aspx,jsp
+```
+
+> **使い分け:** **ディレクトリ探索の初手は `feroxbuster`**（再帰・拡張子・並列がデフォルト最適化）。**vhost には `gobuster vhost` または `ffuf`**（ヘッダー操作が直感的）。`gobuster dir` は枯れていて安定だが、再帰や深いツリーには feroxbuster が早い。
 
 ### エンドポイントの連番・IDを確認する（IDOR）
 
@@ -104,9 +121,12 @@ URLが `/data/3` や `/download/5` のような形式の場合：
 - レスポンスサイズが同じものが大量にある場合はフィルタリングが必要（`--exclude-length`）
 - vhost のファジングでは必ずベースドメインを `/etc/hosts` に登録してから実施する
 - HTTPS の場合は `-k` オプションで証明書チェックをスキップ
-- `--append-domain` は gobuster v3.2 以降のオプション。`gobuster --version` で確認し、
-  v3.2未満の場合はアップデートするか ffuf を代替として使う：
-  `ffuf -w [WORDLIST]:FUZZ -u http://[DOMAIN]/ -H "Host: FUZZ.[DOMAIN]" -fw [FILTER]`
+- **`--append-domain` の挙動はバージョン依存:** gobuster **v3.2 で導入**され、**v3.6 でデフォルトが false に変更**された。`gobuster --version` で確認のこと。
+  - **v3.1 以前**: 自動で `[wordlist].[domain]` 形式に結合する（明示不要）
+  - **v3.2 ～ v3.5**: `--append-domain` を付ければ `[wordlist].[domain]` 形式
+  - **v3.6 以降**: デフォルトは「ワードリストをそのまま Host: ヘッダー値にセット」する挙動。`[wordlist].[domain]` 形式にしたいなら `--append-domain` を明示。**この差を把握していないと「ワードリストが裸の文字列として送られて全件失敗」する事故が起きる**
+  - 古い記憶（v3.1 以前の自動結合）と混同しやすいため、新環境では必ず `--append-domain` 明示 + 1 件で挙動確認
+  - 困ったら ffuf 代替：`ffuf -w [WORDLIST]:FUZZ -u http://[DOMAIN]/ -H "Host: FUZZ.[DOMAIN]" -fw [FILTER]`
 
 ### 刺さらなかったとき・症状別の対処
 
@@ -196,6 +216,34 @@ curl -sI http://[TARGET]/ | grep -i "set-cookie"
 # 出力例: Set-Cookie: CMSSESSID9d372ef93962=...; path=/
 #  → CMSSESSID 接頭辞が見えた時点で CMS Made Simple がほぼ確定
 ```
+
+**自動フィンガープリント — whatweb / Wappalyzer / favicon ハッシュ:**
+
+```bash
+# [Attacker] whatweb — Cookie 名・meta generator・favicon ハッシュを一括で当てる自動フィンガープリンタ
+whatweb -a 3 http://[TARGET]/                  # -a 3 はもっとも深いプロビング
+whatweb -a 3 --log-json=whatweb.json http://[TARGET]/
+
+# [Attacker] favicon mmh3 ハッシュによる製品特定（CN / SAN / Server ヘッダーが generic でも当たる）
+# https://github.com/devanshbatham/FaviconHash 等のスクリプトでも可
+curl -sk https://[TARGET]/favicon.ico -o /tmp/favicon.ico
+python3 -c "import mmh3, base64; print(mmh3.hash(base64.encodebytes(open('/tmp/favicon.ico','rb').read())))"
+# 出力された hash 値で Shodan / FOFA / ZoomEye / 製品 DB を検索:
+# Shodan: http.favicon.hash:[VALUE]
+# → 同じ favicon を持つ全ホスト一覧が出る = 同一製品 / 同一テンプレ
+# → アプライアンスや SaaS の特定で非常に有効（CN / SAN 偽装にも強い）
+
+# [Attacker] nikto — 既知の誤公開ファイル・古いバージョン痕跡・典型的な設定不備を一括検出
+nikto -h http://[TARGET]/ -o nikto.txt
+nikto -h https://[TARGET]/ -ssl -Tuning x6   # x = 全プラグイン / 6 = path traversal 除外（ノイズ削減）
+```
+
+> **使い分け:**
+> 1. **初手は `whatweb -a 3`** — 数秒で Cookie / meta generator / favicon / Server / X-Powered-By を一括判定
+> 2. **ヒットしなかったら favicon ハッシュを mmh3 で取って Shodan / FOFA に投げる** — generic な Web サーバーでも、内部実装の favicon が異なれば特定可能
+> 3. **`nikto` は最後** — 時間がかかるが、whatweb で取れない既知の誤公開・古いバージョン痕跡を網羅
+
+> ブラウザ拡張 `Wappalyzer` も同等の機能を持つが、対話的な調査時はブラウザ拡張・自動化したい場合は CLI ツールを使い分ける。
 
 **アプリ名が判明したら即 searchsploit で検索する：**
 

@@ -124,10 +124,60 @@ DevTools での全レスポンス検索:
   Network タブ → Ctrl+Shift+F → キーワードまたは正規表現で検索
 ```
 
+**Burp 拡張でパッシブ自動化（BApp Store からインストール）：**
+
+| 拡張名 | 機能 | 主な検出対象 |
+|---|---|---|
+| **TruffleHog** | レスポンス本文を全パターンの API キー / シークレット正規表現で自動スキャン | AWS / GCP / Azure / Stripe / Slack 等の各種クラウドキー |
+| **Retire.js** | レスポンス内の JS ライブラリ参照を解析し、既知脆弱バージョンを警告 | jQuery 1.x / Angular 旧版 / Bootstrap 等の old & vulnerable |
+| **Active Scan++** | スキャナーチェックの拡張（GraphQL / Cache poisoning 等） | アクティブスキャンの補完 |
+| **JS Miner** | JS ファイル内のエンドポイント / シークレット抽出 | 隠れ API / 内部ドメイン |
+| **Secrets Finder** | TruffleHog 同等。複数同時に有効化すると検出網が広がる | 各社シークレット |
+
+→ パッシブスキャンに常駐させることで、本ファイルの観点（シークレット漏洩・古ライブラリ・JS 内エンドポイント）の多くを **手動チェック前に自動で網羅**できる。
+
+**nuclei によるレスポンスベースの一括スキャン:**
+
+```bash
+# [Attacker] exposures / tokens / misconfig 系テンプレートでまとめてスキャン（事実上の業界標準）
+nuclei -u https://[TARGET] -t http/exposures/tokens/ -t http/exposures/configs/ -t http/misconfiguration/ \
+  -severity medium,high,critical -o nuclei_triage.txt
+
+# [Attacker] レスポンス内のシークレット網羅（exposures/tokens/ の各種クラウドキー）
+nuclei -u https://[TARGET] -t http/exposures/tokens/ -o nuclei_tokens.txt
+
+# [Attacker] 認証後 cookie / Authorization を渡してスキャン（次の「認証後再スキャン」観点）
+nuclei -u https://[TARGET] -t http/exposures/ -t http/misconfiguration/ \
+  -H "Cookie: session=[VALUE]" -H "Authorization: Bearer [TOKEN]" -o nuclei_auth.txt
+```
+
+> sensitive_scan.py（自作）はキャプチャ済みデータの解析、**`nuclei` は対象に対するライブクエリ**で使い分け。両方を組み合わせて死角を減らす。
+
 ### 刺さらなかったとき
 
-- スキャン結果が全部 LOW / MEDIUM で HIGH がない → 機密情報は返っていないと判断して次フェーズへ。ただし認証後のレスポンスも必ず確認する（未認証のレスポンスだけを見て「問題なし」としない）
+- スキャン結果が全部 LOW / MEDIUM で HIGH がない → 機密情報は返っていないと判断して次フェーズへ。ただし**必ず認証後のレスポンスを再スキャンする**（次節「最重要落とし穴」参照）
 - スキャン結果が大量で判断できない → `--no-low` で絞り込み、HIGH だけ先に片付ける
+
+---
+
+### 🚨 最重要落とし穴：認証後レスポンスの再スキャン
+
+> **「未認証で問題なし」と判断するだけは絶対に NG。** Web アプリのシークレット漏洩・PII 露出の大半は**ログイン後のページ・認証付き API レスポンス**で起きる。トリアージは **(1) 未認証 → (2) ロール別の認証後（一般ユーザー / 管理者 / 開発者など）** の各段階でやり直す。
+
+| やり直す対象 | 着目点 |
+|---|---|
+| ログイン直後のリダイレクト先（ダッシュボード） | 内部 ID・社員番号・部署コード・JWT・API キーが HTML / JSON に埋め込まれていることが多い |
+| `/api/me` / `/api/users/[ID]` 等のユーザー情報 API | PII（メール / 電話 / 住所）・内部 role 名・グループ ID |
+| 管理者ロールでの `/admin/*` 配下 | 管理者専用設定値・他ユーザーのトークン・LDAP / DB 接続情報の漏洩 |
+| エラー時のスタックトレース（ログイン後の API で 500 系を起こす） | ファイルパス / クラス名 / DB スキーマ / 内部 IP |
+| Cookie 取得後の再 nuclei スキャン | `-H "Cookie: session=..."` 付きでテンプレ実行 |
+
+**手順：**
+
+1. 未認証スキャン（本セクション通常手順）
+2. **テストアカウント（一般 / 管理者の最低 2 ロール）でログイン → Burp で全リクエスト再キャプチャ**
+3. キャプチャを `sensitive_scan.py` / nuclei / Burp 拡張で **もう一度通す**
+4. 認証後だけに現れる検出を本番 finding として扱う
 
 ### 注意点・落とし穴
 

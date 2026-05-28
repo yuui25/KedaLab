@@ -123,7 +123,9 @@ smb: \> get users.bat /tmp/users.bat
 
 再帰的にダウンロード：
 ```bash
-smbclient -N //[IP]/SYSVOL -c "recurse ON; prompt OFF; mget *" -D /tmp/sysvol
+# [Attacker] ローカル保存先は -c 内の `lcd` で指定する（-D はサーバー側の初期ディレクトリ指定であってローカル保存先ではない）
+mkdir -p /tmp/sysvol
+smbclient //[IP]/SYSVOL -N -c "lcd /tmp/sysvol; recurse ON; prompt OFF; mget *"
 ```
 
 ## SYSVOL / Replication 内部のナビゲーション観点
@@ -157,7 +159,12 @@ smbclient //[IP]/[SHARE] -N -c "recurse ON; ls" 2>/dev/null | tee smb_recursive.
 
 **ファイルを一括取得（候補が絞れたら）：**
 ```bash
-smbclient //[IP]/[SHARE] -N -c "recurse ON; prompt OFF; mget *" -D /tmp/smb_dump
+# [Attacker] -D はサーバー側ディレクトリ。ローカル保存先は `lcd` で指定する
+mkdir -p /tmp/smb_dump
+smbclient //[IP]/[SHARE] -N -c "lcd /tmp/smb_dump; recurse ON; prompt OFF; mget *"
+
+# [Attacker] サーバー側で特定サブディレクトリから開始したい場合に -D を使う（例: SYSVOL の Policies 配下に直接降りる）
+smbclient //[IP]/SYSVOL -N -D '[DOMAIN]/Policies' -c "lcd /tmp/smb_dump; recurse ON; prompt OFF; mget *"
 ```
 
 **注意点：** 再帰 `ls` の出力には `DfsrPrivate/` のような不要フォルダも混在する。`Policies/` と `scripts/` 配下を中心に見る。
@@ -205,39 +212,71 @@ gpp-decrypt '[CPASSWORD_VALUE]'
 
 ---
 
-## enum4linux での網羅的な列挙
+## enum4linux-ng / smbmap / nxc / rpcclient での網羅的な列挙
 
 ### 着火条件
-445 (SMB) が開いており、ユーザー・グループ・パスワードポリシー等の AD オブジェクト情報を一括取得したい場合。匿名でも実行できるが、認証情報が取れた後の再実行で取得情報が大幅に増える。
+445 (SMB) が開いており、ユーザー・グループ・パスワードポリシー等の AD オブジェクト情報・共有のアクセス権マトリクスを一括取得したい場合。匿名でも実行できるが、認証情報が取れた後の再実行で取得情報が大幅に増える。
 
 ### 観点・着眼点（タイミングと使い分け）
 
-**smbclient との使い分け：**
+**ツールごとの役割：**
 
 - `smbclient` → 共有の**ファイル内容を操作する**ためのツール
-- `enum4linux` → ユーザー・グループ・パスワードポリシーなど**ADオブジェクト情報を一括取得**するためのツール
+- `enum4linux-ng` → **AD オブジェクト情報（ユーザー / グループ / SID / パスワードポリシー）の一括取得**。Python 製・JSON 出力対応の新版。**旧 Perl 版 `enum4linux` はメンテ停止状態なので、新規環境ではこちらを使う**
+- `smbmap` → **共有ごとの READ / WRITE アクセス権マトリクス**を一覧化 + 再帰ファイル検索が強力
+- `nxc smb` → 認証テスト + パスワードポリシー / 共有 / SAM / LSA / セッション列挙の現代版オールインワン
+- `rpcclient` → 名前付きパイプ経由で SAMR / LSAT を叩く低レベル列挙（詳細は `./RPC_Enumeration.md`）
 
 **使うタイミング：**
 
 - 匿名アクセス時でも実行できるが、取得できる情報量は限られる
 - 認証情報が取れた後に `-u` / `-p` オプション付きで実行すると、ユーザーリスト・グループ情報が大幅に増える
 
+**真の null セッション（`-u '' -p ''`）の明示確認：** Guest アカウント無効でも、`RestrictAnonymous=0` の古い環境では **ユーザー名・パスワードともに完全に空**の null セッションが通ることが稀にある。`-u 'guest'` と `-u ''` は別物として両方試す。
+
 ```bash
-# 匿名
+# [Attacker] enum4linux-ng（推奨・新版）
+enum4linux-ng -A [IP] | tee enum4linux_ng_anon.txt           # 匿名で全機能（-A = all）
+enum4linux-ng -A -u '[USER]' -p '[PASSWORD]' [IP] | tee enum4linux_ng_auth.txt
+enum4linux-ng -A -oJ enum4linux_ng.json [IP]                 # JSON 出力（後段スクリプトに渡す場合）
+
+# [Attacker] enum4linux（旧 Perl 版・メンテ停止だが既存スクリプトで残っているケース向け）
 enum4linux -a [IP] | tee enum4linux_anon.txt
 
-# 認証あり（情報量が増える）
-enum4linux -a -u '[USER]' -p '[PASSWORD]' [IP] | tee enum4linux_auth.txt
+# [Attacker] 真の null セッションの明示確認
+nxc smb [IP] -u '' -p ''                # 完全に空
+smbclient -L //[IP] -N                  # smbclient での null セッション一覧
+rpcclient -U "" -N [IP] -c 'getdompwinfo; querydominfo; enumdomusers; enumdomgroups'
+
+# [Attacker] パスワードポリシー取得（スプレー前の lockout 閾値判定に直結）
+nxc smb [IP] --pass-pol                                                # 匿名で試す
+nxc smb [IP] -u '[USER]' -p '[PASSWORD]' --pass-pol                    # 認証あり
+# → スプレー閾値の決定: ../02_Initial_Access/Account_Lockout_Recon.md
+
+# [Attacker] 共有のアクセス権マトリクス（READ / WRITE 一覧）
+nxc smb [IP] -u '' -p '' --shares                                      # 匿名
+nxc smb [IP] -u '[USER]' -p '[PASSWORD]' --shares                      # 認証あり
+
+# [Attacker] smbmap で共有ごとのアクセス権 + 再帰ファイル検索
+smbmap -H [IP]                                                         # 匿名で共有一覧 + 権限
+smbmap -H [IP] -u 'guest' -p ''                                        # guest
+smbmap -H [IP] -u '[USER]' -p '[PASSWORD]'                             # 認証あり
+smbmap -H [IP] -u 'guest' -p '' -R --search "password"                 # 全共有を再帰検索（"password" 文字列を含むファイル）
+smbmap -H [IP] -u '[USER]' -p '[PASSWORD]' -R [SHARE_NAME] --depth 5   # 特定共有を 5 階層まで再帰
+
+# [Attacker] impacket-samrdump（SAM 経由のユーザー列挙・rpcclient 拒否時の代替）
+impacket-samrdump '[IP]'                                               # 匿名
+impacket-samrdump '[DOMAIN]/[USER]:[PASSWORD]@[IP]'                    # 認証あり
 ```
 
-ユーザー一覧・グループ・共有・パスワードポリシーを一括取得。
+> **rpcclient の詳細**（`enumdomusers` / `lookupsid` / RID bruteforce / Account Flags 解釈）は [`./RPC_Enumeration.md`](./RPC_Enumeration.md) に集約。SMB 経由で 445 が開いていれば自動的に RPC エンドポイントも露出しているため、SMB 列挙の延長として実行する。
 
 ## 刺さらなかったとき
 
 | 観測される症状 | 推定原因 | 代替手段 |
 |--------------|---------|---------|
-| `nxc smb [IP] -u 'guest' -p ''` で `STATUS_ACCOUNT_DISABLED` | Guest 無効 | Null 認証（`smbclient -L //[IP] -N`）で再試行。両方失敗なら認証情報が必要 → 認証情報取得（`../00_Playbook/Windows_AD_Attack_Flow.md` Step 3）へ戻る |
-| `smbclient -N //[IP]` が `NT_STATUS_ACCESS_DENIED` | 匿名・Guest 共に閉じている | enum4linux / `nxc smb` で別プロトコル（RPC）経由を試す |
+| `nxc smb [IP] -u 'guest' -p ''` で `STATUS_ACCOUNT_DISABLED` | Guest 無効 | (a) 真の null セッション `nxc smb [IP] -u '' -p ''` / `smbclient -L //[IP] -N` を別途試す（古い `RestrictAnonymous=0` 環境で通る可能性）。(b) ともに失敗なら認証情報が必要 → 認証情報取得（`../00_Playbook/Windows_AD_Attack_Flow.md` Step 3）へ戻る |
+| `smbclient -N //[IP]` が `NT_STATUS_ACCESS_DENIED` | 匿名・Guest 共に閉じている | `enum4linux-ng -A` / `nxc smb --shares` / `rpcclient -U "" -N` で別経路（RPC over SMB）を試す |
 | 共有が `IPC$` のみ表示される | 匿名で見える共有が実質ない | 認証情報取得後に再列挙する（`-u [USER] -p '[PASSWORD]'`） |
 | SMB 署名が必須（`Signing: True`）と表示される | NTLM リレー攻撃が使えない | リレー以外の経路（Kerberos 認証強制 / Coerce 系・Pass-The-Hash）を検討 |
 | `OS=[Unix]` / `OS=[Samba x.x.x]` が表示される | 対象は Linux 上の Samba | Windows 想定の SAM/LSA dump 等は適用外。Samba バージョンの CVE を searchsploit で確認 |
@@ -261,3 +300,5 @@ enum4linux -a -u '[USER]' -p '[PASSWORD]' [IP] | tee enum4linux_auth.txt
 - 後：実行ファイルが取得できた → `../02_Initial_Access/Binary_Analysis.md`
 - 後：取得したドキュメント・画像のメタデータ確認 → `./Metadata_Analysis.md`
 - 後：認証情報が取得できた → `./LDAP_Enumeration.md` へ進む
+- 関連：RPC エンドポイント詳細列挙（rpcclient / samrdump / lookupsid / RID bruteforce）→ `./RPC_Enumeration.md`
+- 関連：パスワードスプレー前の lockout 閾値確認 → `../02_Initial_Access/Account_Lockout_Recon.md`
