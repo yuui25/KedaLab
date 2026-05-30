@@ -122,6 +122,16 @@ netstat -tlnp 2>/dev/null
 
 **着眼点：** `127.0.0.1` にバインドされているサービス（外部から見えないサービス）は、内部からアクセスできる可能性がある。
 
+**逆向きの着眼点（侵入前の外部 nmap との突合）：** `0.0.0.0` で listen しているのに、侵入前の外部 nmap では filtered だった（=届かなかった）ポートがある場合、**ホストファイアウォール（iptables/nftables）が inbound をフィルタしている**。これは「listen しているのに刺さらなかった exploit」（バインド型バックドア・bind shell が届かない等）の事後解明になる。root 取得後にルールを直接読む：
+
+```bash
+# [Target] フィルタルールを確認（root 取得後）
+iptables -L -n -v          # 旧来の iptables（INPUT チェインの DROP/REJECT を見る）
+nft list ruleset           # nftables 系
+```
+
+→ なぜバインド型がホスト FW に弱く、リバース接続が抜けるのか: `../06_Concepts/Reverse_Shell.md`（なぜバインドではなくリバース）
+
 ### Dockerコンテナ環境かどうかの確認
 
 シェルを取得したら早期に「自分がコンテナ内にいるか」を確認する。コンテナ内にいる場合、ホストへの脱出経路を探す必要がある。

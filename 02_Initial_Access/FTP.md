@@ -366,8 +366,10 @@ msfconsole -q -x "use exploit/unix/ftp/vsftpd_234_backdoor; \
 | 出力 | 示唆 | 次のアクション |
 |---|---|---|
 | `nc [TARGET_IP] 6200` で接続成立・`id` が `uid=0(root)` | バックドア発火成功 | `../03_Post_Access_Linux/Enumeration_Checklist.md` |
-| 6200 への接続が拒否 / タイムアウト | パッチ適用済み / バックドア無効化 | §7 辞書攻撃 or 別経路 |
+| 6200 への接続が拒否 / タイムアウト | (a) パッチ済み・バックドア無効化 / (b) **バックドアは発火し 6200 を bind しているが、ホスト FW（iptables）が 6200 への inbound を遮断** — 外部からは (a)(b) を区別できない | §7 辞書攻撃 or 別経路。別経路で root 取得後に `netstat -tnlp` で 6200 が listen していれば (b) と確定 → `../03_Post_Access_Linux/Enumeration_Checklist.md`（ネットワーク節） |
 | Metasploit の Exploit completed, but no session was created | トリガー失敗 / FW で 6200 ブロック | 手動 `nc` で 6200 到達性を先に確認 |
+
+> **バインド型バックドアの弱点:** 6200 のように exploit が**ターゲット側に新規 inbound ポートを開く**方式は、ホスト FW が inbound を絞っていると発火しても接続できない。`netstat` で listen が見えるのに外部から届かない＝ FW フィルタの典型。リバース接続を使う exploit（distcc / Samba usermap 等）はこの制約を受けない理由は `../06_Concepts/Reverse_Shell.md`（なぜバインドではなくリバース）参照。
 
 ### 8.2 ProFTPD 1.3.5 mod_copy (CVE-2015-3306)
 

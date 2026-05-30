@@ -311,6 +311,7 @@
 | 技術名 | カテゴリ | ファイルパス |
 |--------|---------|------------|
 | 侵入後列挙チェックリスト | Post Access Linux | `03_Post_Access_Linux/Enumeration_Checklist.md` |
+| ホスト FW の事後解明（netstat の 0.0.0.0 listen と外部 nmap filtered の突合 → iptables/nft でルール確認・刺さらなかった bind 型 exploit の原因特定） | Post Access Linux | `03_Post_Access_Linux/Enumeration_Checklist.md` |
 | id コマンド出力のグループ解析（staff/lxd/docker/disk/shadow 等） | Post Access Linux | `03_Post_Access_Linux/Enumeration_Checklist.md` |
 | PAM 設定不備による権限昇格（update-motd.d + PATH ハイジャック） | Post Access Linux | `03_Post_Access_Linux/PAM_Misconfig.md` |
 | staff グループ + PATH ハイジャック → root | Post Access Linux | `03_Post_Access_Linux/PAM_Misconfig.md` |
