@@ -1,4 +1,4 @@
-# SARSA（State-Action-Reward-State-Action）
+﻿# SARSA（State-Action-Reward-State-Action）
 
 > **このファイルの位置づけ：** オンポリシー強化学習の動作原理。Q-Learning との違い（安全性・収束性）を理解することで、どのような攻撃シナリオで各アルゴリズムへの攻撃が有効かを判断できる。
 
@@ -71,7 +71,7 @@ for episode in range(n_episodes):
 - **安全性と効率性のトレードオフ**：SARSAは安全だが、Q-Learningより学習効率が悪いことが多い。
 - **Q-Learningとの使い分け**：実環境でシミュレーション不可能な場合はSARSA。シミュレーションで事前学習できる場合はQ-Learningが有利。
 
-### 関連技術
+## 関連技術
 
 - Q-Learning（オフポリシー版との比較） → `./Q_Learning.md`
 - 強化学習の全体像 → `./RL_Overview.md`

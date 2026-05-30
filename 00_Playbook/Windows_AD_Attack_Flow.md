@@ -105,6 +105,7 @@ nmap で 88(Kerberos)・389(LDAP)・3268(Global Catalog) が開いていない�
 | Step 4〜7 | ❌ AD 依存。スタンドアロンではすべてスキップ → `../04_Post_Access_Windows_AD/Enumeration_Checklist.md` の侵入後列挙へ進む |
 
 → スタンドアロンでの権限昇格フロー（ローカル CVE・BoF・特権トークン）: `../04_Post_Access_Windows_AD/Enumeration_Checklist.md`
+→ `netstat` でローカルにのみ公開されたサービスを発見し、既知 Buffer Overflow PoC（Exploit-DB）でシェル取得する場合: `../04_Post_Access_Windows_AD/Buffer_Overflow_LocalService.md`
 
 ---
 
@@ -409,6 +410,7 @@ ACE による直接のチェーンが見つからない、または閉じてい�
 4. Pass-The-Ticket でアクセス
 
 → 詳細: `../04_Post_Access_Windows_AD/Delegation_Attacks/RBCD.md`
+→ チケットの使用（PTT）の手順・Golden Ticket（krbtgt ハッシュ）/ Silver Ticket（サービスアカウントハッシュ）でのチケット偽造: `../04_Post_Access_Windows_AD/Kerberos_Attacks/Pass_The_Ticket.md`
 
 ### Unconstrained Delegation + Printer Bug
 
@@ -509,5 +511,6 @@ evil-winrm -i [IP] -u Administrator -H '[NTLM_HASH]'
 - 前：`00_OS_Identification.md`（Windows と確定し、88番 Kerberos 等から AD 環境と判断してからこのフローに入る）
 - 後：`../04_Post_Access_Windows_AD/Enumeration_Checklist.md`（シェル取得後の侵入後列挙）
 - 後：`../04_Post_Access_Windows_AD/Credential_Dumping.md`（DCSync → 全ハッシュ取得の詳細）
+- 後：`../04_Post_Access_Windows_AD/Kerberos_Attacks/Pass_The_Ticket.md`（取得した krbtgt ハッシュから Golden Ticket を作る持続化、または取得チケットでの横展開）
 - 関連：`Internal_LAN_Pentest_Flow.md`（内部 VLAN 全体のペネトレが対象で、AD はその一部という位置づけの場合の上位フロー）
 - 関連：`../06_Concepts/Windows_Standalone_vs_AD.md`（AD かスタンドアロンか判断がつかない場合）

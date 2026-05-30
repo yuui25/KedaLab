@@ -1,6 +1,12 @@
 # Impacket スイート クイックリファレンス
 
-AD 環境での攻撃・調査に使う Impacket ツール群のまとめ。
+> **スコープ**: AD 環境での攻撃・調査に使う Impacket ツール群のまとめ。認証情報（パスワード / NTLM ハッシュ / Kerberos チケット）を取得した後の各種攻撃手法で利用する。ペネトレ用 Linux ディストリ標準搭載（`pipx install impacket` で追加インストール可）。
+
+## 着火条件
+
+- AD 環境に認証情報を持って侵入した直後
+- DCSync / Pass-The-Hash / Kerberos 攻撃 / コンピューターアカウント作成等を行う場合
+- WinRM が閉じており impacket-psexec / wmiexec 等の代替シェルが必要な場合
 
 ---
 
@@ -181,6 +187,17 @@ impacket-smbclient '[DOMAIN]/[USER]:[PASSWORD]@[IP]'
 | `-hashes :[NTLM_HASH]` | Pass-The-Hash |
 | `-dc-ip [DC_IP]` | DC の IP アドレスを直接指定（DNS 解決を回避） |
 | `-target-ip [IP]` | ターゲットの IP を直接指定 |
+
+---
+
+## 刺さらなかったとき
+
+| 状況 | 原因・対処 |
+|------|-----------|
+| `KRB_AP_ERR_SKEW` | 時刻のずれ。`sudo ntpdate [DC_IP]` で同期してから再試行 |
+| `FQDN で接続できない` | `/etc/hosts` に `[DC_IP] [DC_FQDN]` を登録する |
+| `ACCESS_DENIED` | 認証情報に権限がない。Pass-The-Hash の場合はハッシュを再確認 |
+| Kerberos チケット認証が失敗 | `export KRB5CCNAME=./ticket.ccache` を忘れている |
 
 ---
 

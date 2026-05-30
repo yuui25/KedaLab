@@ -1,6 +1,6 @@
-## XSLT・XML外部エンティティの動作原理
+# XSLT・XML外部エンティティの動作原理
 
-### このファイルの位置づけ
+## このファイルの位置づけ
 
 以下の作業ファイルで参照される動作原理を説明する：
 - `02_Initial_Access/Web_Vulnerabilities/XSLT_Injection.md`（②XXE-via-XSLTのエンティティ宣言構文が効く理由）

@@ -1,4 +1,4 @@
-# 再帰型ニューラルネットワーク（RNN: Recurrent Neural Network）
+﻿# 再帰型ニューラルネットワーク（RNN: Recurrent Neural Network）
 
 > **このファイルの位置づけ：** 系列データ処理の動作原理。テキスト系 AI（感情分析・コンテンツフィルター等）への回避攻撃や、時系列データを扱う異常検知システムへの攻撃を理解するための前提。
 
@@ -87,7 +87,7 @@ class TextClassifier(nn.Module):
 
 LSTMは長らくNLPの標準手法だったが、2017年のTransformer論文（"Attention is All You Need"）以降、NLPではTransformerが主流。一方、組み込みデバイスや低レイテンシが必要な時系列処理ではLSTM/GRUが今も使われている。
 
-### 関連技術
+## 関連技術
 
 - Transformerアーキテクチャ → `../Generative_AI/LLM.md`（Attentionメカニズム）
 - CNN（系列処理への応用：1D CNN） → `./CNN.md`

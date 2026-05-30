@@ -1,10 +1,6 @@
 # Searchsploit クイックリファレンス
 
-## 概要
-
-`searchsploit` は Exploit-DB のオフラインミラーを検索するコマンドラインツール。インターネット接続なしで既知のエクスプロイト・PoC を検索できる。ペネトレ用Linuxディストリ（Kali Linux / Parrot OS 等）に標準搭載。
-
----
+> **スコープ**: `searchsploit` は Exploit-DB のオフラインミラーを検索するコマンドラインツール。インターネット接続なしで既知のエクスプロイト・PoC を検索できる。ペネトレ用 Linux ディストリ標準搭載。
 
 ## 着火条件
 
@@ -12,11 +8,17 @@
 - そのバージョンに既知の脆弱性があるか確認したい
 - エクスプロイトコードをすぐに入手したい
 
+## 環境前提
+
+- 実行環境: テスター端末
+- 必要なツール: `searchsploit`（`exploitdb` パッケージ同梱、ペネトレ用 Linux ディストリ標準搭載）
+- オフライン環境: `/usr/share/exploitdb/` のローカル DB があれば完全オフライン動作可。`sudo searchsploit -u` で事前更新を推奨
+
 ---
 
-## 基本的な使い方
+## 1. 基本的な使い方
 
-### キーワード検索
+**コマンド:**
 
 ```bash
 # サービス名とバージョンで検索
@@ -29,7 +31,7 @@ searchsploit wordpress
 searchsploit "ubuntu 18.04"
 ```
 
-### 検索のコツ
+**検索のコツ:**
 
 ```bash
 # バージョン番号は「メジャー.マイナー」で絞り込む（パッチバージョンまで指定すると漏れが出ることがある）
@@ -47,7 +49,9 @@ searchsploit -t grafana
 
 ---
 
-## 出力の読み方
+---
+
+## 2. 出力の読み方
 
 ```
 ---------------------------------------------------------------------
@@ -65,9 +69,11 @@ searchsploit -t grafana
 
 ---
 
-## エクスプロイトファイルの操作
+---
 
-### ファイルを確認する
+## 3. エクスプロイトファイルの操作
+
+**コマンド:**
 
 ```bash
 # エクスプロイトの内容を直接表示
@@ -75,20 +81,17 @@ searchsploit -x multiple/webapps/50581.py
 
 # ファイルパスを取得（コピーしてから編集したい場合）
 searchsploit -p multiple/webapps/50581.py
-```
 
-### 現在のディレクトリにコピーする
-
-```bash
+# 現在のディレクトリにコピー（コピー後に編集して使う）
 searchsploit -m multiple/webapps/50581.py
-
-# ファイルが作業ディレクトリにコピーされる
 # ls → 50581.py
 ```
 
 ---
 
-## よく使うオプション一覧
+---
+
+## 4. よく使うオプション一覧
 
 | オプション | 説明 |
 |-----------|------|
@@ -104,7 +107,11 @@ searchsploit -m multiple/webapps/50581.py
 
 ---
 
-## Nmap XML との連携（自動スキャン）
+---
+
+## 5. Nmap XML との連携（自動スキャン）
+
+**コマンド:**
 
 ```bash
 # Nmap スキャン時に XML を出力（-oA で .xml/.nmap/.gnmap を同時出力）
@@ -387,6 +394,10 @@ searchsploit -w grafana 8.0
 | **ベンダーセキュリティブログ** | Akamai / SpecterOps / Trustedsec / Semperis / MSRC 等 | 公開直後の新規CVE・研究者記事 |
 | **X（旧Twitter）** | x.com で `CVE-XXXX-XXXXX` 検索 | PoC公開の最速一次情報 |
 | **GreyNoise / Shodan** | shodan.io | 実環境での稼働状況・バージョン分布 |
+
+#---
+
+## 刺さらなかったとき
 
 ### searchsploit が0件のときのフロー
 

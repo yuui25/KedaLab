@@ -1,6 +1,12 @@
 # Windows 侵入後 列挙チェックリスト（AD・スタンドアロン共通）
 
-初期シェル（WinRM / SMB / RDP / Webシェル等）を取得したら、次の権限昇格・横断移動のために以下を確認する。
+> **スコープ**: 初期シェル取得直後の情報収集 → 次の権限昇格・横断移動の手法選択まで。各攻撃手法の手順は個別ファイル（`./ACE_Abuse/`・`./Kerberos_Attacks/`・`./Delegation_Attacks/`・`./NTLM_Relay/`）を参照。
+
+## 着火条件
+
+初期シェル（WinRM / SMB / RDP / Webシェル等）を取得した直後。
+
+---
 
 > **AD 環境か スタンドアロンかで優先度が変わる。**
 > シェル取得直後の4手を打ち終えた後、`Get-ComputerInfo` の `Domain` 欄を確認する。
@@ -588,6 +594,18 @@ $etwpatch = [System.Runtime.InteropServices.Marshal]
 | ETW パッチ | EDR「ETW tampering」/ Sysmon Event ID 8（CreateRemoteThread to ntdll.dll） | 最高（本番では原則禁止） |
 
 **本番での結論：** AMSI が壁になる場合は、まず **PowerShell v2 Downgrade** を試みる。それも使えない環境（PS v2 削除済み・Defender が v2 も監視）では、**ツール選択を変える**（PoC を C# バイナリにコンパイルして直接 EXE 実行 → AMSI は PS スクリプトを対象とするため）か、**実施範囲を対象組織に再確認**する。
+
+---
+
+## 刺さらなかったとき
+
+| 状況 | 対応 |
+|------|------|
+| `whoami /all` で有効な特権トークンがない | Step 1.3 の UAC バイパス・Step 1.5 のローカルサービス確認に集中する |
+| BloodHound で DA へのパスが見つからない | 現在のユーザーの所属グループを確認し、間接的な ACE（GenericAll 経由等）を探す |
+| すべての Kerberoast / ASREP ハッシュがクラックできない | パスワードスプレーや別ユーザーへの ACE Abuse を検討する |
+| 内部サービスが見つからない（netstat が空） | SMB 共有・SYSVOL のスクリプト確認・Web アプリのソースコード確認（Step 7）に移行する |
+| BloodHound がデータを収集できない | DC への LDAP アクセスを確認。`bloodhound-python` の `-ns` オプションで DNS サーバーを指定する |
 
 ---
 

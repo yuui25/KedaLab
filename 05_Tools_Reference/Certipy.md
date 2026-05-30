@@ -1,6 +1,12 @@
 # Certipy — AD CS 攻撃ツールリファレンス
 
-Certipy（`certipy-ad`）は Active Directory 証明書サービス（AD CS）の列挙・証明書申請・認証・CA 管理を一元的に行う Python 製ツール。ペネトレ用 Linux ディストリには**標準搭載されていない場合が多く、要インストール確認**。
+> **スコープ**: Certipy（`certipy-ad`）は AD CS の列挙・証明書申請・認証・CA 管理を一元的に行う Python 製ツール。ペネトレ用 Linux ディストリには**標準搭載されていない場合が多く、要インストール確認**（`pip install certipy-ad --break-system-packages`）。各 ESC の攻撃フローは `../04_Post_Access_Windows_AD/AD_CS/` 配下の ESC ファイルを参照。
+
+## 着火条件
+
+- AD CS（Active Directory 証明書サービス）が環境に存在している
+- `certipy find` で証明書テンプレートを列挙して ESC 脆弱性を探す場合
+- ESC1〜ESC15 の攻撃で証明書申請・認証・ハッシュ取得を行う場合
 
 ```bash
 # インストール
@@ -354,7 +360,7 @@ certipy account update \
 
 ---
 
-## よくあるエラーと対処
+## 刺さらなかったとき
 
 | エラーメッセージ | 原因 | 対処 |
 |----------------|------|------|

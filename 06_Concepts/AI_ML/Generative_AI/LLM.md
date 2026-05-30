@@ -1,4 +1,4 @@
-# 大規模言語モデル（LLM: Large Language Models）
+﻿# 大規模言語モデル（LLM: Large Language Models）
 
 > **このファイルの位置づけ：** LLM・Transformer の動作原理。プロンプトインジェクション・LLM Output Attacks・ジェイルブレイクの仕組みを理解するための直接的な前提。プロンプトがどのようにトークン列として処理されるかを把握することが攻撃設計の出発点になる。
 
@@ -99,7 +99,7 @@ print(response.content[0].text)
 - **AIモデルのポイズニング**：学習データに悪意あるデータを混入させてモデルの挙動を操作
 - **LLM 固有の攻撃分類（LLM OWASP Top 10）** → `LLM_Attacks.md`
 
-### 関連技術
+## 関連技術
 
 - Transformerの前身 → `../Deep_Learning/RNN.md`
 - Diffusionモデル（画像生成の主流手法） → `./Diffusion_Models.md`

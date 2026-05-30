@@ -1,8 +1,21 @@
 # BloodHound クイックリファレンス
 
-## 概要
+> **スコープ**: Active Directory の権限関係（ACE）をグラフで可視化するツール。「現在のユーザーから Domain Admin までの最短ルート」を視覚的に把握できる。AD 環境での調査では**最初に必ず実行する**。
 
-Active Directory の権限関係（ACE）をグラフで可視化するツール。「現在のユーザーから Domain Admin までの最短ルート」を視覚的に把握できる。AD 環境での調査では**最初に必ず実行する**。
+## 着火条件
+
+- AD 環境に認証情報を持って侵入した直後（Windows シェルの有無を問わない）
+- BloodHound のデータなしで ACE Abuse / Kerberoast 等の手法を選択しようとしている
+- 権限昇格パスを特定したいが何が使えるか不明な状態
+
+## 環境前提
+
+- 実行環境: テスター端末（Linux）または Windows シェル内
+- 必要なツール（どちらか選ぶ）:
+  - `bloodhound-python`（Linux コレクター。`pip install bloodhound` で取得。ペネトレ用 Linux ディストリで標準搭載の場合あり）
+  - `SharpHound.exe`（Windows コレクター。BloodHound GitHub の Collectors/ または SharpHound Releases から取得）
+  - `neo4j`・`bloodhound`（GUI 分析用。ペネトレ用 Linux ディストリ標準搭載）
+- オフライン環境: `bloodhound-python` は DC への LDAP アクセスが必要（ネットワーク内なら可）
 
 ---
 
@@ -20,9 +33,11 @@ Windowsシェルがある場合は SharpHound のほうが収集精度が高い�
 
 ---
 
-## データ収集①：bloodhound-python（Linux側コレクター）
+---
 
-`bloodhound-python`（`pip install bloodhound` で別途インストール。ペネトレ用Linuxディストリでは標準搭載の場合あり）
+## 1. bloodhound-python（Linux 側コレクター）
+
+**コマンド:**
 
 ```bash
 # [Attacker] 全データを収集（最も確実）
@@ -43,18 +58,15 @@ bloodhound-python -u [USER] -p '[PASSWORD]' -ns [DC_IP] -d [DOMAIN] \
 
 ---
 
-## データ収集②：SharpHound.exe（Windowsシェル内コレクター）
+---
 
-### 着火条件
+## 2. SharpHound.exe（Windows シェル内コレクター）
 
-evil-winrm / psexec / RDP 等でWindowsシェルを取得済みの場合。
+evil-winrm / psexec / RDP 等で Windows シェルを取得済みの場合。Linux 側コレクターより収集精度が高い（SMB 経由でドメイン情報を取るため）。
 
-**攻撃者の思考トレース：** Windows上から直接ドメインに問い合わせるため、Linux側コレクターより収集漏れが少ない。
-シェルを取ったら BloodHound データ収集と侵入後列挙（Enumeration_Checklist.md）を並行して走らせる。
+**コマンド:**
 
-### 手順
-
-**Step 1: SharpHound.exe を入手してアップロードする**
+**Step 1: SharpHound.exe を転送**
 
 SharpHound.exe は BloodHound の GitHub リポジトリ（`BloodHoundAD/BloodHound`）の `Collectors/` ディレクトリに同梱されている。
 または `BloodHoundAD/SharpHound` リポジトリの Releases ページから単体で取得できる。
@@ -86,14 +98,6 @@ download [日時]_BloodHound.zip
 **Step 4: BloodHound GUI にインポートする**
 
 GUI の「Upload Data」ボタンからzipファイルをドラッグ＆ドロップ、またはインポートする。
-
-### 刺さらなかったとき
-
-| 状況 | 原因・対処 |
-|------|-----------|
-| `Access Denied` / `Exception` | AV / EDR に検知されている可能性。C# ソースからビルドしたカスタム版を試すか、`bloodhound-python` に切り替える |
-| 実行が途中で止まる | ドメインへの接続が切れている場合がある。`-d [DOMAIN] --domaincontroller [DC_IP]` を明示して再試行 |
-| zip が空・データが少ない | 実行ユーザーの権限不足。`-c DCOnly` で DC 情報のみ先に収集し、状況を把握する |
 
 ---
 
@@ -158,6 +162,17 @@ MATCH (u:User) WHERE u.hasspn=true RETURN u.name, u.serviceprincipalnames
 ```cypher
 MATCH (u:User) WHERE u.dontreqpreauth=true RETURN u.name
 ```
+
+---
+
+## 刺さらなかったとき
+
+| 状況 | 原因・対処 |
+|------|-----------|
+| `bloodhound-python` で `Access Denied` | DNS / LDAP アクセス失敗。`/etc/hosts` に DC を登録して `-ns [DC_IP]` を明示する |
+| SharpHound が `Access Denied` / `Exception` | AV / EDR に検知されている可能性。`-c DCOnly` で DC 情報のみ先に収集、または `bloodhound-python` に切り替える |
+| 実行が途中で止まる | ドメインへの接続が切れている。`-d [DOMAIN] --domaincontroller [DC_IP]` を明示して再試行 |
+| zip が空・データが少ない | 実行ユーザーの権限不足。`-c DCOnly` で DC 情報のみ先に収集して状況を把握する |
 
 ---
 

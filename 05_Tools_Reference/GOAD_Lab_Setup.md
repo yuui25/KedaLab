@@ -1,10 +1,10 @@
 # GOAD 演習ラボ構築（VMware Workstation + WSL / Vagrant + Ansible）
 
-## 概要
+> **スコープ**: GOAD（Game of Active Directory）演習ラボの構築手順。**Windows ホスト + VMware Workstation + WSL** の組み合わせで縮小版 **GOAD-Light**（3 VM / 1 forest / 2 domains）を建てる。AD 攻撃手法の習得に使う。ラボ構築後に何を練習するかは `../04_Post_Access_Windows_AD/` 系を参照。
 
-GOAD（Game of Active Directory）は、AD 攻撃の一連の流れを安全に練習するための**意図的に脆弱な Active Directory ラボ**（Orange Cyberdefense 公開）。本書は **Windows ホスト + VMware Workstation + WSL** の組み合わせで縮小版 **GOAD-Light**（3 VM / 1 forest / 2 domains）を建てる際の手順と、つまずきやすい点の判断ロジックをまとめる。
+## 着火条件
 
-ラボ構築後に何を練習するか（Kerberoasting / ACL 悪用 / ADCS / NTLM リレー等）は `../04_Post_Access_Windows_AD/` 系を参照。
+- AD 攻撃技術の習得のため演習環境を手元に構築したい場合
 
 ---
 
@@ -285,7 +285,7 @@ CLI 作業（nmap / netexec / bloodhound-python / impacket / evil-winrm / certip
 
 ---
 
-## トラブルシュート
+## 刺さらなかったとき（トラブルシュート）
 
 | 症状 | 切り分け・対処 |
 |---|---|

@@ -175,6 +175,8 @@ python sensitive_scan.py request.txt --no-low
 | **Cookie 値・クエリパラメータ・ボディ値が `eyJ`（Base64URL）/ `%25`（二重URLエンコード）/ 長い英数字列など「何かエンコードされている」形式** | 多重エンコードを剥がして中身を確認 → ID・role・JWT が出たら改ざんして再送（IDOR / 権限昇格 / JWT攻撃）。内部パスが出たら SSRF / パストラバーサル | `../02_Initial_Access/Web_Vulnerabilities/JS_Obfuscation.md`（多重エンコードセクション） |
 | XMLファイルのアップロード機能がある | XXE（ファイル読み込み・SSRF転用・Blind OOB） | `../02_Initial_Access/Web_Vulnerabilities/XXE.md` |
 | XSLTファイルのアップロード・選択機能がある / XML+XSLTを組み合わせた変換機能がある | XSLTインジェクション（フィンガープリント → XXE-via-XSLT / PHP拡張 / Java拡張） | `../02_Initial_Access/Web_Vulnerabilities/XSLT_Injection.md` |
+| **対象が Electron デスクトップアプリ（.exe / .dmg / AppImage）で、`.html()` / `innerHTML` / `dangerouslySetInnerHTML` 等の HTML 挿入 sink にユーザー入力が届く** | XSS → RCE 昇格（`nodeIntegration: true` + `contextIsolation: false` が揃えば OS コマンド実行まで。揃わなければ XSS 止まり） | `../02_Initial_Access/Web_Vulnerabilities/Electron_XSS_RCE.md` |
+| **Java アプリがネットワーク経由で `ObjectInputStream` デシリアライズを行い、allowlist（許可クラスリスト）防御が実装されている** | Java デシリアライズ allowlist バイパス（`resolveClass()` のみ override で `resolveProxyClass()` 未 override → ysoserial ガジェットチェーンで RCE） | `../02_Initial_Access/Web_Vulnerabilities/Java_Deserialization_Bypass.md` |
 | **上のどれにも当てはまらない機能に当たった** | 機能を観察 → 英語で言語化 → 脆弱性クラスを特定するフロー | `01_Unknown_Tech_Research.md` |
 
 **確認の進め方：**
@@ -257,5 +259,7 @@ searchsploit [ソフトウェア名] [バージョン]   # [Attacker]
 - 後：`../02_Initial_Access/Web_Vulnerabilities/Path_Traversal.md`（パスを受け取るパラメータ）
 - 後：`../02_Initial_Access/Web_Vulnerabilities/XXE.md` / `../02_Initial_Access/Web_Vulnerabilities/XSLT_Injection.md`（XML/XSLT 処理）
 - 後：`../02_Initial_Access/Web_Vulnerabilities/File_Upload.md`（アップロード機能）
+- 後：`../02_Initial_Access/Web_Vulnerabilities/Electron_XSS_RCE.md`（対象が Electron デスクトップアプリで XSS → RCE 昇格を狙う場合）
+- 後：`../02_Initial_Access/Web_Vulnerabilities/Java_Deserialization_Bypass.md`（Java デシリアライズ + allowlist 防御を崩す場合）
 - 後：`01_Unknown_Tech_Research.md`（Step 2 でどの脆弱性クラスにも当てはまらない機能に当たった場合の調査フロー）
 - 関連：`Linux_Attack_Flow.md`（Web を起点にシェル取得を目指すペネトレスコープの場合はこのファイルではなく Linux_Attack_Flow.md の Step 2 へ）

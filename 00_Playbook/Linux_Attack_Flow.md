@@ -242,6 +242,8 @@ export TERM=xterm
 
 シェルを得たら以下を確認する（詳細は `../03_Post_Access_Linux/Enumeration_Checklist.md`）:
 
+> **ファイル検索・プロセス観察・文字列調査・データ持ち出しの bash / coreutils ワンライナー**（`find` の権限フィルタ、`grep -r` での認証情報抜き出し、`/dev/tcp` 転送 等）でターゲット側に `python` / `curl` が無い場合の代替も含む → `../05_Tools_Reference/Linux_Pentest_OneLiners.md`（§2 ファイル検索 / §3 プロセス観察 / §4 文字列調査 / §6 ファイル転送）
+
 | 優先度 | 確認内容 | コマンド |
 |--------|----------|---------|
 | 高 | 現在のユーザーと権限 | `id`, `whoami` |

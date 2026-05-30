@@ -1,4 +1,4 @@
-# 畳み込みニューラルネットワーク（CNN: Convolutional Neural Network）
+﻿# 畳み込みニューラルネットワーク（CNN: Convolutional Neural Network）
 
 > **このファイルの位置づけ：** CNN の動作原理。画像認識システムへの敵対的サンプル攻撃（人間には見えない微小な摂動で誤分類を引き起こす）を理解するための前提。AI Evasion 系モジュール全般で参照する。
 
@@ -552,7 +552,7 @@ plot_history(history, "loss")
 
 ---
 
-### 関連技術
+## 関連技術
 
 - ニューラルネットワーク基礎 → `./Neural_Networks.md`
 - RNN（系列データ処理との組み合わせ：ビデオ認識等） → `./RNN.md`

@@ -1,12 +1,12 @@
 # Netexec（nxc）/ CrackMapExec（cme）クイックリファレンス
 
-## 概要
+> **スコープ**: `nxc`（NetExec）は CrackMapExec の後継ツール。SMB・WinRM・LDAP 等の複数プロトコルで認証確認・パスワードスプレー・情報列挙を行える。ペネトレ用 Linux ディストリ 2023.4 以降標準搭載（旧環境は `pipx install netexec`）。
 
-netexec（`nxc`）は CrackMapExec（`cme`）の後継ツール。SMB・WinRM・LDAP 等の複数プロトコルで認証確認・パスワードスプレー・情報列挙を行える。
+## 着火条件
 
-ペネトレ用Linuxディストリ（Kali Linux 等）2023.4以降は標準搭載。それ以前の環境では `pipx install netexec` でインストールする。古いペネトレ用Linuxディストリでは `crackmapexec`（`cme`）コマンドが使える場合があるが構文が一部異なる。
-
----
+- 認証情報（パスワード / NTLM ハッシュ）を取得して SMB / WinRM / MSSQL / LDAP への有効性を確認したい
+- 取得したパスワードを複数ユーザーにスプレーしたい
+- AD 環境でパスワードポリシーを取得したい
 
 ## 環境前提
 
@@ -180,6 +180,17 @@ nxc smb [IP] -u [USER] -p '[PASSWORD]' --rid-brute \
 ```
 
 > **マシンアカウント（末尾 `$`）はパスワードスプレー対象から除外する。** マシンアカウントのパスワードはランダム生成120文字で辞書攻撃が通らないため、混じっているとスプレーのノイズになる。`grep -v '\$$'` で落とす。
+
+---
+
+## 刺さらなかったとき
+
+| 状況 | 原因・対処 |
+|------|-----------|
+| `STATUS_LOGON_FAILURE` が全件 | パスワードが間違い / アカウントが存在しない | `--users` で有効ユーザーリストを先に取得して再試行 |
+| `STATUS_ACCOUNT_LOCKED_OUT` | ロックアウト発動 | **即停止** → `Account_Lockout_Recon.md` でポリシーを確認してから再設計 |
+| `STATUS_ACCESS_DENIED` / `(--)` | 認証は通るが権限がない | `(Pwn3d!)` が出るアカウントを探す。権限が低い場合は `--shares` 等の読み取り系のみ使用 |
+| Kerberos エラー（`KRB5KDC_ERR_*`）| Kerberos 強制 / NTLM 無効化 | `-k` オプションで Kerberos 認証に切り替える |
 
 ---
 

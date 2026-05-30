@@ -1,5 +1,13 @@
 # Linux 侵入後 列挙チェックリスト
 
+> **スコープ**: Linux シェル取得直後の権限昇格候補の全体確認に徹する。各手法の詳細は `Capabilities.md` / `SUID_SGID.md` / `Sudo_Misconfig.md` / `Kernel_Exploits.md` を参照。
+
+## 着火条件
+
+Linux ホストでシェル取得直後（SSH / リバースシェル / Web シェル経由を問わない）。
+
+---
+
 シェルを取得したら、権限昇格の糸口を探すために以下を順番に確認する。
 **優先度「高」を全て確認してから「中」「低」に移る。**
 
@@ -271,6 +279,18 @@ curl -L https://github.com/carlospolop/PEASS-ng/releases/latest/download/linpeas
 # linux-smart-enumeration
 ./lse.sh -l 1
 ```
+
+---
+
+## 刺さらなかったとき
+
+| 状況 | 対処 |
+|------|------|
+| `sudo -l` でパスワードを要求されるが不明 | 他の認証情報発見手法（`.env` / `.bash_history` / config ファイル）でパスワードを探す |
+| SUID/SGID が見つかるが GTFOBins にない | `../06_Concepts/` の関連概念ファイルで原理を確認 / 自前で悪用方法を考える |
+| カーネルバージョンに CVE が見つからない | パッチ済み。Capabilities / cron / PATH ハイジャック / sudo 設定の確認に切り替える |
+| `pspy` を動かしてもroot プロセスが湧かない | 引き金がタイミング依存。SSH 再ログイン / 特定時刻待ちで再観察（`../05_Tools_Reference/pspy.md`）|
+| 権限昇格パスが見つからない | `./Kernel_Exploits.md` のカーネル CVE を最後の手段として試す |
 
 ---
 

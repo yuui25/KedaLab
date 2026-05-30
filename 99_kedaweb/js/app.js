@@ -527,12 +527,16 @@
     // Escape HTML
     src = src.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-    // Inline code
-    src = src.replace(/`([^`]+)`/g, "<code>$1</code>");
+    // Inline code — stash so * / _ inside a code span survive the emphasis
+    // passes (e.g. the wildcard in `*.bak` would otherwise lose its leading *).
+    const codes = [];
+    src = src.replace(/`([^`]+)`/g, (m, c) => " C" + (codes.push(c) - 1) + " ");
     // Bold
     src = src.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
     // Italic (only inside text, avoid breaking **bold**)
     src = src.replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>");
+    // Restore inline code
+    src = src.replace(/ C(\d+) /g, (_, i) => "<code>" + codes[+i] + "</code>");
 
     // Bullet lists
     src = src.replace(/(?:^[ \t]*[-*]\s+.*\n?)+/gm, block => {
@@ -1795,8 +1799,11 @@
   function inline(s) {
     // escape first
     s = s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    // inline code
-    s = s.replace(/`([^`]+)`/g, "<code>$1</code>");
+    // inline code — stash contents in placeholders so * / _ inside a code span
+    // (e.g. the wildcard in `*.bak`) survive the bold/italic passes below.
+    // Without this, `*.bak` / `*~` gets its leading * eaten by the italic regex.
+    const codes = [];
+    s = s.replace(/`([^`]+)`/g, (m, c) => " C" + (codes.push(c) - 1) + " ");
     // bold
     s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
     // italic
@@ -1805,6 +1812,8 @@
     s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
     // auto link
     s = s.replace(/(?<!["'>=])(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+    // restore inline code
+    s = s.replace(/ C(\d+) /g, (_, i) => "<code>" + codes[+i] + "</code>");
     return s;
   }
 

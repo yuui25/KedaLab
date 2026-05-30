@@ -1,4 +1,4 @@
-# 異常検知（Anomaly Detection）
+﻿# 異常検知（Anomaly Detection）
 
 > **このファイルの位置づけ：** 異常検知システムの動作原理。侵入検知・不正検知システムへの回避攻撃（AI Evasion）を設計するための直接的な前提。「正常に見える」攻撃トラフィックの生成原理を理解するために参照する。
 
@@ -217,7 +217,7 @@ print(classification_report(y_true, predictions, target_names=class_labels))
 - 乖離が大きい場合はクラス不均衡のシグナル → `../../Overview.md` の「classification_report の読み方」を参照
 - `support` 列が小さいクラス（< 50 程度）の指標は統計的に不安定。単独で判断しない
 
-### 関連技術
+## 関連技術
 
 - PCA（次元削減してから異常検知） → `./PCA.md`
 - K-Meansクラスタリング（クラスタから外れた点を異常とみなす） → `./KMeans_Clustering.md`
