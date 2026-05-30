@@ -1156,12 +1156,22 @@
   }
 
   function enterNavMode() {
+    document.body.classList.remove("work-mode");
     document.body.classList.add("nav-mode");
     window.scrollTo({ top: 0, behavior: "instant" });
     ensureNavReady();
   }
   function exitNavMode() {
     document.body.classList.remove("nav-mode");
+  }
+  // Workspace page (Triage + Worksheet side-by-side) — same toggle pattern.
+  function enterWorkMode() {
+    document.body.classList.remove("nav-mode");
+    document.body.classList.add("work-mode");
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }
+  function exitWorkMode() {
+    document.body.classList.remove("work-mode");
   }
 
   // Navigator zoom (CSS variable --nav-zoom; bar + Ctrl+wheel)
@@ -1261,6 +1271,7 @@
     _brandHome.addEventListener("click", e => {
       e.preventDefault();
       if (document.body.classList.contains("nav-mode")) exitNavMode();
+      if (document.body.classList.contains("work-mode")) exitWorkMode();
       if (location.hash) history.replaceState(null, "", location.pathname + location.search);
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
@@ -1269,15 +1280,31 @@
   // Wire nav links — Navigator entry toggles page mode; others exit it
   $$(".nav-link").forEach(a => {
     a.addEventListener("click", () => {
-      if (a.dataset.page === "navigator") {
-        // anchor href #navigator stays — let the hash update, but suppress
-        // default scroll by handling visibility ourselves
+      const page = a.dataset.page;
+      // anchor href stays — update the hash, but handle visibility ourselves
+      if (page === "navigator") {
         setTimeout(enterNavMode, 0);
-      } else if (document.body.classList.contains("nav-mode")) {
-        exitNavMode();
+      } else if (page === "work") {
+        setTimeout(enterWorkMode, 0);
+      } else {
+        if (document.body.classList.contains("nav-mode")) exitNavMode();
+        if (document.body.classList.contains("work-mode")) exitWorkMode();
       }
     });
   });
+
+  // Help / 使い方 tab → render USAGE.md in the modal viewer (reuses openMD)
+  const _helpLink = document.getElementById("navHelp");
+  if (_helpLink) {
+    _helpLink.addEventListener("click", e => {
+      e.preventDefault();
+      openMD("99_kedaweb/USAGE.md");
+    });
+  }
+  // Deep-link / reload support for #usage
+  if (location.hash === "#usage") {
+    setTimeout(() => openMD("99_kedaweb/USAGE.md"), 150);
+  }
 
   // In-page search box
   const _navSearchEl = document.getElementById("navSearch");
@@ -1321,10 +1348,12 @@
   const _navClearBtn = document.getElementById("navClear");
   if (_navClearBtn) _navClearBtn.addEventListener("click", () => setNavFocus(null));
 
-  // Auto-enter if URL hash is #navigator on load
+  // Auto-enter page mode if URL hash matches on load
   if (location.hash === "#navigator") {
     // wait for data so the matrix has techniques to render
     setTimeout(() => enterNavMode(), 100);
+  } else if (location.hash === "#workspace") {
+    setTimeout(() => enterWorkMode(), 100);
   }
 
   // ============================================================
@@ -1562,6 +1591,229 @@
     }
   }
   setupTriage();
+
+  // ============================================================
+  // Worksheet — fillable engagement note / methodology checklist
+  // Template lives in js/worksheet_template.js (window.KEDA_WORKSHEET).
+  // State autosaves to localStorage; export to .md / .txt via Blob.
+  // Fully client-side — nothing leaves the browser.
+  // ============================================================
+  const WS = window.KEDA_WORKSHEET || { version: "—", meta: [], sections: [] };
+  const WS_LS_KEY = "keda_worksheet_v1";
+
+  // 3-state checklist: "" (未着手) → "done" (完了) → "na" (対象外) → ""
+  const WS_TRI = ["", "done", "na"];
+  const WS_TRI_GLYPH = { "": "·", "done": "✓", "na": "–" };
+  function wsSetTri(btn, v) {
+    btn.dataset.v = v;
+    btn.textContent = WS_TRI_GLYPH[v] || "·";
+    const li = btn.closest(".ws-item");
+    if (li) li.dataset.state = v;
+  }
+
+  // Read the live form DOM → flat { dataKey: value|state } map.
+  function wsReadDom() {
+    const form = document.getElementById("wsForm");
+    const out = {};
+    if (!form) return out;
+    $$("[data-k]", form).forEach(el => {
+      if (el.classList.contains("ws-tri")) out[el.dataset.k] = el.dataset.v || "";
+      else out[el.dataset.k] = el.value;
+    });
+    return out;
+  }
+  function wsSave() {
+    try { localStorage.setItem(WS_LS_KEY, JSON.stringify(wsReadDom())); }
+    catch (e) { /* storage full / disabled — ignore */ }
+  }
+  function wsLoad() {
+    try {
+      const raw = localStorage.getItem(WS_LS_KEY);
+      if (!raw) return {};
+      return JSON.parse(raw) || {};
+    } catch (e) { return {}; }
+  }
+  function wsApply(state) {
+    const form = document.getElementById("wsForm");
+    if (!form) return;
+    $$("[data-k]", form).forEach(el => {
+      if (!(el.dataset.k in state)) return;
+      if (el.classList.contains("ws-tri")) wsSetTri(el, state[el.dataset.k] || "");
+      else el.value = state[el.dataset.k];
+    });
+  }
+  function wsUpdateCount() {
+    const cnt = document.getElementById("wsCount");
+    if (!cnt) return;
+    const form = document.getElementById("wsForm");
+    if (!form) return;
+    const tris = $$(".ws-tri", form);
+    const done = tris.filter(b => b.dataset.v === "done").length;
+    const na = tris.filter(b => b.dataset.v === "na").length;
+    // 「対象外」は分母から除外（実質やるべき項目に対する進捗）
+    cnt.textContent = tris.length ? `${done}/${tris.length - na}` : "—";
+    // 節ごとの進捗カウントも更新
+    $$("[data-sec-count]", form).forEach(span => {
+      const sid = span.dataset.secCount;
+      const st = $$('.ws-tri[data-k^="chk:' + sid + ':"]', form);
+      const d = st.filter(b => b.dataset.v === "done").length;
+      const n = st.filter(b => b.dataset.v === "na").length;
+      span.textContent = `${d}/${st.length - n}`;
+    });
+  }
+
+  function wsRender() {
+    const form = document.getElementById("wsForm");
+    if (!form) return;
+    const html = [];
+    // meta fields
+    html.push(`<div class="ws-meta">`);
+    for (const m of (WS.meta || [])) {
+      html.push(
+        `<label class="ws-meta-field">` +
+        `<span>${escapeHtml(m.label)}</span>` +
+        `<input type="text" data-k="meta:${escapeHtml(m.id)}" ` +
+        `placeholder="${escapeHtml(m.placeholder || "")}" autocomplete="off" spellcheck="false" />` +
+        `</label>`
+      );
+    }
+    html.push(`</div>`);
+    // sections
+    for (const sec of (WS.sections || [])) {
+      const isCheck = sec.type === "checklist";
+      const pb = sec.playbook
+        ? ` <a class="ws-flow" data-file="${escapeHtml(sec.playbook)}" title="${escapeHtml(sec.playbook)}">▶ flow</a>`
+        : "";
+      const bulk = isCheck
+        ? `<span class="ws-sec-count" data-sec-count="${sec.id}">0/0</span>` +
+          `<span class="ws-sec-bulk">` +
+          `<button type="button" data-bulk="done" data-sec="${sec.id}" title="この節を全部 完了に">✓全</button>` +
+          `<button type="button" data-bulk="na" data-sec="${sec.id}" title="この節を全部 対象外に">–外</button>` +
+          `<button type="button" data-bulk="" data-sec="${sec.id}" title="この節を全部 未着手に">解除</button>` +
+          `</span>`
+        : "";
+      html.push(`<div class="ws-section" data-sec="${sec.id}">`);
+      html.push(`<div class="ws-sec-h"><span class="ws-sec-title">${escapeHtml(sec.title)}</span>${pb}${bulk}</div>`);
+      if (isCheck) {
+        html.push(`<ul class="ws-items">`);
+        (sec.items || []).forEach((it, i) => {
+          const ref = it.file
+            ? `<a class="ws-ref" data-file="${escapeHtml(it.file)}" title="${escapeHtml(it.file)}">↗</a>`
+            : "";
+          html.push(
+            `<li class="ws-item" data-state="">` +
+            `<button type="button" class="ws-tri" data-k="chk:${sec.id}:${i}" data-v="" title="クリックで切替: 未着手 → 完了 → 対象外">·</button>` +
+            `<span class="ws-item-label">${escapeHtml(it.label)}</span>` +
+            ref +
+            `<input type="text" class="ws-note" data-k="note:${sec.id}:${i}" placeholder="メモ…" autocomplete="off" spellcheck="false" />` +
+            `</li>`
+          );
+        });
+        html.push(`</ul>`);
+      } else {
+        html.push(
+          `<textarea class="ws-text" data-k="text:${sec.id}" spellcheck="false" ` +
+          `placeholder="${escapeHtml(sec.placeholder || "")}"></textarea>`
+        );
+      }
+      html.push(`</div>`);
+    }
+    form.innerHTML = html.join("");
+
+    // wire ↗ / ▶flow links → open the kedalab file
+    $$(".ws-ref, .ws-flow", form).forEach(a =>
+      a.addEventListener("click", e => { e.preventDefault(); openMD(a.dataset.file); }));
+    // tri-state checklist toggle: "" → done → na → ""
+    $$(".ws-tri", form).forEach(btn =>
+      btn.addEventListener("click", () => {
+        const next = WS_TRI[(WS_TRI.indexOf(btn.dataset.v || "") + 1) % WS_TRI.length];
+        wsSetTri(btn, next);
+        wsSave(); wsUpdateCount();
+      }));
+    // per-section bulk: set every item in this section to one state at once
+    $$(".ws-sec-bulk button", form).forEach(b =>
+      b.addEventListener("click", () => {
+        const sid = b.dataset.sec, v = b.dataset.bulk;
+        $$('.ws-tri[data-k^="chk:' + sid + ':"]', form).forEach(t => wsSetTri(t, v));
+        wsSave(); wsUpdateCount();
+      }));
+    // autosave on text input (meta / note / textarea)
+    form.addEventListener("input", () => { wsSave(); });
+
+    wsApply(wsLoad());
+    wsUpdateCount();
+  }
+
+  // Build exportable text. fmt: "md" keeps checkboxes + links; "txt" is plain.
+  function wsBuildOutput(fmt) {
+    const v = wsReadDom();
+    const md = fmt === "md";
+    const L = [];
+    const metaTarget = (v["meta:target"] || "").trim() || "untitled";
+    L.push(md ? `# Worksheet — ${metaTarget}` : `WORKSHEET — ${metaTarget}`);
+    L.push("");
+    for (const m of (WS.meta || [])) {
+      const val = (v["meta:" + m.id] || "").trim();
+      L.push(`${m.label}: ${val}`);
+    }
+    L.push("");
+    for (const sec of (WS.sections || [])) {
+      L.push(md ? `## ${sec.title}` : `── ${sec.title} ──`);
+      if (sec.type === "checklist") {
+        (sec.items || []).forEach((it, i) => {
+          const st = v[`chk:${sec.id}:${i}`] || "";
+          const note = (v[`note:${sec.id}:${i}`] || "").trim();
+          const mark = st === "done" ? "[x]" : st === "na" ? "[-]" : "[ ]";
+          let line = (md ? "- " : "") + mark + " " + it.label;
+          if (it.file) line += md ? ` (${it.file})` : ` -> ${it.file}`;
+          if (st === "na") line += " (対象外)";
+          if (note) line += `  // ${note}`;
+          L.push(line);
+        });
+      } else {
+        const t = (v["text:" + sec.id] || "").trim();
+        L.push(t || "");
+      }
+      L.push("");
+    }
+    L.push(md ? `> generated by kedalab worksheet · template v${WS.version}` : `(template v${WS.version})`);
+    return L.join("\n");
+  }
+
+  function wsDownload(fmt) {
+    const v = wsReadDom();
+    const target = ((v["meta:target"] || "").trim() || "untitled").replace(/[^\w.\-]+/g, "_");
+    const date = ((v["meta:date"] || "").trim()).replace(/[^\w.\-]+/g, "_");
+    const name = `worksheet_${target}${date ? "_" + date : ""}.${fmt}`;
+    const blob = new Blob([wsBuildOutput(fmt)], { type: "text/plain;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  function setupWorksheet() {
+    const form = document.getElementById("wsForm");
+    if (!form) return;
+    const meta = document.getElementById("wsMeta");
+    if (meta) meta.textContent = `🚧 開発中 · 型テンプレ v${WS.version}`;
+    wsRender();
+
+    const mdBtn = document.getElementById("wsDownloadMd");
+    const txtBtn = document.getElementById("wsDownloadTxt");
+    const clearBtn = document.getElementById("wsClear");
+    if (mdBtn) mdBtn.addEventListener("click", () => wsDownload("md"));
+    if (txtBtn) txtBtn.addEventListener("click", () => wsDownload("txt"));
+    if (clearBtn) clearBtn.addEventListener("click", () => {
+      if (!window.confirm("現在の記入内容をすべて消去して新規にしますか？（先に .md/.txt で保存しておくと安心です）")) return;
+      try { localStorage.removeItem(WS_LS_KEY); } catch (e) { /* ignore */ }
+      wsRender();
+    });
+  }
+  setupWorksheet();
 
   // ============================================================
   // Cmd palette

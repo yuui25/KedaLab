@@ -265,6 +265,16 @@ window.KEDA_TRIAGE = {
         { file: "02_Initial_Access/Credential_Discovery.md", why: "復元したファイルから資格情報・API キーを探す" }
       ]
     },
+    {
+      id: "leak-smb-signing",
+      label: "SMB 署名が無効",
+      category: "info-leak",
+      weight: 1,
+      pattern: [/message_signing:\s*disabled/i, /signing\s*[:=]\s*(false|disabled)/i],
+      targets: [
+        { file: "04_Post_Access_Windows_AD/NTLM_Relay/ntlmrelayx.md", why: "署名無効 → NTLM リレーの候補（coerce + relay）" }
+      ]
+    },
 
     /* ── infra-service:nmap 等のポートスキャン出力から ─────────────── */
     {
@@ -275,6 +285,17 @@ window.KEDA_TRIAGE = {
       pattern: [/\b(445|139)\/tcp\s+open/i, /\bmicrosoft-ds\b/i, /\bnetbios-ssn\b/i],
       targets: [
         { file: "01_Reconnaissance/SMB_Enumeration.md", why: "共有・null セッション・バージョン列挙の起点" }
+      ]
+    },
+    {
+      id: "svc-samba-version",
+      label: "Samba（Linux SMB）版数露出",
+      category: "infra-service",
+      weight: 3,
+      pattern: [/\bSamba\s+smbd\s+\d/i, /Unix\s*\(Samba\s+[\d.]+/i, /\bSamba\s+[34]\.\d+\.\d+/i],
+      targets: [
+        { file: "02_Initial_Access/Samba_Exploitation.md", why: "版数固定 → 既知 CVE（usermap script / SambaCry 等）で未認証 RCE を照合。Samba は root 実行が多く即 root の可能性" },
+        { file: "01_Reconnaissance/SMB_Enumeration.md", why: "共有・null セッション列挙も並行（OS=Unix なら AD 前提の GPP 列挙は基本不適用）" }
       ]
     },
     {
@@ -329,6 +350,16 @@ window.KEDA_TRIAGE = {
       ]
     },
     {
+      id: "svc-openssh-old",
+      label: "旧 OpenSSH 版数",
+      category: "infra-service",
+      weight: 1,
+      pattern: [/OpenSSH[_\s][1-6]\./i, /OpenSSH[_\s]7\.[0-6]\b/i],
+      targets: [
+        { file: "02_Initial_Access/SSH.md", why: "OpenSSH 7.7 未満 → CVE-2018-15473 ユーザー列挙（§9）。版数依存 CVE も searchsploit で確認" }
+      ]
+    },
+    {
       id: "svc-ftp",
       label: "FTP",
       category: "infra-service",
@@ -339,6 +370,16 @@ window.KEDA_TRIAGE = {
       ]
     },
     {
+      id: "svc-vsftpd-234",
+      label: "vsftpd 2.3.4（backdoor 版数）",
+      category: "infra-service",
+      weight: 1,
+      pattern: /vsftpd\s*2\.3\.4/i,
+      targets: [
+        { file: "02_Initial_Access/FTP.md", why: "CVE-2011-2523 backdoor 該当版（§8.1）。ただし 6200 が開かなければ未混入＝囮のことも多い" }
+      ]
+    },
+    {
       id: "svc-winrm",
       label: "WinRM / WS-Management",
       category: "infra-service",
@@ -346,6 +387,16 @@ window.KEDA_TRIAGE = {
       pattern: [/\b(5985|5986)\/tcp\s+open/i, /\bwinrm\b/i, /\bwsman\b/i],
       targets: [
         { file: "02_Initial_Access/WinRM.md", why: "資格情報があれば evil-winrm 等でシェル取得" }
+      ]
+    },
+    {
+      id: "svc-distcc",
+      label: "distcc（分散コンパイラ）",
+      category: "infra-service",
+      weight: 2,
+      pattern: [/\b3632\/tcp\s+open/i, /\bdistccd\b/i, /\bdistcc\s+v1\b/i],
+      targets: [
+        { file: "02_Initial_Access/distcc_Exploitation.md", why: "CVE-2004-2687 未認証コマンド実行。-p- で初めて見える非標準ポート。取得権限は非特権が多く要昇格" }
       ]
     },
     {

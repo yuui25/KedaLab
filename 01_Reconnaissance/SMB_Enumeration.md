@@ -68,6 +68,8 @@ smbclient //[IP]/[SHARE_NAME] -N -c "get [FILENAME] /tmp/[FILENAME]"
 
 **注意:** null 認証（`-N`）が拒否されても、Guest が有効なら `-u 'guest' -p ''` で通ることがある。`.exe` / `.zip` があれば必ずダウンロードして内容確認（→ `../02_Initial_Access/Binary_Analysis.md`）。
 
+> **`-L`（一覧）と接続（中身）を混同しない:** `smbclient -L //[IP]` は**サーバの共有一覧を表示するだけ**。共有名を足して `smbclient -L //[IP]/[SHARE]` としても一覧表示に戻るだけで中には入れない。**共有の中身を見るには `-L` を外して接続する** → `smbclient //[IP]/[SHARE] -N -c "ls"`。非標準共有（`IPC$` / `ADMIN$` 以外）は必ずこの形で接続して中を確認する。
+
 ---
 
 ## 2. NETLOGON 共有の確認
@@ -250,7 +252,7 @@ impacket-samrdump '[DOMAIN]/[USER]:[PASSWORD]@[IP]'                    # 認証�
 | `smbclient -N //[IP]` が `NT_STATUS_ACCESS_DENIED` | 匿名・Guest 共に閉じている | `enum4linux-ng -A` / `nxc smb --shares` / `rpcclient -U "" -N` で別経路（RPC over SMB）を試す |
 | 共有が `IPC$` のみ表示される | 匿名で見える共有が実質ない | 認証情報取得後に再列挙する（`-u [USER] -p '[PASSWORD]'`） |
 | SMB 署名が必須（`Signing: True`）と表示される | NTLM リレー攻撃が使えない | リレー以外の経路（Kerberos 認証強制 / Coerce 系・Pass-The-Hash）を検討 |
-| `OS=[Unix]` / `OS=[Samba x.x.x]` が表示される | 対象は Linux 上の Samba | Windows 想定の SAM/LSA dump 等は適用外。Samba バージョンの CVE を searchsploit で確認 |
+| `OS=[Unix]` / `OS=[Samba x.x.x]` が表示される | 対象は Linux 上の Samba | Windows 想定の SAM/LSA dump・GPP 列挙は適用外。**版数を確定し既知 CVE を照合** → `../02_Initial_Access/Samba_Exploitation.md`（usermap script / SambaCry 等の未認証 RCE） |
 | SYSVOL に降りても `Groups.xml` が見つからない | GPP 認証情報未配布 / 撤去済み（MS14-025 適用後） | `Services.xml` / `ScheduledTasks.xml` / `Drives.xml` / `DataSources.xml` / `Printers.xml` も `grep -ril cpassword` で横断確認 |
 | GPP の `cpassword` を復号しても無効値（空・改行のみ） | パスワードが意図的に空、または既にローテーション済み | 他の SYSVOL 配下スクリプト（`.bat` / `.ps1`）の平文探索に切替 |
 
@@ -272,6 +274,7 @@ impacket-samrdump '[DOMAIN]/[USER]:[PASSWORD]@[IP]'                    # 認証�
 - 後：GPP で認証情報取得 → `../02_Initial_Access/Credential_Discovery.md`（GPP パターン）
 - 後：スクリプトに平文パスワード → `../02_Initial_Access/Credential_Discovery.md`
 - 後：実行ファイルが取得できた → `../02_Initial_Access/Binary_Analysis.md`
+- 後：対象が Linux 上の Samba（`OS=Unix (Samba x.x.x)`）で版数が古い → `../02_Initial_Access/Samba_Exploitation.md`
 - 後：取得したドキュメント・画像のメタデータ確認 → `Metadata_Analysis.md`
 - 後：認証情報が取得できた → `LDAP_Enumeration.md` へ進む
 - 関連：RPC エンドポイント詳細列挙（rpcclient / samrdump / lookupsid / RID bruteforce）→ `RPC_Enumeration.md`

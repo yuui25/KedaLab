@@ -180,6 +180,11 @@
 | FTP §8.1 vsftpd 2.3.4 backdoor (CVE-2011-2523) — `:)` スマイリーで TCP/6200 root シェル | Initial Access | `02_Initial_Access/FTP.md` |
 | FTP §8.2 ProFTPD 1.3.5 mod_copy (CVE-2015-3306) — SITE CPFR/CPTO 任意ファイルコピー | Initial Access | `02_Initial_Access/FTP.md` |
 | FTP §9 FTP Bounce 攻撃（PORT command 経由の踏み台スキャン・古典・finding 用）| Initial Access | `02_Initial_Access/FTP.md` |
+| Samba §1 バージョン特定と CVE 照合（nmap smb-os-discovery / nxc / searchsploit samba）| Initial Access | `02_Initial_Access/Samba_Exploitation.md` |
+| Samba §2 CVE-2007-2447 username map script コマンド注入（Samba 3.0.x・未認証 RCE・root 実行多）| Initial Access | `02_Initial_Access/Samba_Exploitation.md` |
+| Samba §3 CVE-2017-7494 SambaCry (is_known_pipename・書込共有 + .so ロード・3.5.0〜4.6.4/4.5.10/4.4.14 未満)| Initial Access | `02_Initial_Access/Samba_Exploitation.md` |
+| Samba §4 バージョン依存 CVE 探索パターン（searchsploit samba / OS・版数厳密一致）| Initial Access | `02_Initial_Access/Samba_Exploitation.md` |
+| distcc §1-2 CVE-2004-2687 distccd 未認証コマンド実行（3632/tcp・-p- で発見・非特権足場→要昇格）| Initial Access | `02_Initial_Access/distcc_Exploitation.md` |
 | SSH §1 バナー観察と OS / ディストリ推定（nmap -sV / nc）| Initial Access | `02_Initial_Access/SSH.md` |
 | SSH §1 CVE-2024-6387 (regreSSHion) バージョン判定と注意点（OpenSSH 8.5p1〜9.7p1 on glibc Linux・race condition pre-auth RCE） | Initial Access | `02_Initial_Access/SSH.md` |
 | SSH §2 対応認証方式の列挙（`ssh -v -o PreferredAuthentications=none` で `publickey,password,keyboard-interactive,gssapi-with-mic` 判定） | Initial Access | `02_Initial_Access/SSH.md` |

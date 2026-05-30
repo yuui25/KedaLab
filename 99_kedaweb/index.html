@@ -40,9 +40,10 @@
   <nav class="nav-links">
     <a class="nav-link" href="#quickstart">Start</a>
     <a class="nav-link" href="#browser">Browser</a>
-    <a class="nav-link" href="#triage">Triage</a>
+    <a class="nav-link nav-page" data-page="work" href="#workspace">Workspace</a>
     <a class="nav-link nav-page" data-page="navigator" href="#navigator">Navigator</a>
     <a class="nav-link opt" href="#raw">Raw</a>
+    <a class="nav-link opt" id="navHelp" href="#usage" title="kedalab の使い方を開く">使い方</a>
   </nav>
 </header>
 
@@ -101,41 +102,63 @@
   </div>
 </section>
 
-<!-- triage — upload .req/.res/.txt → suggest files (client-side signal matching) -->
-<!-- NOTE: 開発中の機能。照合ルールは js/triage_rules.js で随時拡張中 -->
-<section id="triage" class="reveal collapsible" data-collapsed="true">
-  <button type="button" class="coll-header" aria-expanded="false">
-    <span class="section-title">triage</span>
-    <span class="coll-title">レスポンス / メモを <span class="accent">照合する</span></span>
-    <span class="dev-badge" title="開発中の機能。照合ルールは随時追加・改善しています">🚧 開発中 / 随時更新</span>
-    <span class="coll-count" id="triageCount">—</span>
-    <span class="coll-chevron">▾</span>
-  </button>
-  <div class="coll-body">
-    <p class="tri-devnote">
-      ⚠ この機能は<strong>現在開発中</strong>です。照合ルール（シグナル → 参照ファイルの対応表）は
-      <strong>随時追加・改善</strong>しています。示唆は補助であり、網羅性・正確性は保証しません。
+<!-- workspace — Triage + Worksheet を横並びにした別ページ (Navigator と同じ body.work-mode 方式) -->
+<!-- NOTE: 開発中。ルール/型は js/triage_rules.js · js/worksheet_template.js で随時拡張中 -->
+<section id="workspace" class="page-work">
+  <div class="work-head">
+    <div class="section-title">workspace</div>
+    <h2 class="section-h">Triage と 作戦ノートを <span class="accent">並べて使う</span></h2>
+    <p class="nav-lead">
+      左で nmap / レスポンスを照合 → 出た示唆を右の「型」に転記。
+      <span class="dev-badge" title="開発中。ルール/型は随時拡張しています">🚧 開発中 / 随時更新</span>
+      <strong class="tri-privacy">全てブラウザ内で処理・外部送信なし（Worksheet は localStorage 自動保存）。</strong>
     </p>
-    <p class="qs-lead">
-      <code>.req</code> / <code>.res</code> / <code>.txt</code>(nmap・メモ等)をドロップ or 貼り付け →
-      検出したシグナルから「次に見るべき kedalab ファイル」を確証度順で示唆します。
-      <strong class="tri-privacy">ファイルはブラウザ内だけで処理され、どこにも送信されません。</strong>
-    </p>
-    <div class="tri-inputs">
-      <label id="triageDrop" class="tri-drop" for="triageFile">
-        <input id="triageFile" type="file" multiple accept=".txt,.req,.res,.log,.json,.xml,.har,.md" hidden />
-        <span class="tri-drop-hint">▣ ここにファイルをドロップ / クリックで選択（複数可）</span>
-        <div id="triageFiles" class="tri-files"></div>
-      </label>
-      <textarea id="triageText" class="tri-text" spellcheck="false"
-                placeholder="または、ここに HTTP リクエスト/レスポンスや nmap 出力を貼り付け…"></textarea>
+  </div>
+  <div class="work-cols">
+
+    <!-- LEFT: triage -->
+    <div class="work-col">
+      <div class="work-col-h">
+        <span class="work-col-title">▣ TRIAGE — 照合</span>
+        <span class="coll-count" id="triageCount">—</span>
+      </div>
+      <div class="work-col-body">
+        <div class="tri-inputs work-tri-inputs">
+          <label id="triageDrop" class="tri-drop" for="triageFile">
+            <input id="triageFile" type="file" multiple accept=".txt,.req,.res,.log,.json,.xml,.har,.md" hidden />
+            <span class="tri-drop-hint">▣ ファイルをドロップ / クリックで選択（複数可）</span>
+            <div id="triageFiles" class="tri-files"></div>
+          </label>
+          <textarea id="triageText" class="tri-text" spellcheck="false"
+                    placeholder="または、HTTP リクエスト/レスポンスや nmap 出力を貼り付け…"></textarea>
+        </div>
+        <div class="tri-actions">
+          <button id="triageRun" class="tri-btn" type="button">› 照合する</button>
+          <button id="triageClear" class="tri-btn ghost" type="button">クリア</button>
+          <span id="triageRuleMeta" class="tri-rulemeta"></span>
+        </div>
+        <div id="triageResult" class="tri-result"></div>
+      </div>
     </div>
-    <div class="tri-actions">
-      <button id="triageRun" class="tri-btn" type="button">› 照合する</button>
-      <button id="triageClear" class="tri-btn ghost" type="button">クリア</button>
-      <span id="triageRuleMeta" class="tri-rulemeta"></span>
+
+    <!-- RIGHT: worksheet -->
+    <div class="work-col">
+      <div class="work-col-h">
+        <span class="work-col-title">📝 WORKSHEET — 型</span>
+        <span class="coll-count" id="wsCount">—</span>
+      </div>
+      <div class="work-col-body">
+        <div class="tri-actions">
+          <button id="wsDownloadMd" class="tri-btn" type="button">↓ .md</button>
+          <button id="wsDownloadTxt" class="tri-btn ghost" type="button">↓ .txt</button>
+          <button id="wsClear" class="tri-btn ghost" type="button">クリア（新規）</button>
+          <span id="wsMeta" class="tri-rulemeta"></span>
+        </div>
+        <p class="ws-legend">チェックはクリックで3状態を切替: <b>·</b> 未着手 → <b class="lg-done">✓</b> 完了 → <b class="lg-na">–</b> 対象外（進捗カウントの分母から除外）</p>
+        <div id="wsForm" class="ws-form"></div>
+      </div>
     </div>
-    <div id="triageResult" class="tri-result"></div>
+
   </div>
 </section>
 
@@ -232,6 +255,7 @@
 
 <script src="js/data.js"></script>
 <script src="js/triage_rules.js"></script>
+<script src="js/worksheet_template.js"></script>
 <script src="js/matrix.js"></script>
 <script src="js/app.js"></script>
 </body>

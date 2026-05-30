@@ -1446,6 +1446,205 @@ details.qs-tips-acc[open] .qs-tips { animation: coll-slide 0.3s ease; }
 .tri-empty code { background: var(--bg-3); padding: 1px 5px; border-radius: 2px; color: var(--fg-1); }
 
 /* =================================================================
+   Worksheet (fillable engagement note / methodology checklist)
+   ================================================================= */
+.ws-form { display: flex; flex-direction: column; gap: 18px; }
+.ws-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px 14px;
+}
+.ws-meta-field { display: flex; flex-direction: column; gap: 3px; }
+.ws-meta-field > span {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+.ws-meta-field input,
+.ws-note,
+.ws-text {
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--fg-0);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 7px 10px;
+}
+.ws-meta-field input:focus,
+.ws-note:focus,
+.ws-text:focus { outline: none; border-color: var(--acc-c); }
+.ws-section {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px 14px;
+  background: var(--bg-1);
+}
+.ws-sec-h {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--acc-c);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ws-sec-title { flex: 1; min-width: 0; }
+.ws-sec-count {
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--acc-c);
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  padding: 1px 8px;
+}
+.ws-sec-bulk { display: inline-flex; gap: 4px; }
+.ws-sec-bulk button {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid var(--line-hi);
+  background: var(--bg-2);
+  color: var(--fg-1);
+  cursor: pointer;
+}
+.ws-sec-bulk button[data-bulk="done"]:hover { border-color: var(--acc-g); color: var(--acc-g); }
+.ws-sec-bulk button[data-bulk="na"]:hover { border-color: var(--fg-1); color: var(--fg-0); }
+.ws-sec-bulk button[data-bulk=""]:hover { border-color: var(--acc-c); color: var(--acc-c); }
+.ws-flow {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--acc-y);
+  cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--acc-y) 40%, transparent);
+  border-radius: 3px;
+  padding: 1px 6px;
+}
+.ws-flow:hover { background: rgba(255,184,0,0.12); }
+.ws-items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ws-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto minmax(120px, 1.2fr);
+  align-items: center;
+  gap: 8px;
+}
+.ws-tri {
+  width: 19px; height: 19px;
+  flex-shrink: 0;
+  border: 1px solid var(--line-hi);
+  border-radius: 4px;
+  background: var(--bg-3);
+  color: var(--fg-2);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.12s;
+}
+.ws-tri[data-v="done"] { border-color: var(--acc-g); color: var(--acc-g); background: rgba(0,255,156,0.14); }
+.ws-tri[data-v="na"]   { border-color: var(--fg-2);  color: var(--fg-2);  background: var(--bg-2); }
+.ws-item-label {
+  font-size: 12.5px;
+  color: var(--fg-0);
+  line-height: 1.4;
+}
+.ws-item[data-state="done"] .ws-item-label { color: var(--fg-2); text-decoration: line-through; }
+.ws-item[data-state="na"] .ws-item-label { color: var(--fg-2); opacity: 0.5; text-decoration: line-through dotted; }
+.ws-legend {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--fg-2);
+  margin: 0 0 12px;
+}
+.ws-legend b { font-weight: 700; }
+.ws-legend .lg-done { color: var(--acc-g); }
+.ws-legend .lg-na { color: var(--fg-1); }
+.ws-ref {
+  font-size: 12px;
+  color: var(--acc-c);
+  cursor: pointer;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+.ws-ref:hover { color: var(--acc-g); }
+.ws-note { width: 100%; }
+.ws-text { width: 100%; min-height: 64px; resize: vertical; line-height: 1.5; }
+
+/* =================================================================
+   Workspace page — Triage + Worksheet side-by-side
+   Toggled via body.work-mode (hides top-page sections, shows .page-work)
+   ================================================================= */
+.page-work { display: none; }
+body.work-mode .page-work { display: block; }
+body.work-mode .hero,
+body.work-mode #quickstart,
+body.work-mode #browser,
+body.work-mode #raw,
+body.work-mode footer {
+  display: none;
+}
+.work-head {
+  padding: 50px 8px 0;
+  max-width: none;
+  margin: 0;
+}
+.work-head .section-h { margin-bottom: 10px; }
+.work-cols {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  max-width: none;
+  margin: 16px 0 0;
+  padding: 0 8px 32px;
+}
+.work-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  /* keep each pane within the viewport so it scrolls on its own */
+  max-height: calc(100vh - 200px);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg-1);
+}
+.work-col-h {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-2);
+  border-radius: 8px 8px 0 0;
+}
+.work-col-title {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--acc-c);
+}
+.work-col-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 14px 16px;
+}
+/* upload + paste stack vertically inside the narrower column */
+.work-tri-inputs { grid-template-columns: 1fr; }
+
+/* =================================================================
    Quick Start (situation wizard)
    ================================================================= */
 .qs-lead {
@@ -2146,6 +2345,22 @@ footer .accent { color: var(--acc-g); }
   /* triage: stack the upload + paste columns */
   .tri-inputs { grid-template-columns: 1fr; }
   .tri-files-list { grid-template-columns: 1fr; }
+
+  /* worksheet: checklist note drops to its own row on narrow screens */
+  .ws-item {
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "chk label ref" "note note note";
+    gap: 4px 8px;
+  }
+  .ws-tri { grid-area: chk; }
+  .ws-item-label { grid-area: label; }
+  .ws-ref { grid-area: ref; }
+  .ws-note { grid-area: note; }
+
+  /* workspace: stack the two panes; let the page scroll instead of each pane */
+  .work-head { padding: 36px 16px 0; }
+  .work-cols { flex-direction: column; padding: 0 16px 24px; gap: 14px; }
+  .work-col { max-height: none; width: 100%; }
 
   /* boot screen: small padding */
   #boot { padding: 24px 16px; font-size: 11px; }

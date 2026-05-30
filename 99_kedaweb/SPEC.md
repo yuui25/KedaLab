@@ -25,7 +25,8 @@ kedalab のナレッジを実行時に MD パースして表示する SPA。フ�
 ### Top Bar (`<header>`)
 - ロゴ + バージョン + loader pill (起動状態 / クリックで全再読込)
 - 検索ボックス `#topSearch` (placeholder: `技術・CVE・ツール名・本文で検索…`)
-- ナビリンク: `Start` / `Browser` / `Triage` / `Navigator` / `Raw`
+- ナビリンク: `Start` / `Browser` / `Workspace` / `Navigator` / `Raw` / `使い方`
+- `使い方`（`#navHelp`）: クリックで `99_kedaweb/USAGE.md` を MD ビューアモーダルに描画（`openMD` を再利用）。`#usage` ハッシュで起動時も自動表示。内容は USAGE.md を編集すれば反映（app.js 不変）
 
 ### Hero (`<section.hero>`)
 - KEDALAB タイトル + 5 統計カウンタ (Techniques / Phases / Playbooks / CVE / AI Red Team)
@@ -42,9 +43,13 @@ kedalab のナレッジを実行時に MD パースして表示する SPA。フ�
 - マッチング対象: 技術名 / タグ / ファイルパス / **MD 本文** (本文は遅延インデックス完成後)
 - Top Search 入力時に自動展開
 
-### Triage (`#triage`) — collapsible / 既定折り畳み 🚧 開発中・随時更新
-- **ステータス: 開発中**。ヘッダに `開発中 / 随時更新` バッジ、本体上部に dev 注記を常時表示。照合ルールは継続拡張中で、示唆の網羅性・正確性は保証しない旨を明記している
-- ページ上の表示順は **Technique Browser の後**(nav リンクも `… Browser / Triage / …` の順)
+### Workspace (`#workspace`) — 別ページ (`body.work-mode`) 🚧 開発中・随時更新
+- **Triage(左)と Worksheet(右)を横 2 カラムで並べた専用ページ**。Navigator と同じ方式で、nav の `Workspace`(`data-page="work"`)クリックで `body.work-mode` を付与し、トップ各セクション(hero/quickstart/browser/raw/footer)を隠して表示。他の nav / brand クリックや Navigator 遷移で解除。`#workspace` ハッシュで起動時に自動で入る
+- **各カラムは独立スクロール**(`.work-col` が `max-height: calc(100vh - 200px)`、`.work-col-body` が `overflow-y:auto`)。左で照合 → 右の型に転記、という往復で上下スクロールが不要なのが狙い
+- 狭い画面では 2 カラムを縦積み(レスポンシブ)。Triage/Worksheet の中身ロジックは従来どおり(要素 ID 不変)で、置き場所だけがトップページ → Workspace ページに移った
+- Triage / Worksheet の機能詳細は下記。両者ともヘッダ/見出しに `🚧 開発中 / 随時更新` バッジ + dev 注記を表示
+
+#### Triage(Workspace 左カラム）— 照合
 - `.req` / `.res` / `.txt`(nmap 等)を**アップロード(複数可・D&D 対応)or テキスト貼り付け**して、本文から「意味のある指標(シグナル)」を抽出 → 見るべき kedalab ファイルを確証度順で示唆する
 - **完全クライアントサイド**。`FileReader` でブラウザ内読み取りのみ、ファイルは外部送信しない(HTB/OSCP のターゲット情報を扱う前提の設計)
 - **ルールは `js/triage_rules.js`(`window.KEDA_TRIAGE.rules`)に分離**。`app.js` の `runTriage()` はルール配列を汎用的に回すだけなので、**機能を育てる = ルールを 1 オブジェクト追記するだけ**(app.js / index.html / styles.css は不変)
@@ -52,6 +57,17 @@ kedalab のナレッジを実行時に MD パースして表示する SPA。フ�
 - ルールメタ行に `🚧 開発中 · ルール N 件 · 最終更新 <version>` を表示(`version` は triage_rules.js のフィールド)
 - マッチ無しの場合は「ルール N 件・未知の指標は triage_rules.js に追記して育てられる」旨を表示
 - 既存の全文検索(Browser/Palette の `scoreEntry`)とは別物: あちらは全トークン部分一致、こちらは**キュレートしたシグナル→ファイルの対応表**。ノイズの多い HTTP ヘッダ/nmap 出力から要点だけ拾う用途
+
+#### Worksheet（Workspace 右カラム）— 型 / 作戦ノート
+- HTB/OSCP/ペネトレの「型(メソッド)を固める」記入式チェックリスト兼作戦ノート
+- **テンプレート(型)は `js/worksheet_template.js`(`window.KEDA_WORKSHEET`)に分離**。`app.js` の `wsRender()` が定義を読んでフォームを描画。**型を育てる = テンプレを編集するだけ**(app.js は不変)
+- 定義構造: `meta`(上部の単一行入力) + `sections`(`type:"checklist"` は `items:[{label, file?}]` で各項目に kedalab `↗` リンクと1行メモ欄、`type:"text"` は textarea)。`section.playbook` 指定で見出しに `▶ flow` リンク
+- **記入/チェックは localStorage(`keda_worksheet_v1`)に自動保存**。リロードしても残る。外部送信なし
+- **チェックは 3 状態トグル**: `·` 未着手 → `✓` 完了 → `–` 対象外（クリックで循環）。状態は `chk:<sec>:<idx>` に `""`/`"done"`/`"na"` で保存
+- **節ごとの一括操作**: 各セクション見出しに `✓全 / –外 / 解除` ボタン（その節の全項目を一括設定）＋ 節別カウント `done/(総数-対象外)`
+- `↓ .md` / `↓ .txt` で書き出し: `.md` は `- [x]`（完了）/ `- [-] … (対象外)` / `- [ ]`（未着手）+ `(パス.md)` で GitHub 互換、`.txt` はプレーン。ファイル名は `worksheet_<target>_<date>.<ext>`
+- `クリア（新規）` は確認ダイアログ後に localStorage を破棄(次ターゲット用)
+- ヘッダ件数バッジは `完了/(総数-対象外)`（対象外は分母から除外）
 
 ### Navigator (`#navigator`) — タブモード (`body.nav-mode`)
 - 右上 `Navigator` クリックで他セクション非表示・Matrix 表示。他ナビクリックで通常モードに戻る
@@ -234,8 +250,10 @@ Top Search と Cmd Palette はともに `scoreEntry(t, q)` を経由する。各
 ├── js/
 │   ├── data.js        # フェーズメタデータ + indexFiles リスト (静的)
 │   ├── triage_rules.js# Triage のシグナル→ファイル対応ルール表 (拡張点)
+│   ├── worksheet_template.js # Worksheet の「型」テンプレ定義 (拡張点)
 │   ├── matrix.js      # 背景マトリックスレイン Canvas
 │   └── app.js         # ローダ・パーサ・全 UI ロジック (single file)
+├── USAGE.md           # 「使い方」タブで表示するエンドユーザ向けガイド
 ├── README.md          # 起動方法・機能サマリ
 └── SPEC.md            # このファイル
 ```
@@ -267,6 +285,7 @@ python -m http.server 8000
 | 新トップ番号フォルダ (例: `08_Cloud_Identity/` を本格化) | `js/data.js > phases` に 1 行 + `js/app.js > phaseFromPath()` に 1 行 |
 | `_` 接頭辞ディレクトリの追加・編集 (`_pending/` `_workspace/` 等) | なし。`phaseFromPath` が null を返すため自動的に kedaweb から除外される |
 | Triage の示唆精度を上げる / シグナルを増やす | `js/triage_rules.js` の `rules` 配列に 1 オブジェクト追記し `version` を更新。`targets[].file` は実在パスであること。app.js は不変 |
+| Worksheet の「型」(チェック項目)を増やす/直す | `js/worksheet_template.js` の `sections`/`items` を編集し `version` を更新。`file`/`playbook` は実在パスであること。app.js は不変 |
 | UI 改修 / 演出変更 | `99_kedaweb/` 配下のみ編集、kedalab MD は触らない |
 
 ## スケーラビリティの保証
