@@ -1369,6 +1369,201 @@
   };
 
   // ============================================================
+  // Triage — upload/paste .req/.res/.txt → suggest kedalab files
+  // Pure client-side signal matching. Rules live in js/triage_rules.js
+  // (window.KEDA_TRIAGE.rules); this engine just runs them generically,
+  // so growing the feature = adding a rule object there, no code change.
+  // ============================================================
+  const TRIAGE = (window.KEDA_TRIAGE && Array.isArray(window.KEDA_TRIAGE.rules))
+    ? window.KEDA_TRIAGE.rules : [];
+  const TRIAGE_VER = (window.KEDA_TRIAGE && window.KEDA_TRIAGE.version) || "—";
+  const _triageInputs = []; // [{ name, text }] from uploaded files
+
+  // Run every rule against each input. Returns { signals, files }.
+  //   signals: [{ rule, samples:Set<string>, sources:Set<string> }]
+  //   files:   [{ file, score, reasons:[{label, why}] }] sorted by score desc
+  function runTriage(inputs) {
+    const fired = new Map(); // ruleId -> record
+    for (const input of inputs) {
+      const text = input.text || "";
+      if (!text) continue;
+      for (const rule of TRIAGE) {
+        const pats = Array.isArray(rule.pattern) ? rule.pattern : [rule.pattern];
+        for (const pat of pats) {
+          let m;
+          try { m = text.match(pat); } catch (e) { m = null; }
+          if (!m) continue;
+          let rec = fired.get(rule.id);
+          if (!rec) { rec = { rule, samples: new Set(), sources: new Set() }; fired.set(rule.id, rec); }
+          rec.samples.add(m[0].replace(/\s+/g, " ").trim().slice(0, 80));
+          rec.sources.add(input.name);
+          break; // one sample per rule per input is enough
+        }
+      }
+    }
+    const fileMap = new Map(); // file -> { file, score, reasons[] }
+    for (const rec of fired.values()) {
+      const w = rec.rule.weight || 1;
+      for (const tgt of (rec.rule.targets || [])) {
+        let fe = fileMap.get(tgt.file);
+        if (!fe) { fe = { file: tgt.file, score: 0, reasons: [] }; fileMap.set(tgt.file, fe); }
+        fe.score += w;
+        fe.reasons.push({ label: rec.rule.label, why: tgt.why });
+      }
+    }
+    const files = Array.from(fileMap.values())
+      .sort((a, b) => b.score - a.score || a.file.localeCompare(b.file));
+    return { signals: Array.from(fired.values()), files };
+  }
+
+  function renderTriageChips() {
+    const wrap = document.getElementById("triageFiles");
+    if (!wrap) return;
+    if (!_triageInputs.length) { wrap.innerHTML = ""; return; }
+    wrap.innerHTML = _triageInputs.map((inp, i) =>
+      `<span class="tri-chip" data-i="${i}">${escapeHtml(inp.name)}` +
+      `<button type="button" class="tri-chip-x" data-i="${i}" title="削除">×</button></span>`
+    ).join("");
+    $$(".tri-chip-x", wrap).forEach(b => {
+      b.addEventListener("click", e => {
+        e.preventDefault(); e.stopPropagation();
+        _triageInputs.splice(+b.dataset.i, 1);
+        renderTriageChips();
+      });
+    });
+  }
+
+  function renderTriageResult(res) {
+    const box = document.getElementById("triageResult");
+    const cnt = document.getElementById("triageCount");
+    if (!box) return;
+
+    if (!res.signals.length) {
+      if (cnt) cnt.textContent = "0 hit";
+      box.innerHTML =
+        `<div class="tri-empty">` +
+        `マッチするシグナルはありませんでした。<br>` +
+        `現在のルール数は <strong>${TRIAGE.length}</strong> 件です。未知の指標は ` +
+        `<code>99_kedaweb/js/triage_rules.js</code> に 1 オブジェクト追記して育てられます。` +
+        `</div>`;
+      return;
+    }
+
+    // 検出シグナル
+    const sigHtml = res.signals.map(s => {
+      const samples = Array.from(s.samples).slice(0, 2)
+        .map(x => `<code>${escapeHtml(x)}</code>`).join(" ");
+      const cat = s.rule.category || "";
+      return `<li class="tri-sig" data-cat="${escapeHtml(cat)}">` +
+        `<span class="tri-sig-label">${escapeHtml(s.rule.label)}</span>` +
+        (samples ? `<span class="tri-sig-ev">${samples}</span>` : "") +
+        `</li>`;
+    }).join("");
+
+    // 見るべきファイル(確証度＝発火ルールの重み合計)
+    const maxScore = res.files[0].score || 1;
+    const fileHtml = res.files.map(fe => {
+      const pct = Math.max(8, Math.round(fe.score / maxScore * 100));
+      const conf = pct >= 66 ? "high" : pct >= 33 ? "mid" : "low";
+      const seen = new Set();
+      const reasons = fe.reasons.filter(r => {
+        const k = r.label + "|" + r.why;
+        if (seen.has(k)) return false; seen.add(k); return true;
+      });
+      const reasonsHtml = reasons.map(r =>
+        `<li><span class="tri-why-label">${escapeHtml(r.label)}</span> → ${escapeHtml(r.why)}</li>`
+      ).join("");
+      const p = phaseById[phaseFromPath(fe.file)] || { color: "#888", code: "", name: "" };
+      return `<div class="tri-file conf-${conf}" data-file="${escapeHtml(fe.file)}" style="--tc:${p.color};">` +
+        `<div class="tri-file-head">` +
+        `<span class="tri-file-name">${escapeHtml(shortLabel(fe.file))}</span>` +
+        `<span class="tri-file-bar"><i style="width:${pct}%;"></i></span>` +
+        `</div>` +
+        `<ul class="tri-why">${reasonsHtml}</ul>` +
+        `<div class="tri-file-meta">` +
+        `<span class="tech-phase">${p.code} · ${escapeHtml(p.name)}</span>` +
+        `<span class="tech-file">${escapeHtml(fe.file)}</span>` +
+        `</div></div>`;
+    }).join("");
+
+    if (cnt) cnt.textContent = `${res.files.length} hit`;
+    box.innerHTML =
+      `<div class="tri-sec-h">検出シグナル <span class="tri-n">${res.signals.length}</span></div>` +
+      `<ul class="tri-sigs">${sigHtml}</ul>` +
+      `<div class="tri-sec-h">見るべきファイル <span class="tri-n">${res.files.length}</span>` +
+      `<span class="tri-hint">確証度 = 発火したルールの重み合計。クリックで開く</span></div>` +
+      `<div class="tri-files-list">${fileHtml}</div>`;
+    $$(".tri-file", box).forEach(el =>
+      el.addEventListener("click", () => openMD(el.dataset.file)));
+  }
+
+  function doTriage() {
+    const inputs = _triageInputs.slice();
+    const ta = document.getElementById("triageText");
+    const txt = ta ? ta.value.trim() : "";
+    if (txt) inputs.push({ name: "(貼り付けテキスト)", text: txt });
+    const box = document.getElementById("triageResult");
+    if (!inputs.length) {
+      if (box) box.innerHTML = `<div class="tri-empty">ファイルを追加するか、テキストを貼り付けてください。</div>`;
+      return;
+    }
+    renderTriageResult(runTriage(inputs));
+  }
+
+  function setupTriage() {
+    const fileInput = document.getElementById("triageFile");
+    const drop = document.getElementById("triageDrop");
+    const runBtn = document.getElementById("triageRun");
+    const clearBtn = document.getElementById("triageClear");
+    const meta = document.getElementById("triageRuleMeta");
+    if (!drop || !runBtn) return; // markup absent → nothing to wire
+
+    if (meta) meta.textContent = `🚧 開発中 · ルール ${TRIAGE.length} 件 · 最終更新 ${TRIAGE_VER}`;
+
+    function ingest(fileList) {
+      Array.from(fileList || []).forEach(f => {
+        const r = new FileReader();
+        r.onload = () => {
+          _triageInputs.push({ name: f.name, text: String(r.result || "") });
+          renderTriageChips();
+        };
+        r.onerror = () => console.warn("[triage] read failed:", f.name);
+        r.readAsText(f);
+      });
+    }
+
+    if (fileInput) {
+      fileInput.addEventListener("change", e => {
+        ingest(e.target.files);
+        fileInput.value = ""; // allow re-selecting the same file
+      });
+    }
+    // drag & drop (label wraps the hidden input; prevent default nav)
+    ["dragenter", "dragover"].forEach(ev =>
+      drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("dragover"); }));
+    ["dragleave", "drop"].forEach(ev =>
+      drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("dragover"); }));
+    drop.addEventListener("drop", e => {
+      if (e.dataTransfer && e.dataTransfer.files) ingest(e.dataTransfer.files);
+    });
+
+    runBtn.addEventListener("click", doTriage);
+    if (clearBtn) {
+      clearBtn.addEventListener("click", () => {
+        _triageInputs.length = 0;
+        const ta = document.getElementById("triageText");
+        if (ta) ta.value = "";
+        renderTriageChips();
+        const box = document.getElementById("triageResult");
+        if (box) box.innerHTML = "";
+        const cnt = document.getElementById("triageCount");
+        if (cnt) cnt.textContent = "—";
+      });
+    }
+  }
+  setupTriage();
+
+  // ============================================================
   // Cmd palette
   // ============================================================
   const palette = $("#palette");

@@ -25,7 +25,7 @@ kedalab のナレッジを実行時に MD パースして表示する SPA。フ�
 ### Top Bar (`<header>`)
 - ロゴ + バージョン + loader pill (起動状態 / クリックで全再読込)
 - 検索ボックス `#topSearch` (placeholder: `技術・CVE・ツール名・本文で検索…`)
-- ナビリンク: `Start` / `Chain` / `Browser` / `Navigator` / `Raw`
+- ナビリンク: `Start` / `Browser` / `Triage` / `Navigator` / `Raw`
 
 ### Hero (`<section.hero>`)
 - KEDALAB タイトル + 5 統計カウンタ (Techniques / Phases / Playbooks / CVE / AI Red Team)
@@ -41,6 +41,17 @@ kedalab のナレッジを実行時に MD パースして表示する SPA。フ�
 - フェーズフィルタチップ (All + 8 フェーズ・件数バッジ付き)
 - マッチング対象: 技術名 / タグ / ファイルパス / **MD 本文** (本文は遅延インデックス完成後)
 - Top Search 入力時に自動展開
+
+### Triage (`#triage`) — collapsible / 既定折り畳み 🚧 開発中・随時更新
+- **ステータス: 開発中**。ヘッダに `開発中 / 随時更新` バッジ、本体上部に dev 注記を常時表示。照合ルールは継続拡張中で、示唆の網羅性・正確性は保証しない旨を明記している
+- ページ上の表示順は **Technique Browser の後**(nav リンクも `… Browser / Triage / …` の順)
+- `.req` / `.res` / `.txt`(nmap 等)を**アップロード(複数可・D&D 対応)or テキスト貼り付け**して、本文から「意味のある指標(シグナル)」を抽出 → 見るべき kedalab ファイルを確証度順で示唆する
+- **完全クライアントサイド**。`FileReader` でブラウザ内読み取りのみ、ファイルは外部送信しない(HTB/OSCP のターゲット情報を扱う前提の設計)
+- **ルールは `js/triage_rules.js`(`window.KEDA_TRIAGE.rules`)に分離**。`app.js` の `runTriage()` はルール配列を汎用的に回すだけなので、**機能を育てる = ルールを 1 オブジェクト追記するだけ**(app.js / index.html / styles.css は不変)
+- ルール書式: `{ id, label, category, weight, pattern(正規表現 or その配列), targets:[{file, why}] }`。`weight` 合計がファイルのスコア(確証度バー)になる
+- ルールメタ行に `🚧 開発中 · ルール N 件 · 最終更新 <version>` を表示(`version` は triage_rules.js のフィールド)
+- マッチ無しの場合は「ルール N 件・未知の指標は triage_rules.js に追記して育てられる」旨を表示
+- 既存の全文検索(Browser/Palette の `scoreEntry`)とは別物: あちらは全トークン部分一致、こちらは**キュレートしたシグナル→ファイルの対応表**。ノイズの多い HTTP ヘッダ/nmap 出力から要点だけ拾う用途
 
 ### Navigator (`#navigator`) — タブモード (`body.nav-mode`)
 - 右上 `Navigator` クリックで他セクション非表示・Matrix 表示。他ナビクリックで通常モードに戻る
@@ -222,6 +233,7 @@ Top Search と Cmd Palette はともに `scoreEntry(t, q)` を経由する。各
 ├── css/styles.css     # サイバーパンクテーマ、全コンポーネントスタイル
 ├── js/
 │   ├── data.js        # フェーズメタデータ + indexFiles リスト (静的)
+│   ├── triage_rules.js# Triage のシグナル→ファイル対応ルール表 (拡張点)
 │   ├── matrix.js      # 背景マトリックスレイン Canvas
 │   └── app.js         # ローダ・パーサ・全 UI ロジック (single file)
 ├── README.md          # 起動方法・機能サマリ
@@ -254,6 +266,7 @@ python -m http.server 8000
 | Playbook ファイル追加 (`00_Playbook/*.md`) | README または INDEX から 1 回以上参照すれば自動収集 |
 | 新トップ番号フォルダ (例: `08_Cloud_Identity/` を本格化) | `js/data.js > phases` に 1 行 + `js/app.js > phaseFromPath()` に 1 行 |
 | `_` 接頭辞ディレクトリの追加・編集 (`_pending/` `_workspace/` 等) | なし。`phaseFromPath` が null を返すため自動的に kedaweb から除外される |
+| Triage の示唆精度を上げる / シグナルを増やす | `js/triage_rules.js` の `rules` 配列に 1 オブジェクト追記し `version` を更新。`targets[].file` は実在パスであること。app.js は不変 |
 | UI 改修 / 演出変更 | `99_kedaweb/` 配下のみ編集、kedalab MD は触らない |
 
 ## スケーラビリティの保証

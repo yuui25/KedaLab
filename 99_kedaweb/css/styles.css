@@ -1187,6 +1187,265 @@ details.qs-tips-acc[open] .qs-tips { animation: coll-slide 0.3s ease; }
 }
 
 /* =================================================================
+   Triage (upload/paste .req/.res/.txt → suggest files)
+   ================================================================= */
+.tri-privacy { color: var(--acc-g); }
+.dev-badge {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 3px;
+  color: var(--acc-y);
+  background: rgba(255,184,0,0.1);
+  border: 1px solid color-mix(in srgb, var(--acc-y) 45%, transparent);
+  white-space: nowrap;
+}
+.tri-devnote {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--acc-y);
+  background: rgba(255,184,0,0.06);
+  border: 1px solid color-mix(in srgb, var(--acc-y) 30%, transparent);
+  border-left: 3px solid var(--acc-y);
+  border-radius: 4px;
+  padding: 9px 12px;
+  margin: 0 0 16px;
+}
+.tri-devnote strong { color: var(--fg-0); }
+.tri-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.tri-drop {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  min-height: 130px;
+  padding: 16px;
+  border: 1px dashed var(--line-hi);
+  border-radius: 8px;
+  background: var(--bg-1);
+  color: var(--fg-1);
+  font-family: var(--mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.18s;
+  text-align: center;
+}
+.tri-drop:hover { border-color: var(--acc-c); color: var(--fg-0); }
+.tri-drop.dragover {
+  border-color: var(--acc-g);
+  background: rgba(0,255,156,0.06);
+  color: var(--fg-0);
+}
+.tri-files { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.tri-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  padding: 2px 4px 2px 8px;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  color: var(--fg-0);
+}
+.tri-chip-x {
+  border: none;
+  background: none;
+  color: var(--fg-2);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0 2px;
+}
+.tri-chip-x:hover { color: var(--acc-r); }
+.tri-text {
+  width: 100%;
+  min-height: 130px;
+  resize: vertical;
+  padding: 12px 14px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--fg-0);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.tri-text:focus { outline: none; border-color: var(--acc-c); }
+.tri-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.tri-btn {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 4px;
+  border: 1px solid var(--acc-g);
+  background: rgba(0,255,156,0.08);
+  color: var(--acc-g);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.tri-btn:hover { background: var(--acc-g); color: var(--bg-0); }
+.tri-btn.ghost { border-color: var(--line-hi); background: none; color: var(--fg-1); }
+.tri-btn.ghost:hover { border-color: var(--fg-1); background: var(--bg-2); color: var(--fg-0); }
+.tri-rulemeta {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--fg-2);
+  margin-left: auto;
+}
+.tri-sec-h {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-1);
+  margin: 18px 0 10px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.tri-sec-h .tri-n {
+  color: var(--acc-c);
+  font-weight: 700;
+}
+.tri-sec-h .tri-hint {
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--fg-2);
+  font-size: 10px;
+  margin-left: auto;
+}
+.tri-sigs {
+  list-style: none;
+  margin: 0 0 4px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tri-sig {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 10px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--acc-c);
+  border-radius: 4px;
+  max-width: 100%;
+}
+.tri-sig[data-cat="web-vuln"]       { border-left-color: var(--acc-c); }
+.tri-sig[data-cat="tech-stack"]     { border-left-color: var(--acc-v); }
+.tri-sig[data-cat="auth"]           { border-left-color: var(--acc-y); }
+.tri-sig[data-cat="info-leak"]      { border-left-color: var(--acc-r); }
+.tri-sig[data-cat="infra-service"]  { border-left-color: var(--acc-g); }
+.tri-sig-label { font-size: 12px; font-weight: 600; color: var(--fg-0); }
+.tri-sig-ev {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--fg-2);
+  word-break: break-all;
+}
+.tri-sig-ev code {
+  background: var(--bg-3);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.tri-files-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px;
+}
+.tri-file {
+  background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--tc, var(--acc-g));
+  border-radius: 4px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.18s;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tri-file:hover {
+  border-color: var(--tc, var(--acc-g));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+.tri-file.conf-high { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc, var(--acc-g)) 35%, transparent); }
+.tri-file-head { display: flex; align-items: center; gap: 10px; }
+.tri-file-name { font-size: 13px; font-weight: 600; color: var(--fg-0); flex: 1; }
+.tri-file-bar {
+  position: relative;
+  width: 70px;
+  height: 5px;
+  background: var(--bg-3);
+  border-radius: 3px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.tri-file-bar i {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: var(--tc, var(--acc-g));
+  border-radius: 3px;
+}
+.tri-why {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11.5px;
+  color: var(--fg-1);
+  line-height: 1.45;
+}
+.tri-why li { position: relative; padding-left: 12px; }
+.tri-why li::before {
+  content: "›";
+  position: absolute;
+  left: 0;
+  color: var(--tc, var(--acc-g));
+  opacity: 0.6;
+}
+.tri-why-label { color: var(--fg-0); font-weight: 600; }
+.tri-file-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.tri-empty {
+  padding: 36px 20px;
+  text-align: center;
+  color: var(--fg-2);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+  border: 1px dashed var(--line);
+  border-radius: 6px;
+}
+.tri-empty code { background: var(--bg-3); padding: 1px 5px; border-radius: 2px; color: var(--fg-1); }
+
+/* =================================================================
    Quick Start (situation wizard)
    ================================================================= */
 .qs-lead {
@@ -1883,6 +2142,10 @@ footer .accent { color: var(--acc-g); }
   .palette-input { font-size: 14px; padding: 12px 14px; }
   .palette-item { padding: 8px 12px; gap: 8px; }
   .palette-item .pi-file { display: none; }
+
+  /* triage: stack the upload + paste columns */
+  .tri-inputs { grid-template-columns: 1fr; }
+  .tri-files-list { grid-template-columns: 1fr; }
 
   /* boot screen: small padding */
   #boot { padding: 24px 16px; font-size: 11px; }
