@@ -31,6 +31,7 @@ kedalab のナレッジを実行時に MD パースして表示する SPA。フ�
 ### Hero (`<section.hero>`)
 - KEDALAB タイトル + 5 統計カウンタ (Techniques / Phases / Playbooks / CVE / AI Red Team)
 - 起動時に easing アニメ
+- 初見向け一行案内 `.hero-guide`: `使い方`（`#heroHelp` → USAGE.md モーダル）/ `Start`（#quickstart へ）への入口。density を増やさず開始点を 1 つに固定する狙い
 
 ### Quick Start (`#quickstart`) — collapsible / 既定展開
 - README の「最初に開くファイル」表をパースして 9 状況カード

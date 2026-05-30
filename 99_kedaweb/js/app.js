@@ -1293,14 +1293,12 @@
     });
   });
 
-  // Help / 使い方 tab → render USAGE.md in the modal viewer (reuses openMD)
-  const _helpLink = document.getElementById("navHelp");
-  if (_helpLink) {
-    _helpLink.addEventListener("click", e => {
-      e.preventDefault();
-      openMD("99_kedaweb/USAGE.md");
-    });
-  }
+  // Help / 使い方 → render USAGE.md in the modal viewer (reuses openMD)
+  const _openUsage = e => { e.preventDefault(); openMD("99_kedaweb/USAGE.md"); };
+  ["navHelp", "heroHelp"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("click", _openUsage);
+  });
   // Deep-link / reload support for #usage
   if (location.hash === "#usage") {
     setTimeout(() => openMD("99_kedaweb/USAGE.md"), 150);
