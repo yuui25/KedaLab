@@ -22,10 +22,10 @@
    file / playbook のパスは kedalab ルート相対。実在すること。
    ============================================================= */
 window.KEDA_WORKSHEET = {
-  version: "2026-05-30",
+  version: "2026-05-31",
 
   meta: [
-    { id: "target",   label: "TARGET",   placeholder: "10.10.10.x" },
+    { id: "target",   label: "TARGET",   placeholder: "[TARGET_IP]" },
     { id: "hostname", label: "HOSTNAME", placeholder: "" },
     { id: "os",       label: "OS",       placeholder: "Linux / Windows" },
     { id: "date",     label: "DATE",     placeholder: "2026-..." },
@@ -33,6 +33,8 @@ window.KEDA_WORKSHEET = {
   ],
 
   sections: [
+    { id: "ports", title: "PORTS / SERVICES (nmap 抜粋)", type: "text",
+      placeholder: "21/tcp  open  ftp    [VERSION]\n22/tcp  open  ssh    [VERSION]\n445/tcp open  smb    Samba [VERSION]\n3632/tcp open distccd [VERSION]" },
     {
       id: "recon",
       title: "[01] RECON / 列挙",
@@ -110,8 +112,8 @@ window.KEDA_WORKSHEET = {
     { id: "privesc",  title: "PRIVESC  (どう昇格したか)", type: "text",
       placeholder: "vector → root/SYSTEM までの経路" },
     { id: "proof",    title: "PROOF", type: "text",
-      placeholder: "user.txt:\nroot.txt:" },
+      placeholder: "低権限ユーザー取得確認 (id):\nroot / SYSTEM 取得確認 (id):" },
     { id: "notes",    title: "NOTES / 振り返り (型の改善メモ)", type: "text",
-      placeholder: "詰まった所・次回試すこと・このテンプレに足したい項目" }
+      placeholder: "詰まった所・次回試すこと・このテンプレに足したい項目\n[確認] コマンドの IP / ポートが TARGET と一致しているか送信前に照合" }
   ]
 };

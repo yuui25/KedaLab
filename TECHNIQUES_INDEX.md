@@ -433,6 +433,7 @@
 | BloodHound / bloodhound-python | `05_Tools_Reference/BloodHound.md` |
 | Impacket スイート全般 | `05_Tools_Reference/Impacket_Suite.md` |
 | hashcat | `05_Tools_Reference/Hashcat.md` |
+| Metasploit Framework（モジュール探索 search → use → info → show options → set → run・LHOST 明示・handler vs nc・エラー読み分け） | `05_Tools_Reference/Metasploit.md` |
 | searchsploit（バージョン検索・ファイル操作・Nmap XML連携） | `05_Tools_Reference/Searchsploit.md` |
 | 複数CVE候補からの絞り込み基準（バージョン一致・OS一致・パッチ前確認・前提条件） | `05_Tools_Reference/Searchsploit.md` |
 | Exploit-DB Web・NVD・GitHub PoC の使い分け | `05_Tools_Reference/Searchsploit.md` |

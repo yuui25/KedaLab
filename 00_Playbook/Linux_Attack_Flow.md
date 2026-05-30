@@ -61,13 +61,15 @@ Linux と確定した上でこのファイルのStep 1以降を進める。
 
 ```bash
 # [Attacker] 全ポートスキャン（必ず実行 — 初期 -sC -sV は上位1000ポートのみで非標準ポートを見逃す）
+# -p- のみで版数は取らない（速度優先）→ 開口部だけ次のコマンドで版数精査
 sudo nmap -p- --min-rate 5000 --reason -oA nmap_allports [TARGET_IP]
 
 # [Attacker] 開いていたポートに絞って スクリプト + バージョン精査
 sudo nmap -sC -sV -p[OPEN_PORTS] -oA nmap_detail [TARGET_IP]
 
-# [Attacker] スキャン結果から既知 CVE を一括照合（手動での見落とし防止）
-searchsploit --nmap nmap_allports.xml
+# [Attacker] 版数付きスキャン結果から既知 CVE を一括照合（手動での見落とし防止）
+# ※ nmap_allports.xml は -sV なしで版数が入っていないため nmap_detail.xml を渡す
+searchsploit --nmap nmap_detail.xml
 ```
 
 → 高速化（RustScan / Masscan）・UDP スキャンの詳細: `../01_Reconnaissance/Network_Scanning.md`
@@ -77,7 +79,7 @@ searchsploit --nmap nmap_allports.xml
 - 21 (FTP), 22 (SSH), 80/443 (HTTP/S) が基本セット
 - 非標準ポートに注目（開発環境・管理用途の可能性）
 - `nmap -sC -sV` のスクリプトスキャンでバージョン情報を取得
-- **スキャン後に `searchsploit --nmap nmap_initial.xml` で既知CVEを一括確認する**（`-oA` で保存した XML が必要）
+- **スキャン後に `searchsploit --nmap nmap_detail.xml` で既知CVEを一括確認する**（版数付きの詳細スキャン XML が必要。`nmap_allports.xml` は `-sV` なしで版数が無いため使わない）
   → `../01_Reconnaissance/Network_Scanning.md`（Step 5）
 
 **nmap 出力でバックエンド技術を読み取るシグナル：**
@@ -171,6 +173,8 @@ smbclient //[TARGET_IP]/[SHARE] -N -c "ls"
 
 → 列挙の詳細: `../01_Reconnaissance/SMB_Enumeration.md`
 → Samba 版数依存 CVE による侵入（usermap script / SambaCry 等）: `../02_Initial_Access/Samba_Exploitation.md`
+
+> **Samba バナーで古いバージョンが見えたら、共有を歩き切る前に `Samba_Exploitation.md §1` の版数 CVE 照合を並行で実施する。** 未認証 RCE が成立すれば共有列挙より速い。
 
 ---
 
