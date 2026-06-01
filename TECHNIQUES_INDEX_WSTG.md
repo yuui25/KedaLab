@@ -86,9 +86,10 @@ OWASP Web Security Testing Guide v4.2 のテストカテゴリ・テストケー
 | WSTG ID | テスト項目 | kedalab ファイル |
 |---------|-----------|--------|
 | WSTG-SESS-01 | Testing for Session Management Schema（JWT トークン構造・alg 検証・署名バイパス / OAuth id_token・access_token の検証） | `02_Initial_Access/Web_Vulnerabilities/JWT_Attacks.md` / `02_Initial_Access/Web_Vulnerabilities/OAuth_Attacks.md` |
-| WSTG-SESS-09 | Testing for Session Hijacking | `02_Initial_Access/Web_Vulnerabilities/XSS.md`（Cookie スティーリング・stolen cookie ブラウザ植え替え） / `02_Initial_Access/Web_Vulnerabilities/OAuth_Attacks.md`（Implicit Flow Token Leakage） |
+| WSTG-SESS-06 | Testing for Cross Site Request Forgery | `02_Initial_Access/Web_Vulnerabilities/CSRF.md`（トークン検証不備・SameSite 別成立条件・Content-Type/JSON 回避） / `02_Initial_Access/Web_Vulnerabilities/OAuth_Attacks.md`（state 欠落 CSRF） |
+| WSTG-SESS-09 | Testing for Session Hijacking | `02_Initial_Access/Web_Vulnerabilities/XSS.md`（Cookie スティーリング・stolen cookie ブラウザ植え替え・localStorage / sessionStorage トークン窃取） / `02_Initial_Access/Web_Vulnerabilities/CORS.md`（CORS 不備による認証済みレスポンス窃取） / `02_Initial_Access/Web_Vulnerabilities/OAuth_Attacks.md`（Implicit Flow Token Leakage） |
 
-> SESS-02（Cookie 属性）/ SESS-04（Session Fixation）/ SESS-05（Exposed Session Variables）/ SESS-06（CSRF）/ SESS-07（Logout）は手動確認領域。kedalab に追加判定は WRITING_GUIDE.md の「網羅的に書こうとしない」方針に従う。
+> SESS-02（Cookie 属性）/ SESS-04（Session Fixation）/ SESS-05（Exposed Session Variables）/ SESS-07（Logout）は手動確認領域。kedalab に追加判定は WRITING_GUIDE.md の「網羅的に書こうとしない」方針に従う。
 
 ---
 
@@ -106,11 +107,11 @@ OWASP Web Security Testing Guide v4.2 のテストカテゴリ・テストケー
 | WSTG-INPV-12 | IMAP/SMTP Injection | （手動・kedalab 化候補） |
 | WSTG-INPV-13 | Testing for Code Injection | `02_Initial_Access/Web_Vulnerabilities/Java_Deserialization_Bypass.md` / `03_Post_Access_Linux/Sudo_Misconfig.md`（YAML.load Gadget Chain） |
 | WSTG-INPV-14 | Testing for Command Injection | `02_Initial_Access/Web_Vulnerabilities/Command_Injection.md`（OS コマンド・PDFKit CVE-2022-25765） |
-| WSTG-INPV-17 | Testing for HTTP Request Smuggling | （手動・kedalab 化候補） |
-| WSTG-INPV-18 | Testing for HTTP Incoming Requests | （リクエストヘッダー XSS は INPV-01/02 を参照） |
-| WSTG-INPV-19 | Testing for Host Header Injection | （手動・kedalab 化候補） |
-| WSTG-INPV-20 | Testing for Server-Side Request Forgery | `02_Initial_Access/Web_Vulnerabilities/SSRF.md` |
-| WSTG-INPV-XX | Testing for Server-Side Template Injection（v4.2 で項目追加検討中） | （kedalab 化候補） |
+| WSTG-INPV-15 | Testing for HTTP Splitting Smuggling | （手動・kedalab 化候補） |
+| WSTG-INPV-16 | Testing for HTTP Incoming Requests | （リクエストヘッダー XSS は INPV-01/02 を参照） |
+| WSTG-INPV-17 | Testing for Host Header Injection | （手動・kedalab 化候補） |
+| WSTG-INPV-18 | Testing for Server-Side Template Injection | `02_Initial_Access/Web_Vulnerabilities/SSTI.md` |
+| WSTG-INPV-19 | Testing for Server-Side Request Forgery | `02_Initial_Access/Web_Vulnerabilities/SSRF.md` |
 | - | XSLT Injection（WSTG 未収載・MITRE T1059 系） | `02_Initial_Access/Web_Vulnerabilities/XSLT_Injection.md` |
 
 ---
@@ -130,7 +131,7 @@ OWASP Web Security Testing Guide v4.2 のテストカテゴリ・テストケー
 |---------|-----------|--------|
 | WSTG-CLNT-01 | Testing for DOM-Based Cross Site Scripting | `02_Initial_Access/Web_Vulnerabilities/XSS.md`（DOM 型 XSS） |
 | WSTG-CLNT-04 | Testing for Client-side URL Redirect | `02_Initial_Access/Web_Vulnerabilities/Open_Redirect.md`（バイパス全般・`javascript:` スキーム経由 XSS 化・SSRF 連鎖） / `02_Initial_Access/Web_Vulnerabilities/XSS.md`（DOM 偽装・フィッシングリダイレクト） / `02_Initial_Access/Web_Vulnerabilities/OAuth_Attacks.md`（redirect_uri バイパス・Open Redirect 連鎖） |
-| WSTG-CLNT-09 | Testing for Cross Origin Resource Sharing | （手動・kedalab 化候補） |
+| WSTG-CLNT-07 | Testing Cross Origin Resource Sharing | `02_Initial_Access/Web_Vulnerabilities/CORS.md` |
 
 ---
 

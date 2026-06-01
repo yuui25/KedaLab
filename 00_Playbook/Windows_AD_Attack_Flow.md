@@ -7,6 +7,8 @@ AD環境（ドメインコントローラーが存在するWindows環境）で�
 > 詳細は [`../06_Concepts/Pentest_Fundamentals.md`](../06_Concepts/Pentest_Fundamentals.md) を参照。
 > 演習環境（HTB / OSCP 等）ではこのチェックは不要。
 
+> **記録しながら進める**：各 Step の成果（開いたポート・取得した認証情報・入った経路・昇格経路）は控えながら進む。各 Step 末尾の「▶ 記録」が、控えるべき成果と、kedaweb の Workspace ＞ Worksheet（記入の「型」）の対応欄を示す。kedaweb を使わない場合も、同じ項目を手元のノートに残しておくと経路選択で何度も効く。
+
 ---
 
 ## 開始条件の確認
@@ -91,6 +93,8 @@ searchsploit --nmap nmap_detail.xml
 
 → 高速化（RustScan / Masscan）・UDP スキャンの詳細: `../01_Reconnaissance/Network_Scanning.md`
 
+> **▶ 記録:** open ポート一覧（この後の経路選択で繰り返し参照する）と OS / ビルドを控える。→ Worksheet「PORTS」欄・上部「OS」欄。
+
 **nmap でWebポート（80・443・8080 等）のみが開いている場合：**
 
 AD・SMB 関連のステップ（Step 2・4〜7）は全部スキップし、**Web 偵察を最初の行動にする。**
@@ -148,6 +152,8 @@ nmap の `-sC` スクリプトスキャン結果から：
 
 **FTP（21）がスキャン結果に含まれる場合は並行確認する** → `../02_Initial_Access/FTP.md`
 **SSH（22）がスキャン結果に含まれる場合は並行確認する** → `../02_Initial_Access/SSH.md`
+
+> **▶ 記録:** ドメイン名・ホスト名・OS バージョンを控える。→ Worksheet 上部「HOSTNAME」「OS」欄。
 
 ---
 
@@ -219,6 +225,8 @@ smbclient -N //[IP]/Replication -c "recurse ON; ls" 2>/dev/null
 > ハッシュのクラック完了を待ってから次に進むと数日待ちになることがある。
 > 取得したハッシュをクラックに回しつつ、**他ユーザーへのパスワード使い回し**・**よくある初期パスワード**・**RID brute で得たユーザーリストへのスプレー** を並行で進める（Step 3.5 参照）。
 > hashcat の推定完了時間が現実的でない場合は、担当者・対象組織に平文パスワードの提供を確認するのも正当な選択肢（グレーボックス前提）。
+
+> **▶ 記録:** 取得した認証情報は「値 : 入手元 : 通用先」の形で控える（使い回しの追跡が後で効く）。→ Worksheet「LOOT」欄。
 
 ---
 
@@ -359,6 +367,8 @@ impacket-wmiexec -hashes :[NTLM_HASH] '[DOMAIN]/[USER]@[IP]'
 | `whoami /priv` で SeImpersonate / SeAssignPrimaryToken / SeDebug / SeBackup 等の特権トークンを確認（IIS / MSSQL サービスアカウントは保有しやすい） | `../04_Post_Access_Windows_AD/Privilege_Tokens.md` |
 | ユーザーワークステーションを取った場合は DPAPI マスターキー / ブラウザ保存パスワード / Credential Manager を確認 | `../04_Post_Access_Windows_AD/DPAPI_Browser_Creds.md` |
 
+> **▶ 記録:** どの経路・どのツール・どのユーザでシェルを得たかを控える。→ Worksheet「FOOTHOLD」欄。
+
 ---
 
 ## Step 4 — LDAP / BloodHound でAD全体を把握
@@ -390,6 +400,8 @@ BloodHound の「Shortest Paths to Domain Admins」で権限昇格の経路を�
 > **このコマンドは Linux（攻撃側）から1回実行すれば十分。** Windows シェル取得後の `../04_Post_Access_Windows_AD/Enumeration_Checklist.md` Step 2 でも BloodHound が登場するが、ここで実行済みであれば再実行は不要（同じデータを取得するだけ）。
 
 → 詳細: `../05_Tools_Reference/BloodHound.md`
+
+> **▶ 記録:** LDAP の info / description で見つけた平文認証情報は「LOOT」へ。BloodHound の最短経路・標的にする ACE / ノードを控える（グラフ全体は zip / 出力に残るので、メモには「次に狙う1経路」を書く）。→ Worksheet「[04] POST/PRIVESC — Windows / AD」のメモ欄。
 
 ---
 
@@ -424,6 +436,8 @@ ACE による直接のチェーンが見つからない、または閉じてい�
 | LLMNR / NBT-NS / mDNS が応答している（マルチキャスト ポイズニング可能） | Responder 受信 → Relay or オフラインクラック | `../04_Post_Access_Windows_AD/NTLM_Relay/Responder.md` |
 | IPv6 が有効・DHCPv6 応答なし | mitm6 で DNS スプーフィング → Relay | `../04_Post_Access_Windows_AD/NTLM_Relay/mitm6.md` |
 | 認証強制が必要（Relay の起点） | Coerce 系（PetitPotam / PrinterBug / DFSCoerce / ShadowCoerce） | `../04_Post_Access_Windows_AD/NTLM_Relay/Coerce.md` |
+
+> **▶ 記録:** 採用する権限チェーン（発見した ACE / 脆弱性 → 選んだ手法）を1本の経路として控える。これが昇格の「作戦」になる。→ Worksheet「PRIVESC」欄。
 
 ---
 
@@ -532,6 +546,8 @@ evil-winrm -i [IP] -u Administrator -H '[NTLM_HASH]'
 ```
 
 → 詳細: `../04_Post_Access_Windows_AD/Credential_Dumping.md`
+
+> **▶ 記録:** 昇格・横展開の経路と最終権限の証跡（`getuid` / `whoami /priv` / `id` 等）を控える。→ Worksheet「PRIVESC」「PROOF」欄。
 
 ---
 

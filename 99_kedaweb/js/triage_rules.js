@@ -34,7 +34,7 @@
    UI のフッタ表示で「いつ時点のルールか」が分かる。
    ============================================================= */
 window.KEDA_TRIAGE = {
-  version: "2026-06-01",
+  version: "2026-06-02",
   rules: [
     /* ── tech-stack:レスポンスから判定できる土台技術 ───────────── */
     {
@@ -307,6 +307,16 @@ window.KEDA_TRIAGE = {
       targets: [
         { file: "02_Initial_Access/SMB_Windows_Exploitation.md", why: "旧 Windows + SMBv1 → smb-vuln-* で MS17-010(EternalBlue)/MS08-067 を照合。該当すれば認証情報ゼロで SYSTEM シェルが直接取れる（cred 探索を丸ごとスキップ）" },
         { file: "01_Reconnaissance/SMB_Enumeration.md", why: "並行して共有・null/Guest 列挙。smbclient -L が NT_STATUS_INVALID_PARAMETER なら SMBv1 のみ → --option='client min protocol=NT1'" }
+      ]
+    },
+    {
+      id: "svc-smb-vuln-confirmed",
+      label: "SMB リモート RCE 確認済み (MS17-010 / MS08-067)",
+      category: "infra-service",
+      weight: 4,
+      pattern: [/smb-vuln-ms17-010[\s\S]{0,160}State:\s*VULNERABLE/i, /smb-vuln-ms08-067[\s\S]{0,160}State:\s*VULNERABLE/i],
+      targets: [
+        { file: "02_Initial_Access/SMB_Windows_Exploitation.md", why: "nmap smb-vuln-* が VULNERABLE 確定 = 認証情報ゼロで SYSTEM シェル直行（§2 EternalBlue / §3 MS08-067）。x86 ターゲットは既定 eternalblue 不可 → ms17_010_psexec / MS08-067 へ" }
       ]
     },
     {

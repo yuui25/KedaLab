@@ -1703,7 +1703,7 @@
             `<button type="button" class="ws-tri" data-k="chk:${sec.id}:${i}" data-v="" title="クリックで切替: 未着手 → 完了 → 対象外">·</button>` +
             `<span class="ws-item-label">${escapeHtml(it.label)}</span>` +
             ref +
-            `<input type="text" class="ws-note" data-k="note:${sec.id}:${i}" placeholder="メモ…" autocomplete="off" spellcheck="false" />` +
+            `<input type="text" class="ws-note" data-k="note:${sec.id}:${i}" placeholder="${escapeHtml(it.hint || 'メモ…')}" autocomplete="off" spellcheck="false" />` +
             `</li>`
           );
         });

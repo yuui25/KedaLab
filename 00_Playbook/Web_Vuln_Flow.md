@@ -163,8 +163,12 @@ python sensitive_scan.py request.txt --no-low
 | **「Login with Google / GitHub / Microsoft」等のソーシャルログインボタンがある / `/oauth/authorize` `/.well-known/openid-configuration` が存在する / リクエストに `redirect_uri=` `state=` `client_id=` が観測される** | OAuth フロー攻撃（redirect_uri バイパス → 被害者 code 奪取 / state 欠落 → アカウント連携乗っ取り / Implicit Token Leak / id_token 検証バイパス / email・sub 信頼性 / PKCE 欠落 / client_secret 漏洩）。id_token が JWT なら Step 3「4層目」と併用 | `../02_Initial_Access/Web_Vulnerabilities/OAuth_Attacks.md` |
 | **URL パラメータに `redirect=` `return=` `next=` `url=` `dest=` `continue=` `target=` 等が観測される / ログイン後・ログアウト後の遷移先が URL 制御 / JS に `location.href = userInput` が存在** | Open Redirect（バイパス全般 / `javascript:` スキーム → XSS 化 / SSRF 302 follow 防御回避 / OAuth `redirect_uri` バイパス構成要素 / Referer 経由 token 漏洩）。単独では低スコアだがチェーンで化ける | `../02_Initial_Access/Web_Vulnerabilities/Open_Redirect.md` |
 | URLに連番IDがある | IDOR | `../02_Initial_Access/Web_Vulnerabilities/IDOR.md` |
+| **状態変更（メール/パスワード変更・送金・設定変更）が Cookie だけで認証され、CSRF トークンが無い / 欠落時に検証されない / 値が検証されない** | CSRF（SameSite 別成立条件・GET 化・Content-Type/JSON 回避 → PoC で被害者操作を偽造） | `../02_Initial_Access/Web_Vulnerabilities/CSRF.md` |
+| **認証済みの機微データ（個人情報・APIキー・トークン）を返す API のレスポンスに `Access-Control-Allow-Origin` が動的反射 / `Allow-Credentials: true` が付く** | CORS 設定不備（Origin 反射 / null origin / 部分一致 allowlist → クロスオリジンで認証済みレスポンス窃取） | `../02_Initial_Access/Web_Vulnerabilities/CORS.md` |
 | ファイルダウンロード機能 | パストラバーサル・IDOR | `../02_Initial_Access/Web_Vulnerabilities/Path_Traversal.md` |
 | ユーザー入力がページに反映される | XSS（反射型・格納型） | `../02_Initial_Access/Web_Vulnerabilities/XSS.md` |
+| **反映される入力に `{{7*7}}` / `${7*7}` / `#{7*7}` を入れると `49` が表示される（式が評価される）** | SSTI（エンジン特定 → エンジン別 RCE）。`49` でなく文字列のままなら XSS 側へ | `../02_Initial_Access/Web_Vulnerabilities/SSTI.md` |
+| **XSS が刺さったが Cookie が HTTPOnly で `document.cookie` が空** | localStorage / sessionStorage トークン窃取・キーロギング・保存パスワード autofill 窃取（HTTPOnly 保護外の窃取面） | `../02_Initial_Access/Web_Vulnerabilities/XSS.md`（§4 Cookie 以外の窃取） |
 | **フォーム入力に `<script>` を入れたら「不正検知」エラーページが返り、エラーページに自分のリクエストヘッダー（User-Agent / Referer / IP）が反射されている** | ヘッダー注入経由の XSS（フィルタが本文にしかかかっていない設計） + 「管理者にレポート送信」文言があれば Blind XSS の発火条件 | `../02_Initial_Access/Web_Vulnerabilities/XSS.md`（ヘッダー注入経路 + Blind XSS シグナル） |
 | 問い合わせ・サポート・苦情フォームなど、入力内容がその場では反射されないが「管理者がレビューします」旨の表示がある | Blind XSS（運用者ブラウザでロード時に発火） | `../02_Initial_Access/Web_Vulnerabilities/XSS.md`（Blind XSS） |
 | **stolen cookie で管理画面に入れた → そこに新しい入力フォーム（日付・ホスト名・URL等）がある** | 管理者専用APIにコマンドインジェクションがある典型パターン | `../02_Initial_Access/Web_Vulnerabilities/Command_Injection.md` |
@@ -253,6 +257,9 @@ searchsploit [ソフトウェア名] [バージョン]   # [Attacker]
 - 後：`../02_Initial_Access/Web_Vulnerabilities/Command_Injection.md`（OS コマンド呼び出し系・PDFKit 等）
 - 後：`../02_Initial_Access/Web_Vulnerabilities/IDOR.md`（連番 ID / 直接参照）
 - 後：`../02_Initial_Access/Web_Vulnerabilities/SSRF.md`（URL を受け取るフォーム）
+- 後：`../02_Initial_Access/Web_Vulnerabilities/SSTI.md`（入力に `{{7*7}}` 等を入れて式が評価される場合）
+- 後：`../02_Initial_Access/Web_Vulnerabilities/CSRF.md`（Cookie のみ認証の状態変更リクエスト）
+- 後：`../02_Initial_Access/Web_Vulnerabilities/CORS.md`（認証済み機微データ API の緩い CORS ヘッダー）
 - 後：`../02_Initial_Access/Web_Vulnerabilities/JWT_Attacks.md`（JWT ベースの認証）
 - 後：`../02_Initial_Access/Web_Vulnerabilities/OAuth_Attacks.md`（OAuth / OIDC ソーシャルログイン）
 - 後：`../02_Initial_Access/Web_Vulnerabilities/Open_Redirect.md`（リダイレクト系パラメータ / 単独 + OAuth・SSRF・XSS への連鎖）

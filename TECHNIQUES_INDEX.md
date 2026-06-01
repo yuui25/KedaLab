@@ -105,6 +105,13 @@
 | **Blind XSS の発火シグナル（「管理者にレポート送信」文言・問い合わせフォーム等）** | Initial Access | `02_Initial_Access/Web_Vulnerabilities/XSS.md` |
 | **Blind XSS の `new Image()` ステルス cookie exfil チャネル + base64 デコード受信** | Initial Access | `02_Initial_Access/Web_Vulnerabilities/XSS.md` |
 | **stolen cookie のブラウザ植え替え（DevTools Storage タブ・curl/Burp の Cookie ヘッダー差し替え）** | Initial Access | `02_Initial_Access/Web_Vulnerabilities/XSS.md` |
+| **XSS §4 Cookie 以外の窃取（localStorage / sessionStorage トークン・キーロギング・保存パスワード autofill 窃取。HTTPOnly Cookie 保護外の窃取面）** | Initial Access | `02_Initial_Access/Web_Vulnerabilities/XSS.md` |
+| CSRF §1 トークン検証不備の判定（欠落時不検証 / 値の非検証 / セッション非紐付けの3パターン・POST→GET 化バイパス・Cookie のみ認証かの切り分け） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/CSRF.md` |
+| CSRF §3 SameSite 別成立条件（None/Lax/Strict・Lax のトップレベル GET ナビゲーション貫通・GET 状態変更の設計ミス悪用） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/CSRF.md` |
+| CSRF §4 Content-Type / JSON エンドポイント回避（enctype=text/plain で JSON 風ボディ送信・simple request 化・カスタムヘッダー必須なら不成立判定） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/CSRF.md` |
+| CORS §1 Origin 反射 + Allow-Credentials による認証済みレスポンス窃取（`*`+credentials はブラウザ拒否・curl 結果と実害の切り分け） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/CORS.md` |
+| CORS §2 null origin 許可の悪用（sandbox iframe で null origin 生成 → 認証済みレスポンス読み取り） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/CORS.md` |
+| CORS §3 部分一致 allowlist バイパス（startsWith / endsWith / contains・正規表現の未エスケープ `.`・サブドメイン無条件許可 × Takeover/XSS 連鎖） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/CORS.md` |
 | ソーシャルエンジニアリング（フィッシング・スピアフィッシング・BEC） | Initial Access | `02_Initial_Access/Social_Engineering.md` |
 | プリテキスティング（IT サポート・監査員・ベンダーを装った認証情報詐取） | Initial Access | `02_Initial_Access/Social_Engineering.md` |
 | ベイティング（感染USB放置・偽ダウンロードリンク） | Initial Access | `02_Initial_Access/Social_Engineering.md` |
@@ -130,6 +137,10 @@
 | SSRF defense bypass：IPv4-mapped IPv6 (`::ffff:127.0.0.1`)（Python 3.11.9 / 3.12.4 未満限定） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/SSRF.md` |
 | XXE（XML外部エンティティインジェクション） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/XXE.md` |
 | XSLTインジェクション（プロセッサフィンガープリント・XXE-via-XSLT・PHP拡張・Java拡張） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/XSLT_Injection.md` |
+| SSTI §1-2 検出・エンジン特定（数式ポリグロット `{{7*7}}` / `${7*7}` / `#{7*7}`・`{{7*'7'}}` の文字列演算差で Jinja2/Twig 判定・error polyglot で例外クラス名漏洩） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/SSTI.md` |
+| SSTI §3-6 エンジン別 RCE（Jinja2 内省 `__class__`/`__mro__`/`cycler`/`lipsum` → os.popen / Twig `filter('system')`・`registerUndefinedFilterCallback` / Freemarker `Execute`?new() / Pug `global.process...child_process`） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/SSTI.md` |
+| SSTI §7 ロジックレス系（Mustache は式評価不可で `{{{ }}}` 非エスケープ XSS 止まり / Handlebars の with+lookup constructor 連鎖 RCE） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/SSTI.md` |
+| SSTI §8 サンドボックス脱出（Jinja2 SandboxedEnvironment を `\|attr` / `lipsum` / `get_flashed_messages` globals で迂回・16進エスケープ/文字列分割で `__class__` フィルタ回避・脱出不可でも変数漏洩 finding） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/SSTI.md` |
 | JWT 未検証署名（Accepting Arbitrary Signatures：alg はそのまま署名部のみデタラメに書き換えても通る最 Basic な実装ミス） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/JWT_Attacks.md` |
 | JWT alg:none 攻撃（署名検証スキップ・大文字小文字バリエーション含む） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/JWT_Attacks.md` |
 | JWT 弱い秘密鍵ブルートフォース（hashcat mode 16500 / john HMAC-SHA256 / sample key リスト） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/JWT_Attacks.md` |
@@ -185,7 +196,7 @@
 | Samba §3 CVE-2017-7494 SambaCry (is_known_pipename・書込共有 + .so ロード・3.5.0〜4.6.4/4.5.10/4.4.14 未満)| Initial Access | `02_Initial_Access/Samba_Exploitation.md` |
 | Samba §4 バージョン依存 CVE 探索パターン（searchsploit samba / OS・版数厳密一致）| Initial Access | `02_Initial_Access/Samba_Exploitation.md` |
 | Windows SMB §1 バージョン特定と脆弱性スキャン（nmap smb-os-discovery / nxc SMBv1 判定 / nmap --script "smb-vuln-*" / searchsploit）| Initial Access | `02_Initial_Access/SMB_Windows_Exploitation.md` |
-| Windows SMB §2 MS17-010 EternalBlue（CVE-2017-0143〜0148・SMBv1 前提・未認証 SYSTEM RCE・msf eternalblue/psexec・AutoBlue 手動・bitness 依存・失敗時 BSOD）| Initial Access | `02_Initial_Access/SMB_Windows_Exploitation.md` |
+| Windows SMB §2 MS17-010 EternalBlue（CVE-2017-0143〜0148・SMBv1 前提・未認証 SYSTEM RCE・msf eternalblue/psexec・AutoBlue 手動・bitness 依存・失敗時 BSOD・**既定 eternalblue は x64 専用→x86 は `no-target: This module only supports x64...` で停止→psexec / MS08-067 へ**・成功確認は getuid / echo %USERNAME%（XP に whoami 不在））| Initial Access | `02_Initial_Access/SMB_Windows_Exploitation.md` |
 | Windows SMB §3 MS08-067 NetAPI BoF（CVE-2008-4250・2000/XP/2003・未認証 SYSTEM RCE・msf ms08_067_netapi・TARGET 手動指定・OS 言語版/SP オフセット依存）| Initial Access | `02_Initial_Access/SMB_Windows_Exploitation.md` |
 | Windows SMB §4 その他版数依存 CVE 探索（searchsploit OS ビルド一致・SMBGhost CVE-2020-0796 等）| Initial Access | `02_Initial_Access/SMB_Windows_Exploitation.md` |
 | Windows SMB 刺さらなかったとき: smbclient -L の NT_STATUS_INVALID_PARAMETER ＝ 対象 SMBv1 のみ → --option='client min protocol=NT1' で再試行 | Initial Access | `02_Initial_Access/SMB_Windows_Exploitation.md` |
@@ -440,6 +451,7 @@
 | Impacket スイート全般 | `05_Tools_Reference/Impacket_Suite.md` |
 | hashcat | `05_Tools_Reference/Hashcat.md` |
 | Metasploit Framework（モジュール探索 search → use → info → show options → set → run・LHOST 明示・handler vs nc・エラー読み分け） | `05_Tools_Reference/Metasploit.md` |
+| Meterpreter セッション基礎（getuid / sysinfo / getsystem / hashdump / shell / background / sessions -i・`id`/`whoami` は meterpreter コマンドではない罠・古い Windows の `whoami` 不在と echo %USERNAME% 代替） | `05_Tools_Reference/Metasploit.md` |
 | searchsploit（バージョン検索・ファイル操作・Nmap XML連携） | `05_Tools_Reference/Searchsploit.md` |
 | 複数CVE候補からの絞り込み基準（バージョン一致・OS一致・パッチ前確認・前提条件） | `05_Tools_Reference/Searchsploit.md` |
 | Exploit-DB Web・NVD・GitHub PoC の使い分け | `05_Tools_Reference/Searchsploit.md` |
@@ -448,6 +460,7 @@
 | Certipy（AD CS 列挙・証明書申請・PKINIT 認証・CA 管理の統合ツール。find / req / auth / ca / template / forge / relay） | `05_Tools_Reference/Certipy.md` |
 | GOAD（AD攻撃練習ラボ）の構築（VMware Workstation + WSL / Vagrant + ansible。host-only vmnet 手動IP・WSL1・version選択等の注意点） | `05_Tools_Reference/GOAD_Lab_Setup.md` |
 | Linux ペネトレ用ワンライナー集（テキスト処理 grep/awk/sed・ファイル検索 find -perm・プロセス/ネット観察 ss/ps・文字列/バイナリ調査 strings/xxd・エンコード base64/openssl・ファイル転送 HTTP/nc//dev/tcp/base64・リスナー受信 python3/nc/socat） | `05_Tools_Reference/Linux_Pentest_OneLiners.md` |
+| Windows ペネトレ用ワンライナー集（テキスト処理 Select-String/findstr・ファイル検索 Get-ChildItem/icacls/Unquoted Service Path・プロセス/ネット観察 Get-CimInstance/netstat -ano・バイナリ調査 Format-Hex/Get-AuthenticodeSignature・エンコード Base64/certutil・ファイル転送 iwr/certutil -urlcache/SMB/base64 コピペ・LOLBAS/CLM 代替） | `05_Tools_Reference/Windows_Pentest_OneLiners.md` |
 
 ---
 
