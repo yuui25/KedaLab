@@ -27,47 +27,9 @@ AD環境（ドメインコントローラーが存在するWindows環境）で�
 
 ---
 
-## Step 0 — OS判定・AD環境の確認
-
-> **「Windows か Linux か」の初手判定 → `00_OS_Identification.md` を参照。**
-> Windows と確定した上でこのファイルを開いていること。
-
-**AD環境かどうかの見分け方：**
-
-nmap スキャンで以下のポートが複数開いていれば AD 環境と判断する：
-
-| ポート | サービス | 意味 |
-|--------|---------|------|
-| 53 | DNS | ドメイン名前解決 |
-| 88 | Kerberos | Kerberos認証 ← これがあれば AD 確定 |
-| 389 / 636 | LDAP / LDAPS | ディレクトリサービス |
-| 445 | SMB | ファイル共有 |
-| 5985 | WinRM | リモート管理 |
-| 3268 / 3269 | Global Catalog | フォレスト全体のLDAP |
-
-→ 詳細: `../01_Reconnaissance/Network_Scanning.md`
-
-**nmap でWebポート（80・443・8080 等）のみが開いている場合：**
-
-AD・SMB 関連のステップ（Step 2・4〜7）は全部スキップし、**Web 偵察を最初の行動にする。**
-
-```
-Step 0 でWebのみ確認
-       ↓
-→ ../01_Reconnaissance/Web_Enumeration.md へ直行
-  （robots.txt 確認 → アプリ名特定 → ディレクトリ列挙 → バージョン確認 → searchsploit）
-       ↓
-→ 脆弱性が特定できたら ../02_Initial_Access/Web_Vulnerabilities/ の該当ファイルへ
-       ↓
-→ シェル取得後 → ../04_Post_Access_Windows_AD/Enumeration_Checklist.md へ
-```
-
-> **「Web しかない」は「攻撃面が少ない」ではなく「Web が唯一の入口」という意味。**
-> robots.txt・アプリ名・ディレクトリ列挙・バージョン確認を確実に行う。
-
----
-
 ## フロー概要
+
+> **スコープ:** 本ファイルは **AD 環境（DC が存在する Windows）を主対象**に Step 0〜7 を並べる。**AD 側の攻撃軸**は本体の Step 4〜7（BloodHound → ACE 濫用 → 委任攻撃 → DCSync）がそれにあたる。スタンドアロン（非ドメイン参加）でも読めるが、その場合の各 Step の適用可否は Step 0 直後の「スタンドアロン環境でのこのPlaybookの読み方」表に集約してある。「いま AD を攻めているのか、スタンドアロンとして読んでいるのか」を見失ったら、まず Step 0 に戻ってどちらか確定する。
 
 ```
 [1. ドメイン情報の特定]
@@ -90,6 +52,65 @@ Step 0 でWebのみ確認
 > **AD 環境か「スタンドアロン」か分からない場合は先に確認する。**
 > AD とスタンドアロンの違い・nmap からの判断方法・各 Step の適用可否 → `../06_Concepts/Windows_Standalone_vs_AD.md`
 
+---
+
+## Step 0 — OS判定・AD環境の確認
+
+> **「Windows か Linux か」の初手判定 → `00_OS_Identification.md` を参照。**
+> Windows と確定した上でこのファイルを開いていること。
+
+**AD環境かどうかの見分け方：**
+
+nmap スキャンで以下のポートが複数開いていれば AD 環境と判断する：
+
+| ポート | サービス | 意味 |
+|--------|---------|------|
+| 53 | DNS | ドメイン名前解決 |
+| 88 | Kerberos | Kerberos認証 ← これがあれば AD 確定 |
+| 389 / 636 | LDAP / LDAPS | ディレクトリサービス |
+| 445 | SMB | ファイル共有 |
+| 5985 | WinRM | リモート管理 |
+| 3268 / 3269 | Global Catalog | フォレスト全体のLDAP |
+
+→ 詳細: `../01_Reconnaissance/Network_Scanning.md`
+
+**全ポートスキャン（必ず実行）：**
+
+`00_OS_Identification.md` の初期 nmap（`-sC -sV`）は上位 1000 ポートのみ。AD 判定が付いた後も、**経路を選ぶ前に必ず全ポートスキャンを回す。** 非標準ポートの MSSQL・WSUS・内部 Web・古い SMB 以外の RCE 経路などを見落とさないため。
+
+```bash
+# [Attacker] 全ポートスキャン（-p- のみ・版数なしで速度優先）
+sudo nmap -p- --min-rate 5000 --reason -oA nmap_allports [TARGET_IP]
+
+# [Attacker] 開いていたポートに絞って スクリプト + バージョン精査
+sudo nmap -sC -sV -p[OPEN_PORTS] -oA nmap_detail [TARGET_IP]
+
+# [Attacker] 版数付き結果から既知 CVE を一括照合（手動の見落とし防止）
+searchsploit --nmap nmap_detail.xml
+```
+
+→ 高速化（RustScan / Masscan）・UDP スキャンの詳細: `../01_Reconnaissance/Network_Scanning.md`
+
+**nmap でWebポート（80・443・8080 等）のみが開いている場合：**
+
+AD・SMB 関連のステップ（Step 2・4〜7）は全部スキップし、**Web 偵察を最初の行動にする。**
+
+```
+Step 0 でWebのみ確認
+       ↓
+→ ../01_Reconnaissance/Web_Enumeration.md へ直行
+  （robots.txt 確認 → アプリ名特定 → ディレクトリ列挙 → バージョン確認 → searchsploit）
+       ↓
+→ 脆弱性が特定できたら ../02_Initial_Access/Web_Vulnerabilities/ の該当ファイルへ
+       ↓
+→ シェル取得後 → ../04_Post_Access_Windows_AD/Enumeration_Checklist.md へ
+```
+
+> **「Web しかない」は「攻撃面が少ない」ではなく「Web が唯一の入口」という意味。**
+> robots.txt・アプリ名・ディレクトリ列挙・バージョン確認を確実に行う。
+
+---
+
 ### スタンドアロン環境でのこのPlaybookの読み方
 
 nmap で 88(Kerberos)・389(LDAP)・3268(Global Catalog) が開いていない場合は **スタンドアロン環境** の可能性が高い。
@@ -104,6 +125,7 @@ nmap で 88(Kerberos)・389(LDAP)・3268(Global Catalog) が開いていない�
 | Step 3.5 | ⚠️ SMB/WinRM が開いていれば有効。ただし `--local-auth` を付ける（ローカルアカウントへのスプレー）|
 | Step 4〜7 | ❌ AD 依存。スタンドアロンではすべてスキップ → `../04_Post_Access_Windows_AD/Enumeration_Checklist.md` の侵入後列挙へ進む |
 
+→ **古い スタンドアロン Windows（SMBv1 / XP・2003・2008）で SMB が開いている場合は、まずリモート SMB CVE を試す**（cred 不要で SYSTEM が取れる初期侵入）: `../02_Initial_Access/SMB_Windows_Exploitation.md`
 → スタンドアロンでの権限昇格フロー（ローカル CVE・BoF・特権トークン）: `../04_Post_Access_Windows_AD/Enumeration_Checklist.md`
 → `netstat` でローカルにのみ公開されたサービスを発見し、既知 Buffer Overflow PoC（Exploit-DB）でシェル取得する場合: `../04_Post_Access_Windows_AD/Buffer_Overflow_LocalService.md`
 
@@ -135,6 +157,13 @@ nmap の `-sC` スクリプトスキャン結果から：
 含まれていない場合は、このステップの SMB 関連手順（匿名アクセス・SYSVOL・ASREPRoasting のユーザーリスト収集）はすべてスキップして Step 3 へ進む。
 
 > SMB は TCP 445 で動作する。ファイアウォールや設定で閉じられている場合、またはそもそも SMB が有効でない場合（Webのみのサービス等）は smbclient コマンド自体が応答しない。
+
+> **先に潰す（認証情報ゼロでシェルが取れる経路）：** `nxc smb [IP]` の出力に **`SMBv1:True`**、または `smb-os-discovery` が **古い OS（Windows XP / 2003 / 2008 等）** を示す場合は、共有列挙より先にリモート SMB CVE を当てる。MS17-010（EternalBlue）/ MS08-067 が該当すれば cred 取得（Step 3）を丸ごとスキップして **SYSTEM シェル**が直接取れる。
+> ```bash
+> # [Attacker] 古い Windows + 445 を見たら即これ
+> nmap -p139,445 --script "smb-vuln-*" [IP]
+> ```
+> → 手順詳細: `../02_Initial_Access/SMB_Windows_Exploitation.md`（§1 スキャン → §2 MS17-010 / §3 MS08-067）
 
 ### SMB匿名アクセス
 
@@ -509,6 +538,7 @@ evil-winrm -i [IP] -u Administrator -H '[NTLM_HASH]'
 ## 関連技術
 
 - 前：`00_OS_Identification.md`（Windows と確定し、88番 Kerberos 等から AD 環境と判断してからこのフローに入る）
+- 後（古い Windows / `SMBv1:True` 発見）：`../02_Initial_Access/SMB_Windows_Exploitation.md`（MS17-010 / MS08-067 で cred 不要の SYSTEM シェル。Step 3 をスキップ）
 - 後：`../04_Post_Access_Windows_AD/Enumeration_Checklist.md`（シェル取得後の侵入後列挙）
 - 後：`../04_Post_Access_Windows_AD/Credential_Dumping.md`（DCSync → 全ハッシュ取得の詳細）
 - 後：`../04_Post_Access_Windows_AD/Kerberos_Attacks/Pass_The_Ticket.md`（取得した krbtgt ハッシュから Golden Ticket を作る持続化、または取得チケットでの横展開）

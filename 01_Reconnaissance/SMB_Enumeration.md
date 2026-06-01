@@ -16,6 +16,7 @@
 - **真の null セッション（`-u '' -p ''`）と Guest（`-u 'guest'`）は別物**: 両方試す。`RestrictAnonymous=0` の古い環境では完全に空の null セッションが通ることが稀にある
 - **SMB 署名の状態**: `Signing: True`（必須）なら NTLM リレーが使えない（§刺さらなかったとき参照）
 - **Samba（Linux）でバージョンが古い場合**: 共有列挙と**並行して** `../02_Initial_Access/Samba_Exploitation.md §1` の版数 CVE 照合を先に実施する。未認証 RCE があれば共有の中を歩くより速い
+- **Windows で OS が古い / `SMBv1:True` の場合**: `nxc smb [IP]` に `SMBv1:True` が出る、または `smb-os-discovery` が `Windows XP / 2003 / 2008` 等の古い OS を示す場合は、共有列挙より先に `../02_Initial_Access/SMB_Windows_Exploitation.md §1` の `nmap --script "smb-vuln-*"` を当てる。MS17-010 / MS08-067 が該当すれば**認証情報ゼロで SYSTEM シェル**が取れ、cred 探索を丸ごとスキップできる
 
 **標準共有と非標準共有の区別:**
 
@@ -250,6 +251,7 @@ impacket-samrdump '[DOMAIN]/[USER]:[PASSWORD]@[IP]'                    # 認証�
 | 観測される症状 | 推定原因 | 代替手段 |
 |--------------|---------|---------|
 | `nxc smb [IP] -u 'guest' -p ''` で `STATUS_ACCOUNT_DISABLED` | Guest 無効 | (a) 真の null セッション `nxc smb [IP] -u '' -p ''` / `smbclient -L //[IP] -N` を試す。(b) ともに失敗 + **対象が Linux Samba（バナーに `OS=Unix (Samba x.x.x)`）** なら版数 CVE 照合へ → `../02_Initial_Access/Samba_Exploitation.md`。(c) Windows AD なら認証情報取得（`../00_Playbook/Windows_AD_Attack_Flow.md` Step 3）へ |
+| `smbclient -L //[IP] -N` が `NT_STATUS_INVALID_PARAMETER` で即終了 | 「共有が無い」ではなく**対象が SMBv1 のみ**で、現行 smbclient が既定の SMB2+ でネゴシエートして弾かれている | dialect を下げて再試行 → `smbclient -L //[IP] -N --option='client min protocol=NT1'`。同時に「古い SMBv1 ホスト」のシグナルなので `../02_Initial_Access/SMB_Windows_Exploitation.md §1` の `smb-vuln-*` を当てる |
 | `smbclient -N //[IP]` が `NT_STATUS_ACCESS_DENIED` | 匿名・Guest 共に閉じている | `enum4linux-ng -A` / `nxc smb --shares` / `rpcclient -U "" -N` で別経路（RPC over SMB）を試す |
 | 共有が `IPC$` のみ表示される | 匿名で見える共有が実質ない | 認証情報取得後に再列挙する（`-u [USER] -p '[PASSWORD]'`） |
 | SMB 署名が必須（`Signing: True`）と表示される | NTLM リレー攻撃が使えない | リレー以外の経路（Kerberos 認証強制 / Coerce 系・Pass-The-Hash）を検討 |

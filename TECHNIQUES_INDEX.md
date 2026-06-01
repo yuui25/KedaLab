@@ -184,6 +184,11 @@
 | Samba §2 CVE-2007-2447 username map script コマンド注入（Samba 3.0.x・未認証 RCE・root 実行多）| Initial Access | `02_Initial_Access/Samba_Exploitation.md` |
 | Samba §3 CVE-2017-7494 SambaCry (is_known_pipename・書込共有 + .so ロード・3.5.0〜4.6.4/4.5.10/4.4.14 未満)| Initial Access | `02_Initial_Access/Samba_Exploitation.md` |
 | Samba §4 バージョン依存 CVE 探索パターン（searchsploit samba / OS・版数厳密一致）| Initial Access | `02_Initial_Access/Samba_Exploitation.md` |
+| Windows SMB §1 バージョン特定と脆弱性スキャン（nmap smb-os-discovery / nxc SMBv1 判定 / nmap --script "smb-vuln-*" / searchsploit）| Initial Access | `02_Initial_Access/SMB_Windows_Exploitation.md` |
+| Windows SMB §2 MS17-010 EternalBlue（CVE-2017-0143〜0148・SMBv1 前提・未認証 SYSTEM RCE・msf eternalblue/psexec・AutoBlue 手動・bitness 依存・失敗時 BSOD）| Initial Access | `02_Initial_Access/SMB_Windows_Exploitation.md` |
+| Windows SMB §3 MS08-067 NetAPI BoF（CVE-2008-4250・2000/XP/2003・未認証 SYSTEM RCE・msf ms08_067_netapi・TARGET 手動指定・OS 言語版/SP オフセット依存）| Initial Access | `02_Initial_Access/SMB_Windows_Exploitation.md` |
+| Windows SMB §4 その他版数依存 CVE 探索（searchsploit OS ビルド一致・SMBGhost CVE-2020-0796 等）| Initial Access | `02_Initial_Access/SMB_Windows_Exploitation.md` |
+| Windows SMB 刺さらなかったとき: smbclient -L の NT_STATUS_INVALID_PARAMETER ＝ 対象 SMBv1 のみ → --option='client min protocol=NT1' で再試行 | Initial Access | `02_Initial_Access/SMB_Windows_Exploitation.md` |
 | distcc §1-2 CVE-2004-2687 distccd 未認証コマンド実行（3632/tcp・-p- で発見・非特権足場→要昇格）| Initial Access | `02_Initial_Access/distcc_Exploitation.md` |
 | SSH §1 バナー観察と OS / ディストリ推定（nmap -sV / nc）| Initial Access | `02_Initial_Access/SSH.md` |
 | SSH §1 CVE-2024-6387 (regreSSHion) バージョン判定と注意点（OpenSSH 8.5p1〜9.7p1 on glibc Linux・race condition pre-auth RCE） | Initial Access | `02_Initial_Access/SSH.md` |

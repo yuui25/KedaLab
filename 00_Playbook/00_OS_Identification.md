@@ -59,7 +59,14 @@ ping -c 1 [IP]
 nmap -sC -sV [IP]
 # または OS 検出を明示的に有効化
 sudo nmap -O [IP]
+
+# 上記は1コマンドにまとめてよい（OS検出 + バージョン + デフォルトスクリプト）
+sudo nmap -O -sC -sV [IP]
+# -A でもほぼ等価（-O・-sV・-sC・traceroute を一括。出力は増える）
+sudo nmap -A [IP]
 ```
+
+> **`-O` と `-sC -sV` を分ける必然性はない。** root 権限さえあれば `-O -sC -sV` を一度に投げてよい。分割例は「OS 検出だけ後から足したい」場合の参考。
 
 ### ポートの組み合わせで判断する
 
@@ -93,11 +100,26 @@ sudo nmap -O [IP]
 
 TCP/IP スタックの特性からOSを推定する。root 権限が必要。
 
+**`No exact OS matches` + `TCP/IP fingerprint:` が出たとき：**
+
+`-O` がデータベースと一致せず `No exact OS matches for host` を返し、生の `TCP/IP fingerprint:`（`OS:SCAN(...)` の塊）を吐くことがある。
+
+| 観測 | 意味 | どうするか |
+|------|------|-----------|
+| `TCP/IP fingerprint:` の生ブロック | nmap.org への**投稿用データ**。その場の判定には直接使わない | 無視してよい。判定は他のシグナル（後述）で行う |
+| `No exact OS matches` だが `Host script results` に `smb-os-discovery` の OS 行がある | スタック推定は外したが**サービス側が OS を明示**している | そちらを採用する（例: `OS: Windows XP` なら Windows 確定） |
+| `Service Info: OSs: Windows ...` | サービスバナー由来の OS 情報 | これも有効な判定材料 |
+
+> **`No exact OS match` ＝「判定不能」ではない。** `-O` のスタック推定が DB にヒットしなくても、`smb-os-discovery` / `Service Info` / ポート構成で OS はほぼ確定できる。生フィンガープリントの解読に時間を使わない。
+
 ### 注意点
 - ファイアウォールで一部ポートが閉じられている場合は判断が難しい
-- 全ポートスキャン（`-p-`）と組み合わせると見落としが減る
+- **OS が確定した後でも、初期 recon として全ポートスキャン（`-p-`）は必ず1回回す**
+  OS 判定はデフォルトの上位ポートだけでも付くことが多いが、攻撃経路の選択は「全ポートを把握してから」行う。高位ポートに刺さるサービス（非標準ポートの DB・内部サービス・古い SMB 以外の RCE 経路等）を見落とさないため、対応 Playbook へ進む前に `-p-` の結果を揃える。
   ```bash
   sudo nmap -p- --min-rate 5000 [IP]
+  # 開いていたポートだけ詳細スキャンし直す
+  sudo nmap -p[OPEN_PORTS] -sC -sV [IP]
   ```
 
 ---
@@ -217,9 +239,10 @@ nmap -p 22 -sV [IP]
 | 判定 | 参照するPlaybook |
 |------|----------------|
 | Linux | `Linux_Attack_Flow.md` |
-| Windows（88番 Kerberos あり） | `Windows_AD_Attack_Flow.md` |
-| Windows（88番なし） | `Windows_AD_Attack_Flow.md`（AD なし環境として読む） |
+| Windows | `Windows_AD_Attack_Flow.md`（88番 Kerberos の有無は遷移先の Step 0 で AD / スタンドアロンを読み分ける。88 がなくても同じファイルに進む）|
 | 判定できない | 全ポートスキャン（`nmap -p-`）を実施してから再判定（→ 下記） |
+
+> Windows は AD でもスタンドアロンでも入口は同じ `Windows_AD_Attack_Flow.md`。**OS 判定の段階で 88 の有無による分岐を気にする必要はない**（遷移先で判定する）。
 
 ---
 

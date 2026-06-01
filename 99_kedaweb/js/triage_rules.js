@@ -34,7 +34,7 @@
    UI のフッタ表示で「いつ時点のルールか」が分かる。
    ============================================================= */
 window.KEDA_TRIAGE = {
-  version: "2026-05-30",
+  version: "2026-06-01",
   rules: [
     /* ── tech-stack:レスポンスから判定できる土台技術 ───────────── */
     {
@@ -296,6 +296,17 @@ window.KEDA_TRIAGE = {
       targets: [
         { file: "02_Initial_Access/Samba_Exploitation.md", why: "版数固定 → 既知 CVE（usermap script / SambaCry 等）で未認証 RCE を照合。Samba は root 実行が多く即 root の可能性" },
         { file: "01_Reconnaissance/SMB_Enumeration.md", why: "共有・null セッション列挙も並行（OS=Unix なら AD 前提の GPP 列挙は基本不適用）" }
+      ]
+    },
+    {
+      id: "svc-windows-smb-old",
+      label: "古い Windows SMB（SMBv1 / 旧 OS）",
+      category: "infra-service",
+      weight: 3,
+      pattern: [/SMBv1\s*[:=]\s*True/i, /\bWindows\s+XP\b/i, /\bWindows\s+2000\b/i, /Windows\s+Server\s+200[038]\b/i, /Windows\s+2000\s+LAN\s+Manager/i],
+      targets: [
+        { file: "02_Initial_Access/SMB_Windows_Exploitation.md", why: "旧 Windows + SMBv1 → smb-vuln-* で MS17-010(EternalBlue)/MS08-067 を照合。該当すれば認証情報ゼロで SYSTEM シェルが直接取れる（cred 探索を丸ごとスキップ）" },
+        { file: "01_Reconnaissance/SMB_Enumeration.md", why: "並行して共有・null/Guest 列挙。smbclient -L が NT_STATUS_INVALID_PARAMETER なら SMBv1 のみ → --option='client min protocol=NT1'" }
       ]
     },
     {

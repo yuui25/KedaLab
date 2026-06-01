@@ -73,6 +73,12 @@ Get-ComputerInfo | Select-Object CsDomain
 
 ---
 
+## AD 環境での攻撃軸
+
+AD は「認証情報取得 → 横展開 → DC 支配」の構造を持つ。攻撃軸の本体（BloodHound での経路把握・ACE 濫用・委任攻撃・DCSync）は `../00_Playbook/Windows_AD_Attack_Flow.md` の Step 4〜7 に集約してあるため、ここでは繰り返さない。本ファイルは「AD か否か」の**判断**に専念する。
+
+---
+
 ## スタンドアロン環境での攻撃軸
 
 AD のような「横展開 → DC 支配」の構造がないため、**ローカル権限昇格**が最終目標になることが多い。
@@ -81,12 +87,15 @@ AD のような「横展開 → DC 支配」の構造がないため、**ロー�
 
 - Web アプリの脆弱性（ファイルアップロード・SQLi・コマンドインジェクション 等）
 - 公開サービスの CVE（FTP・SSH・RDP 等）
+- **SMB のリモート CVE（古い Windows / SMBv1）**: MS17-010（EternalBlue）/ MS08-067 等。**未認証で SYSTEM シェルが直接取れる初期侵入経路**で、ローカル権限昇格ではない（シェル取得が前提ではない）→ `../02_Initial_Access/SMB_Windows_Exploitation.md`
 
-**ローカル権限昇格の選択肢：**
+> **「OS が古い」の切り分け：** SMB が露出した古い Windows なら、まず **リモート SMB CVE（上記・初期侵入）** を試す。シェルを取った後に「OS ビルドが古い」を**ローカル権限昇格**に使うのは下表の経路で、リモート初期侵入とは別物。
+
+**ローカル権限昇格の選択肢（シェル取得後）：**
 
 | 状況 | 手法 | 参照先 |
 |------|------|--------|
-| OS ビルドが古い | CVE（`searchsploit [OS バージョン]`） | `../04_Post_Access_Windows_AD/Enumeration_Checklist.md`（Step 0） |
+| OS ビルドが古い（ローカル特権昇格 CVE） | CVE（`searchsploit [OS バージョン] local`） | `../04_Post_Access_Windows_AD/Enumeration_Checklist.md`（Step 0） |
 | ローカルサービスが内部でリスニング | そのサービスの CVE・Buffer Overflow | `../04_Post_Access_Windows_AD/Enumeration_Checklist.md`（Step 1.5） → `Buffer_Overflow_LocalService.md` |
 | `SeImpersonatePrivilege` がある | Potato 系攻撃 → SYSTEM 昇格 | （将来追記予定） |
 | `whoami /all` で高権限トークン | トークン昇格 | `../04_Post_Access_Windows_AD/Enumeration_Checklist.md`（Step 1） |
