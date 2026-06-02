@@ -87,7 +87,12 @@
 | **Server ヘッダーからの Python WSGI 系識別（Werkzeug / gunicorn / uWSGI / Tornado / Django runserver）と非標準ポート観点** | Reconnaissance | `01_Reconnaissance/Web_Enumeration.md` |
 | HTML `<meta name="generator">` 著作権年範囲からのバージョン推定 | Reconnaissance | `01_Reconnaissance/Web_Enumeration.md` |
 | DoS 保護・自動 IP ブロック前提のディレクトリ列挙抑制（robots.txt・トップページの警告文を読む） | Reconnaissance | `01_Reconnaissance/Web_Enumeration.md` |
-| 未認証ファイルアップロード RCE（二重拡張子・マジックバイト・Content-Type 偽装） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/File_Upload.md` |
+| 未認証ファイルアップロード RCE（二重拡張子・逆二重拡張子・大文字小文字・代替MIME/Content-Type重複・代替PHPタグ・マジックバイト・Content-Type 偽装） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/File_Upload.md` |
+| ファイルアップロードの型判定 3 箇所モデル（申告MIME/応答MIME/MIME sniffing・nosniff確認・検証方法別バイパス対応表・base64シグネチャ早見表） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/File_Upload.md` |
+| アップロード設定ファイル経由 RCE（.htaccess / .user.ini / web.config / uwsgi.ini @(exec) / Python .pth） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/File_Upload.md` |
+| 画像再エンコード生存 payload（EXIF コメント・PLTE/Global Color Table チャンク埋め込み） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/File_Upload.md` |
+| NTFS ADS によるアップロード拡張子バイパス（filename:stream / ::$DATA・IIS/Windows） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/File_Upload.md` |
+| 画像・動画変換ライブラリ経由 RCE/任意ファイル読取（ImageTragick CVE-2016-3714 / CVE-2022-44268 / FFmpeg HLS） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/File_Upload.md` |
 | 難読化JavaScript解析（eval/Packer形式・console.log置換・de4js） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/JS_Obfuscation.md` |
 | ROT13 / Base64 APIレスポンスのデコード | Initial Access | `02_Initial_Access/Web_Vulnerabilities/JS_Obfuscation.md` |
 | 多重エンコードの自動検出・再帰デコード（URL / Base64 / JWT / gzip / Hex 等、decode_layers）（WSTG-INPV-01） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/JS_Obfuscation.md` |

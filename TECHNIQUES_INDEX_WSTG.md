@@ -17,7 +17,7 @@ OWASP Web Security Testing Guide v4.2 のテストカテゴリ・テストケー
 | 報告書に WSTG-INPV-05 のような ID 併記したい | 該当手順実施後、本表で kedalab ファイル → WSTG ID を逆引き |
 | 対象組織 RFP に「WSTG-ATHN を全項目」とある | 該当カテゴリの行から kedalab ファイルへ飛ぶ |
 
-> **網羅していない領域の扱い**: WSTG-BUSLOGIC（ビジネスロジック）、WSTG-APIT（API テスト）等は kedalab の現スコープ外。手動テスト・スコープ個別対応とする。
+> **網羅していない領域の扱い**: WSTG-BUSL（ビジネスロジック）はファイルアップロード関連（BUSL-08/09）のみ収載。それ以外の BUSL 項目と WSTG-APIT（API テスト）等は kedalab の現スコープ外。手動テスト・スコープ個別対応とする。
 
 ---
 
@@ -122,6 +122,15 @@ OWASP Web Security Testing Guide v4.2 のテストカテゴリ・テストケー
 |---------|-----------|--------|
 | WSTG-CRYP-01 | Testing for Weak Transport Layer Security | `01_Reconnaissance/TLS_Audit.md`（プロトコル/暗号スイート列挙・名前付き脆弱性） |
 | WSTG-CRYP-04 | Testing for Weak Encryption | `02_Initial_Access/Binary_Analysis.md`（XOR / RC4 復号） |
+
+---
+
+## WSTG-BUSL（ビジネスロジック / Business Logic Testing）
+
+| WSTG ID | テスト項目 | kedalab ファイル |
+|---------|-----------|--------|
+| WSTG-BUSL-08 | Test Upload of Unexpected File Types | `02_Initial_Access/Web_Vulnerabilities/File_Upload.md`（拡張子/MIME ホワイトリスト外の受理・型判定 3 箇所モデル） |
+| WSTG-BUSL-09 | Test Upload of Malicious Files | `02_Initial_Access/Web_Vulnerabilities/File_Upload.md`（webshell / polyglot / 再エンコード生存 / 変換ライブラリ CVE） |
 
 ---
 
