@@ -6,6 +6,8 @@
 > 詳細は [`../README.md`](../README.md) Step 0 と [`../06_Concepts/Pentest_Fundamentals.md`](../06_Concepts/Pentest_Fundamentals.md) を参照。
 > 演習環境（HTB / OSCP 等）ではこのチェックは不要。
 
+> **記録しながら進める**：各 Step の成果（開いたポート・取得した認証情報・入った経路・昇格経路）は控えながら進む。各 Step 末尾の「▶ 記録」が、控えるべき成果と、kedaweb の Workspace ＞ Worksheet（記入の「型」）の対応欄を示す。kedaweb を使わない場合も、同じ項目を手元のノートに残すと後の判断で効く。
+
 ---
 
 ## 開始条件の確認
@@ -89,6 +91,8 @@ searchsploit --nmap nmap_detail.xml
 | `http-server-header: nginx/x.x + Phusion Passenger(R) x.x` | **Ruby / Rails アプリがバックエンドで動いている** | Step 2.9 の PDF 生成フォーム確認・`X-Runtime: Ruby` チェックを優先 |
 | `http-title: Convert Web Page to PDF` 等のツール機能名 | URL 入力型の変換機能が存在する | Step 2.9 へ直行して生成物のメタデータ確認（`exiftool`）を実施 |
 | `X-Powered-By: Express` / `X-Generator: Drupal` 等 | フレームワーク・CMSが特定できる | バージョンを確認して `searchsploit [フレームワーク名] [バージョン]` |
+
+> **▶ 記録:** open ポート一覧（この後の経路選択で繰り返し参照する）と OS / バージョンを控える。→ Worksheet「PORTS」欄・上部「OS」欄。
 
 ---
 
@@ -214,6 +218,8 @@ Step 2の列挙結果を元に、「今の状況でどの手法を試すか」�
 
 → `../02_Initial_Access/Credential_Discovery.md`（パスワード使い回し確認の表）
 
+> **▶ 記録:** 取得した認証情報は「値 : 入手元 : 通用先」の形で控える（全サービスでの使い回し確認とセット）。→ Worksheet「LOOT」欄。
+
 ---
 
 ## Step 4 — シェルの取得
@@ -271,6 +277,8 @@ export TERM=xterm
 
 → 詳細手順・代替手段: `../03_Post_Access_Linux/Shell_Stabilization.md`
 
+> **▶ 記録:** どの経路・どのサービス/脆弱性・どのユーザでシェルを得たかを控える。→ Worksheet「FOOTHOLD」欄。
+
 ---
 
 ## Step 5 — 侵入後の列挙
@@ -304,6 +312,8 @@ export TERM=xterm
 | `shadow` | `/etc/shadow` 直読み → ハッシュクラック |
 
 → 詳細: `../03_Post_Access_Linux/Enumeration_Checklist.md`（`id` 出力の読み方）
+
+> **▶ 記録:** 列挙で見つけた昇格の手がかり（sudo / SUID / capabilities / 書込先 / cron 等）を控える。→ Worksheet「[03] POST/PRIVESC — Linux」のメモ欄。
 
 ---
 
@@ -408,6 +418,8 @@ PoC取得→ターゲットへの転送→コンパイル（gcc / make）→実�
 
 → 詳細チェックリスト: `../03_Post_Access_Linux/Enumeration_Checklist.md`（root 権限取得後の追加列挙）
 → 取得した認証情報の使い回し確認: `../02_Initial_Access/Credential_Discovery.md`（パスワード使い回し確認の表）
+
+> **▶ 記録:** 昇格の経路と最終権限の証跡（`id` の出力等）を控える。横展開で見つけた鍵・認証情報は「LOOT」へ。→ Worksheet「PRIVESC」「PROOF」欄。
 
 ---
 

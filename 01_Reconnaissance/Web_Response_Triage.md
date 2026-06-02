@@ -31,6 +31,7 @@
 | スタックトレース / エラー | Java/Python/PHP/SQL のエラー出力・内部パス漏洩 | HIGH |
 | セキュリティヘッダー欠落 | CSP / HSTS / X-Content-Type-Options / Referrer-Policy 等 | MEDIUM |
 | Cookie 属性不備 | HttpOnly / Secure / SameSite 欠落 / 超長期 Expires | MEDIUM |
+| CORS 設定不備 | `Access-Control-Allow-Origin` の動的反射 / `null` 許可 / `Access-Control-Allow-Credentials: true` | MEDIUM |
 | 内部識別子 | UUID / ObjectId / プライベート IP / 内部ホスト名 / Windows パス | MEDIUM |
 | HTML フォーム値 | `input` の value 属性 / `select` の selected / `textarea` の中身 | MEDIUM |
 | HTML コメント | `<!-- TODO -->` / 開発者コメント | LOW |
@@ -121,8 +122,10 @@ DevTools での全レスポンス検索:
 | `Referrer-Policy: unsafe-url` / `no-referrer-when-downgrade` | URL パラメータが 3rd party に漏洩 | センシティブなパラメータの有無を確認 |
 | `Server:` / `X-Powered-By:` でバージョン露出 | 既知 CVE の可能性 | `searchsploit` → `Web_Enumeration.md` |
 | `Set-Cookie` で HttpOnly 欠落 | XSS でトークン窃取が可能 | `../02_Initial_Access/Web_Vulnerabilities/XSS.md` |
+| `Set-Cookie` で SameSite=None / 属性なし、かつ状態変更が Cookie のみで認証される | クロスサイトから状態変更を強制できる可能性 | `../02_Initial_Access/Web_Vulnerabilities/CSRF.md` |
+| `Access-Control-Allow-Origin` がリクエスト `Origin` を動的反射 / `null` 許可 / `Allow-Credentials: true` | クロスオリジンで認証済みレスポンスを窃取できる可能性 | `../02_Initial_Access/Web_Vulnerabilities/CORS.md` |
 
-**注意:** `X-Frame-Options` と CSP `frame-ancestors` は重複し後者が優先される。両方欠落した場合のみ確実にクリックジャッキング指摘可能。`Server:` / `X-Powered-By:` は WAF / CDN が書き換えていることがあり直接の証跡にならない場合がある。
+**注意:** `X-Frame-Options` と CSP `frame-ancestors` は重複し後者が優先される。両方欠落した場合のみ確実にクリックジャッキング指摘可能。`Server:` / `X-Powered-By:` は WAF / CDN が書き換えていることがあり直接の証跡にならない場合がある。CORS の ACAO 反射確認は任意の `Origin:` ヘッダーを送って反射可否を見る軽い能動テストを伴う（手順は `../02_Initial_Access/Web_Vulnerabilities/CORS.md` §1）。`*` + credentials はブラウザが拒否するため、実害判定は ACAO 反射と `Allow-Credentials` の組み合わせで行う。
 
 ---
 
@@ -232,6 +235,8 @@ nuclei -u https://[TARGET] -t http/exposures/ -t http/misconfiguration/ \
 - 前：`Web_Enumeration.md`（Web アプリの初期偵察・Cookie 分類）
 - 前：`TLS_Audit.md`（HSTS 等 TLS 関連ヘッダーの詳細確認）
 - 後：`../02_Initial_Access/Web_Vulnerabilities/XSS.md`（HttpOnly 欠落・CSP 弱体の悪用）
+- 後：`../02_Initial_Access/Web_Vulnerabilities/CSRF.md`（SameSite=None/欠落 + Cookie のみ認証の状態変更）
+- 後：`../02_Initial_Access/Web_Vulnerabilities/CORS.md`（ACAO 動的反射 / Allow-Credentials の緩い CORS ヘッダーを検出した場合）
 - 後：`../02_Initial_Access/Web_Vulnerabilities/JS_Obfuscation.md`（JWT / エンコード値の多重デコード）
 - 後：`../02_Initial_Access/Web_Vulnerabilities/JWT_Attacks.md`（JWT が検出された場合）
 - 後：`../02_Initial_Access/Web_Vulnerabilities/IDOR.md`（認証後の認可不備）

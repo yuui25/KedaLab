@@ -8,6 +8,8 @@
 
 > **「外部」スコープの用語について**：本フローの「外部」は NIST SP 800-115 §2.4.1 "External and Internal" で定義された業界標準のテスティングビューポイントに対応する（自組織のセキュリティ境界の外側、インターネット側からのテスト）。ガイドライン章マッピング → [`../TECHNIQUES_INDEX_GUIDELINES.md`](../TECHNIQUES_INDEX_GUIDELINES.md)。ガイドライン概要 → [`../06_Concepts/Pentest_Guidelines_Guide.md`](../06_Concepts/Pentest_Guidelines_Guide.md)
 
+> **記録しながら進める**：開いたポート・特定した製品/版・発見した認証情報は控えながら進む。各 Step 末尾の「▶ 記録」が、控えるべき成果と、kedaweb の Workspace ＞ Worksheet（記入の「型」）の対応欄を示す。
+
 ---
 
 ## このファイルをいつ使うか（着火条件）
@@ -133,6 +135,8 @@ TLS ポートが開いている場合は、証明書の `Issuer` / `Subject CN` 
 
 製品が確定したら Step 2 へ。
 
+> **▶ 記録:** 開いたポート・特定した製品/バージョン（証明書の組織情報含む）を控える。→ Worksheet「PORTS」欄・「[02] INITIAL ACCESS」のメモ欄（製品 → CVE 照合）。
+
 ---
 
 ## Step 2 — Edge CVE 照合（エッジアプライアンス製品確定時のみ）
@@ -172,6 +176,8 @@ TLS ポートが開いている場合は、証明書の `Issuer` / `Subject CN` 
 | 管理パス（`/admin` / `/manager` 等）が確認できた | Step 5 → Step 6 でそのパスを標的に絞る |
 | 公開ディレクトリ・誤公開先から Office 文書 / PDF / 画像が取得できた | メタデータ（作成者・内部ドメイン名・ソフトバージョン）を抽出 → ユーザー名は Step 6 のスプレー辞書、ソフトバージョンは CVE 検索の起点に → `../01_Reconnaissance/Metadata_Analysis.md` |
 | 何も見つからない | Step 4（TLS弱点）へ |
+
+> **▶ 記録:** 誤公開ファイル・メタデータから得た認証情報候補・ユーザー名・内部ドメイン名を控える（Step 6 のスプレー辞書になる）。→ Worksheet「LOOT」欄。
 
 ---
 
@@ -229,6 +235,8 @@ Step 3 で発見した認証情報候補もここで使用する。
 | Step 3 で取得した認証情報がある | `Default_Credentials.md` の辞書に追加して再試行 |
 | 全試行失敗 | `Web_Vuln_Flow.md` で Web アプリ脆弱性の観点に切り替える |
 | 技術的経路がすべて閉じている + 従業員への連絡手段・OSINT 情報があり、スコープにソーシャルが含まれる | 人間を介した初期アクセス（フィッシング / プリテキスティング）。**本番では書面承認・対象者リスト必須** → `../02_Initial_Access/Social_Engineering.md` |
+
+> **▶ 記録:** ログインできた場合は資格情報と管理画面の権限を控える。→ Worksheet「LOOT」「FOOTHOLD」欄。
 
 ---
 

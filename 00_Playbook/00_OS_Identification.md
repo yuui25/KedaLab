@@ -7,6 +7,8 @@
 > ログイン後のプロンプト形式（`$` → Linux 系、`>` → Windows 系）でOSが即確定する。
 > TTL確認やnmapより速い。接続できた時点でOS判定は完了とし、対応Playbookの「開始条件の確認」テーブルへ進む。
 
+> **記録しながら進める**：判定した OS・ホスト名・開いたポートは、この後のどの Playbook でも最初に参照する。控えておく（kedaweb の Workspace ＞ Worksheet 上部「OS」「HOSTNAME」欄・「PORTS」欄が対応）。kedaweb を使わない場合も手元のノートに残す。
+
 ---
 
 ## 判定の優先順位
@@ -121,6 +123,8 @@ TCP/IP スタックの特性からOSを推定する。root 権限が必要。
   # 開いていたポートだけ詳細スキャンし直す
   sudo nmap -p[OPEN_PORTS] -sC -sV [IP]
   ```
+
+> **▶ 記録:** 開いたポート一覧を控える（全 Playbook で最初に参照する）。→ Worksheet「PORTS」欄。
 
 ---
 
@@ -243,6 +247,8 @@ nmap -p 22 -sV [IP]
 | 判定できない | 全ポートスキャン（`nmap -p-`）を実施してから再判定（→ 下記） |
 
 > Windows は AD でもスタンドアロンでも入口は同じ `Windows_AD_Attack_Flow.md`。**OS 判定の段階で 88 の有無による分岐を気にする必要はない**（遷移先で判定する）。
+
+> **▶ 記録:** 確定した OS とホスト名を控える。→ Worksheet 上部「OS」「HOSTNAME」欄。
 
 ---
 
