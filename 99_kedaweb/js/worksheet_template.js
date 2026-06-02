@@ -40,12 +40,12 @@ window.KEDA_WORKSHEET = {
       id: "recon",
       title: "[01] RECON / 列挙",
       type: "checklist",
-      playbook: "00_Playbook/External_Service_Recon_Flow.md",
+      playbook: "00_Playbook/00_OS_Identification.md",
       items: [
-        { label: "全ポートスキャン (nmap -p- → 詳細)",   file: "05_Tools_Reference/Nmap.md", hint: "例) -p- 済 / open: 22,80,445。版数付き -sV を -oA 保存 → searchsploit --nmap nmap_detail.xml" },
+        { label: "全ポートスキャン (nmap -p- → 詳細)",   file: "01_Reconnaissance/Network_Scanning.md", hint: "例) -p- 済 / open: 22,80,445" },
         { label: "サービス/バージョン特定",              file: "01_Reconnaissance/Network_Scanning.md", hint: "例) OpenSSH 8.2 / Apache 2.4.41 / Samba 4.x" },
-        { label: "OS版数/ビルド特定",                    file: "00_Playbook/00_OS_Identification.md", hint: "例) Windows 7 / Server 2008 R2 → 古い=ローカル昇格CVEの入口" },
-        { label: "FTP/サービス別 enum (21/22 等)",       file: "02_Initial_Access/FTP.md", hint: "例) 21 anon可 / 書込? / web既定ファイル(iisstart等)が見える=webroot疑い→書込→webshell" },
+        { label: "OS版数/ビルド特定",                    file: "00_Playbook/00_OS_Identification.md", hint: "例) Windows 7 / 2008 R2 → 古いほど昇格CVE" },
+        { label: "FTP/サービス別 enum (21/22 等)",       file: "02_Initial_Access/FTP.md", hint: "例) anon可? 書込可? iisstart等=webroot疑い" },
         { label: "Web 列挙 (80/443)",                    file: "01_Reconnaissance/Web_Enumeration.md", hint: "例) CMS名・版 / 当たりのパス(/admin,/backup)。" },
         { label: "Web レスポンス精査 (ヘッダ/エラー)",   file: "01_Reconnaissance/Web_Response_Triage.md", hint: "例) Server/X-Powered-By / TRACE等の危険メソッド / スタックトレース" },
         { label: "SMB 列挙 (139/445)",                   file: "01_Reconnaissance/SMB_Enumeration.md", hint: "例) 共有名 / null可否 / SMBv1 / 署名" },
@@ -76,7 +76,7 @@ window.KEDA_WORKSHEET = {
       items: [
         { label: "default / 弱い資格情報",               file: "02_Initial_Access/Default_Credentials.md", hint: "例) 試した cred / 成功した組合せ" },
         { label: "資格情報の発見 (露出/再利用)",         file: "02_Initial_Access/Credential_Discovery.md", hint: "例) 入手元 / 値 / 使い回し先" },
-        { label: "既知 CVE 照合 (バージョン → exploit)", file: "05_Tools_Reference/Searchsploit.md", hint: "例) version → CVE-xxxx / PoC有無。searchsploit --nmap は版数付き xml を渡す(allports は版数無しで空振り)" },
+        { label: "既知 CVE 照合 (バージョン → exploit)", file: "05_Tools_Reference/Searchsploit.md", hint: "例) version → CVE / PoC有無 (xmlは-sV版を渡す)" },
         { label: "エッジ機器/アプライアンス CVE",        file: "02_Initial_Access/Edge_Appliance_CVEs.md", hint: "例) 製品 / 版 / CVE" },
         { label: "サービス別侵入 (SSH/FTP/MSSQL 等)",    file: "02_Initial_Access/MSSQL_Exploitation.md", hint: "例) サービス / 手法 / 得た権限" }
       ]
