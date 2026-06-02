@@ -2132,6 +2132,20 @@
     // normalize newlines
     src = src.replace(/\r\n/g, "\n");
 
+    // blockquotes: group consecutive `>` lines into ONE <blockquote>, strip the
+    // marker, and render the inner content recursively so nested lists / code
+    // fences render inside the single quote box instead of fragmenting into a
+    // separate box per line (and leaking literal `>` for fenced lines). Stashed
+    // as a \x00-sentinel placeholder (same scheme as fenced code below) so the
+    // rest of the pipeline leaves it untouched until re-insertion.
+    const quotes = [];
+    src = src.replace(/(?:^[ \t]*>[^\n]*(?:\n|$))+/gm, block => {
+      const inner = block.replace(/^[ \t]*>[ \t]?/gm, "").replace(/\s+$/, "");
+      const idx = quotes.length;
+      quotes.push(markdown(inner));
+      return "\n\x00Q" + idx + "\x00\n";
+    });
+
     // extract fenced code blocks first (placeholder)
     const fences = [];
     src = src.replace(/```([^\n]*)\n([\s\S]*?)```/g, (m, lang, code) => {
@@ -2171,8 +2185,7 @@
     // hr
     src = src.replace(/^---+$/gm, "<hr>");
 
-    // blockquotes (single line)
-    src = src.replace(/^>\s?(.*)$/gm, (m, c) => "<blockquote>" + inline(c) + "</blockquote>");
+    // blockquotes are handled at the top of this function (grouped + recursive).
 
     // lists
     // Captures bullet lines + any indented (>= 1 space) continuation lines.
@@ -2208,9 +2221,10 @@
     );
 
     // paragraphs — split on blank lines, wrap non-block lines
-    const html = src.split(/\n{2,}/).map(chunk => {
+    let html = src.split(/\n{2,}/).map(chunk => {
       const t = chunk.trim();
       if (!t) return "";
+      if (/^\x00Q\d+\x00$/.test(t)) return chunk;
       if (/^<(h\d|ul|ol|table|blockquote|hr|pre)/.test(t)) return chunk;
       if (/^ F\d+ /.test(t)) return chunk;
       // Defensive: chunk may contain a block element mid-text when markdown
@@ -2233,6 +2247,9 @@
       }
       return "<p>" + inline(t.replace(/\n/g, " ")) + "</p>";
     }).join("\n");
+
+    // re-insert blockquotes (inner rendered recursively above → one <blockquote> box)
+    html = html.replace(/\x00Q(\d+)\x00/g, (_, i) => "<blockquote>" + quotes[+i] + "</blockquote>");
 
     // re-insert fences (highlight() handles HTML-escaping internally)
     return html.replace(/ F(\d+) /g, (_, i) => {

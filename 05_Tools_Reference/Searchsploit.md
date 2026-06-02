@@ -114,18 +114,20 @@ searchsploit -m multiple/webapps/50581.py
 **コマンド:**
 
 ```bash
-# Nmap スキャン時に XML を出力（-oA で .xml/.nmap/.gnmap を同時出力）
-nmap -sC -sV -oA nmap_initial TARGET_IP   # [Attacker]
+# Nmap は版数込みで XML を出力（-oA で .xml/.nmap/.gnmap を同時出力）
+sudo nmap -sC -sV -p- --min-rate 5000 -oA nmap_allports TARGET_IP   # [Attacker]
 
 # 出力した XML に対して searchsploit を実行
-searchsploit --nmap nmap_initial.xml   # [Attacker]
+searchsploit --nmap nmap_allports.xml   # [Attacker]
 ```
+
+> **`--nmap` には版数（`-sV`）が入った XML を渡す。** `-p-` だけで保存した XML（`-sV` なし）はサービス名しか無く、`ftp` / `http` が "term is too general" で全件スキップされて空振りする。上のコマンドは `-sV` 込みなのでこの問題は起きない。
 
 **`--nmap` の出力例（80/22 のみ開いている環境の場合）：**
 
 ```
 [i] SearchSploit's XML mode (without verbose enabled).   To enable: searchsploit -v --xml...
-[i] Reading: 'nmap_initial.xml'
+[i] Reading: 'nmap_allports.xml'
 
 [-] Skipping term: ssh   (Term is too general. Please re-search manually: /usr/bin/searchsploit -t ssh)
 

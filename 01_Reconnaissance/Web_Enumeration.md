@@ -2,6 +2,8 @@
 
 > **スコープ**: HTTP/HTTPS サービスの列挙フェーズ全般。robots.txt 等の手動把握〜フレームワーク/アプリ名の特定〜バージョン→CVE 検索〜ディレクトリ/vhost ファジング〜Cookie 分類までを扱う。HTTPS のプロトコル/証明書監査は `TLS_Audit.md`、誤公開ファイル検出は `Exposed_Files.md`、個別 Web 脆弱性の攻撃は `../02_Initial_Access/Web_Vulnerabilities/` を参照。
 
+> **このファイルの立ち位置**: 列挙手順（技術ファイル）。**ペネトレ/シェル取得目的**では `../00_Playbook/Linux_Attack_Flow.md`・`../00_Playbook/Windows_AD_Attack_Flow.md` から呼ばれる（この場合ここに来ていれば方向は正しい）。**Web 脆弱性を網羅的に洗い出す診断スコープ**なら `../00_Playbook/Web_Vuln_Flow.md` を起点にする（そこからもこのファイルが参照される）。どちらの経路でも、この列挙手順自体は共通。
+
 ## 着火条件
 80 / 443 / 8080 等の Web ポートが開いている場合。**ディレクトリ列挙の前に、まず手動でサイト構造とアプリ名を把握する。**
 

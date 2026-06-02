@@ -81,12 +81,15 @@ sudo nmap -A --reason -oA nmap_aggressive [TARGET_IP]
 **コマンド:**
 
 ```bash
-# [Attacker] 全 65535 ポートを高速スキャン
-sudo nmap -p- --min-rate 5000 --reason -oA nmap_allports [TARGET_IP]
+# [Attacker] 初手スキャン（版数 -sV + スクリプト -sC + 全 65535 ポート + xml 保存）
+sudo nmap -sC -sV -p- --min-rate 5000 -oA nmap_allports [TARGET_IP]
+# -sC -sV         : デフォルトスクリプト + 版数検出（open ポートにのみ走る）
 # -p-             : 全 65535 ポート
 # --min-rate 5000 : スキャン速度を上げる（本番では事前合意による）
-# --reason        : 各判定の根拠を残す（後解析の精度が上がる）
+# （根拠を残したい場合は --reason を追加）
 ```
+
+> 高速化が要る広域スコープ・時間制約時のみ、下の RustScan / Masscan → nmap の2段に切り替える。
 
 **RustScan / Masscan → nmap パイプライン（時間制約のある実案件向け）:**
 
@@ -187,12 +190,11 @@ unicornscan -mU -v [TARGET_IP]:1-65535
 **コマンド:**
 
 ```bash
-# [Attacker] 初期スキャン結果から既知エクスプロイト一括検索
-searchsploit --nmap nmap_initial.xml
-
-# [Attacker] 全ポートスキャン結果も確認
+# [Attacker] スキャン XML（版数込み）から既知エクスプロイト一括検索
 searchsploit --nmap nmap_allports.xml
 ```
+
+> **渡す XML は版数（`-sV`）が入っているものに限る。** `-p-` だけで保存した XML はサービス名しか無く "term is too general" で全件スキップされる。§2 のコマンドは `-sV` 込みなので `nmap_allports.xml` をそのまま渡せる。
 
 **観測される出力 → 次のアクション:**
 

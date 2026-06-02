@@ -56,22 +56,12 @@ Linux と確定した上でこのファイルのStep 1以降を進める。
 
 ## Step 1 — ポートスキャン
 
-> `00_OS_Identification.md` で実施した初期 nmap スキャン（`-sC -sV`）は再利用してよい。
-> このStep 1の目的は**追加で全ポートスキャン（`-p-`）を行うこと**。OS判定時のスキャンで見落としたポートを拾う。
-
-まず全ポートをスキャンして開いているサービスを把握する。
+> OS判定（`00_OS_Identification.md`）で `nmap_allports`（`-sC -sV -p-`）を取得済みなら、それをそのまま使う（**再実行不要**）。未取得ならここで回す。
 
 ```bash
-# [Attacker] 全ポートスキャン（必ず実行 — 初期 -sC -sV は上位1000ポートのみで非標準ポートを見逃す）
-# -p- のみで版数は取らない（速度優先）→ 開口部だけ次のコマンドで版数精査
-sudo nmap -p- --min-rate 5000 --reason -oA nmap_allports [TARGET_IP]
-
-# [Attacker] 開いていたポートに絞って スクリプト + バージョン精査
-sudo nmap -sC -sV -p[OPEN_PORTS] -oA nmap_detail [TARGET_IP]
-
-# [Attacker] 版数付きスキャン結果から既知 CVE を一括照合（手動での見落とし防止）
-# ※ nmap_allports.xml は -sV なしで版数が入っていないため nmap_detail.xml を渡す
-searchsploit --nmap nmap_detail.xml
+# [Attacker] 初手スキャン（版数 -sV + スクリプト -sC + 全ポート -p- + xml 保存）
+sudo nmap -sC -sV -p- --min-rate 5000 -oA nmap_allports [TARGET_IP]
+searchsploit --nmap nmap_allports.xml          # 版数付き xml から既知 CVE を一括照合
 ```
 
 → 高速化（RustScan / Masscan）・UDP スキャンの詳細: `../01_Reconnaissance/Network_Scanning.md`
@@ -81,7 +71,7 @@ searchsploit --nmap nmap_detail.xml
 - 21 (FTP), 22 (SSH), 80/443 (HTTP/S) が基本セット
 - 非標準ポートに注目（開発環境・管理用途の可能性）
 - `nmap -sC -sV` のスクリプトスキャンでバージョン情報を取得
-- **スキャン後に `searchsploit --nmap nmap_detail.xml` で既知CVEを一括確認する**（版数付きの詳細スキャン XML が必要。`nmap_allports.xml` は `-sV` なしで版数が無いため使わない）
+- **スキャン後に `searchsploit --nmap nmap_allports.xml` で既知CVEを一括確認する**（`-sV` 込みなので xml に版数が入り、そのまま渡せる）
   → `../01_Reconnaissance/Network_Scanning.md`（Step 5）
 
 **nmap 出力でバックエンド技術を読み取るシグナル：**
@@ -158,6 +148,7 @@ searchsploit --nmap nmap_detail.xml
 - 匿名ログインを試行 (`ftp anonymous@`)
 - ファイルがあればダウンロードして内容確認
 - **FTPは平文通信** → ネットワークキャプチャファイル（PCAP）があれば認証情報が含まれている可能性
+- **80/443 が同時に開いている場合は、ファイル精査より先に「FTP root = Web の DocumentRoot か」を判定する** → 同一なら書込 → webshell 設置 → ブラウザ実行で RCE が最短経路（FTP のファイルが 80 番の HTML と同名・同サイズなら疑う。`../02_Initial_Access/FTP.md` §2 判定 → §5 書込テスト）
 
 → 詳細: `../02_Initial_Access/FTP.md`（バナー観察〜匿名取得〜書込判定〜辞書攻撃〜既知 CVE まで）
 

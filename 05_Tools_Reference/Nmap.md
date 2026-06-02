@@ -12,14 +12,18 @@
 ## 基本スキャンセット（毎回使う）
 
 ```bash
-# 初期スキャン（サービス検出）
-nmap -sC -sV -oA nmap_initial [IP]
+# [Attacker] 初手スキャン（版数 -sV + スクリプト -sC + 全ポート -p- + xml 保存）
+sudo nmap -sC -sV -p- --min-rate 5000 -oA nmap_allports [IP]
+searchsploit --nmap nmap_allports.xml          # 版数付き xml から既知 CVE を一括照合
+```
 
-# 全ポートスキャン
-nmap -p- --min-rate 5000 -oA nmap_allports [IP]
+> 広域スコープ・時間制約で高速化したい場合のみ RustScan / Masscan → nmap の2段に切り替える → `../01_Reconnaissance/Network_Scanning.md` §2。
 
-# 特定ポートへの詳細スキャン
-nmap -sC -sV -p [PORT1],[PORT2] -oA nmap_targeted [IP]
+任意の追加オプション（必要時のみ付ける）:
+
+```bash
+nmap -sC -sV -p- --min-rate 5000 --reason -oA nmap_allports [IP]   # --reason: 各判定の根拠を残す
+nmap -sC -sV -p- --min-rate 5000 -Pn     -oA nmap_allports [IP]    # -Pn: ICMP ブロック環境でホスト発見をスキップ
 ```
 
 ## よく使うオプション

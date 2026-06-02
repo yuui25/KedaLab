@@ -23,12 +23,12 @@
    file / playbook のパスは kedalab ルート相対。実在すること。
    ============================================================= */
 window.KEDA_WORKSHEET = {
-  version: "2026-06-02",
+  version: "2026-06-03",
 
   meta: [
     { id: "target",   label: "TARGET",   placeholder: "[TARGET_IP]" },
     { id: "hostname", label: "HOSTNAME", placeholder: "" },
-    { id: "os",       label: "OS",       placeholder: "Linux / Windows" },
+    { id: "os",       label: "OS",       placeholder: "Linux / Windows + 版数 (例: Windows 7 / 2008 R2)" },
     { id: "date",     label: "DATE",     placeholder: "2026-..." },
     { id: "scope",    label: "SCOPE / RULES", placeholder: "本番のみ: 実施可否・除外・連絡先を先に合意（演習は空欄可）" }
   ],
@@ -42,10 +42,12 @@ window.KEDA_WORKSHEET = {
       type: "checklist",
       playbook: "00_Playbook/External_Service_Recon_Flow.md",
       items: [
-        { label: "全ポートスキャン (nmap -p- → 詳細)",   file: "05_Tools_Reference/Nmap.md", hint: "例) -p- 済 / open: 22,80,445" },
+        { label: "全ポートスキャン (nmap -p- → 詳細)",   file: "05_Tools_Reference/Nmap.md", hint: "例) -p- 済 / open: 22,80,445。版数付き -sV を -oA 保存 → searchsploit --nmap nmap_detail.xml" },
         { label: "サービス/バージョン特定",              file: "01_Reconnaissance/Network_Scanning.md", hint: "例) OpenSSH 8.2 / Apache 2.4.41 / Samba 4.x" },
+        { label: "OS版数/ビルド特定",                    file: "00_Playbook/00_OS_Identification.md", hint: "例) Windows 7 / Server 2008 R2 → 古い=ローカル昇格CVEの入口" },
+        { label: "FTP/サービス別 enum (21/22 等)",       file: "02_Initial_Access/FTP.md", hint: "例) 21 anon可 / 書込? / web既定ファイル(iisstart等)が見える=webroot疑い→書込→webshell" },
         { label: "Web 列挙 (80/443)",                    file: "01_Reconnaissance/Web_Enumeration.md", hint: "例) CMS名・版 / 当たりのパス(/admin,/backup)。" },
-        { label: "Web レスポンス精査 (ヘッダ/エラー)",   file: "01_Reconnaissance/Web_Response_Triage.md", hint: "例) Server/X-Powered-By / スタックトレース" },
+        { label: "Web レスポンス精査 (ヘッダ/エラー)",   file: "01_Reconnaissance/Web_Response_Triage.md", hint: "例) Server/X-Powered-By / TRACE等の危険メソッド / スタックトレース" },
         { label: "SMB 列挙 (139/445)",                   file: "01_Reconnaissance/SMB_Enumeration.md", hint: "例) 共有名 / null可否 / SMBv1 / 署名" },
         { label: "SNMP 列挙 (161/udp)",                  file: "01_Reconnaissance/SNMP_Enumeration.md", hint: "例) community名 / 取得できたMIB" },
         { label: "LDAP/AD 列挙 (389/636)",               file: "01_Reconnaissance/LDAP_Enumeration.md", hint: "例) ドメイン名 / ユーザ / SPN" },
@@ -74,7 +76,7 @@ window.KEDA_WORKSHEET = {
       items: [
         { label: "default / 弱い資格情報",               file: "02_Initial_Access/Default_Credentials.md", hint: "例) 試した cred / 成功した組合せ" },
         { label: "資格情報の発見 (露出/再利用)",         file: "02_Initial_Access/Credential_Discovery.md", hint: "例) 入手元 / 値 / 使い回し先" },
-        { label: "既知 CVE 照合 (バージョン → exploit)", file: "05_Tools_Reference/Searchsploit.md", hint: "例) version → CVE-xxxx / PoC有無" },
+        { label: "既知 CVE 照合 (バージョン → exploit)", file: "05_Tools_Reference/Searchsploit.md", hint: "例) version → CVE-xxxx / PoC有無。searchsploit --nmap は版数付き xml を渡す(allports は版数無しで空振り)" },
         { label: "エッジ機器/アプライアンス CVE",        file: "02_Initial_Access/Edge_Appliance_CVEs.md", hint: "例) 製品 / 版 / CVE" },
         { label: "サービス別侵入 (SSH/FTP/MSSQL 等)",    file: "02_Initial_Access/MSSQL_Exploitation.md", hint: "例) サービス / 手法 / 得た権限" }
       ]
@@ -114,6 +116,8 @@ window.KEDA_WORKSHEET = {
       placeholder: "vector → root/SYSTEM までの経路" },
     { id: "proof",    title: "PROOF", type: "text",
       placeholder: "低権限ユーザー取得確認 (id):\nroot / SYSTEM 取得確認 (id):" },
+    { id: "next",     title: "NEXT / 中断メモ (再開時の一手)", type: "text",
+      placeholder: "中断時に「次の一手」をここへ。再開はここから読む。\n例) 明日: FTP anon 書込テスト → webroot同一の疑い(689一致) → .aspx webshell 設置\n例) feroxbuster 結果を回収 / searchsploit IIS FTP は DoS のみ=RCE無し(再検索不要)" },
     { id: "notes",    title: "NOTES / 振り返り (型の改善メモ)", type: "text",
       placeholder: "詰まった所・次回試すこと・このテンプレに足したい項目\n[確認] コマンドの IP / ポートが TARGET と一致しているか送信前に照合" }
   ]

@@ -34,7 +34,7 @@
    UI のフッタ表示で「いつ時点のルールか」が分かる。
    ============================================================= */
 window.KEDA_TRIAGE = {
-  version: "2026-06-02",
+  version: "2026-06-03",
   rules: [
     /* ── tech-stack:レスポンスから判定できる土台技術 ───────────── */
     {
@@ -303,7 +303,10 @@ window.KEDA_TRIAGE = {
       label: "古い Windows SMB（SMBv1 / 旧 OS）",
       category: "infra-service",
       weight: 3,
-      pattern: [/SMBv1\s*[:=]\s*True/i, /\bWindows\s+XP\b/i, /\bWindows\s+2000\b/i, /Windows\s+Server\s+200[038]\b/i, /Windows\s+2000\s+LAN\s+Manager/i],
+      /* 旧 OS 文字列は SMB の文脈（smb-os-discovery ブロック / smbclient・nxc の OS=[...] バナー）に
+         限定して拾う。nmap -O の "Running (JUST GUESSING)" / "Aggressive OS guesses" は
+         あらゆる Windows 版を羅列するため、ここで拾うと 445 が無くても誤発火する（FTP+IIS のみ等）。 */
+      pattern: [/SMBv1\s*[:=]\s*True/i, /smb-os-discovery[\s\S]{0,200}?Windows\s+(XP|2000|Server\s+200[038]|Vista|7)\b/i, /OS=\[Windows\s+(XP|2000|Server\s+200[038]|Vista|7)/i, /Windows\s+2000\s+LAN\s+Manager/i],
       targets: [
         { file: "02_Initial_Access/SMB_Windows_Exploitation.md", why: "旧 Windows + SMBv1 → smb-vuln-* で MS17-010(EternalBlue)/MS08-067 を照合。該当すれば認証情報ゼロで SYSTEM シェルが直接取れる（cred 探索を丸ごとスキップ）" },
         { file: "01_Reconnaissance/SMB_Enumeration.md", why: "並行して共有・null/Guest 列挙。smbclient -L が NT_STATUS_INVALID_PARAMETER なら SMBv1 のみ → --option='client min protocol=NT1'" }

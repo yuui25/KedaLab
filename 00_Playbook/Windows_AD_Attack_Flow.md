@@ -76,19 +76,14 @@ nmap スキャンで以下のポートが複数開いていれば AD 環境と�
 
 → 詳細: `../01_Reconnaissance/Network_Scanning.md`
 
-**全ポートスキャン（必ず実行）：**
+**全ポートスキャン（取得済みなら再利用）：**
 
-`00_OS_Identification.md` の初期 nmap（`-sC -sV`）は上位 1000 ポートのみ。AD 判定が付いた後も、**経路を選ぶ前に必ず全ポートスキャンを回す。** 非標準ポートの MSSQL・WSUS・内部 Web・古い SMB 以外の RCE 経路などを見落とさないため。
+OS判定（`00_OS_Identification.md`）で `nmap_allports`（`-sC -sV -p-`）を取得済みなら、それをそのまま使う（**再実行不要**）。未取得ならここで回す。非標準ポートの MSSQL・WSUS・内部 Web・古い SMB 以外の RCE 経路を見落とさないため、経路選択の前に全ポート結果を必ず揃える。
 
 ```bash
-# [Attacker] 全ポートスキャン（-p- のみ・版数なしで速度優先）
-sudo nmap -p- --min-rate 5000 --reason -oA nmap_allports [TARGET_IP]
-
-# [Attacker] 開いていたポートに絞って スクリプト + バージョン精査
-sudo nmap -sC -sV -p[OPEN_PORTS] -oA nmap_detail [TARGET_IP]
-
-# [Attacker] 版数付き結果から既知 CVE を一括照合（手動の見落とし防止）
-searchsploit --nmap nmap_detail.xml
+# [Attacker] 初手スキャン（版数 -sV + スクリプト -sC + 全ポート -p- + xml 保存）
+sudo nmap -sC -sV -p- --min-rate 5000 -oA nmap_allports [TARGET_IP]
+searchsploit --nmap nmap_allports.xml          # 版数付き xml から既知 CVE を一括照合
 ```
 
 → 高速化（RustScan / Masscan）・UDP スキャンの詳細: `../01_Reconnaissance/Network_Scanning.md`
@@ -152,6 +147,8 @@ nmap の `-sC` スクリプトスキャン結果から：
 
 **FTP（21）がスキャン結果に含まれる場合は並行確認する** → `../02_Initial_Access/FTP.md`
 **SSH（22）がスキャン結果に含まれる場合は並行確認する** → `../02_Initial_Access/SSH.md`
+
+> **FTP（21）+ IIS/Web（80/443）の同居は定番の侵入経路。** 匿名 FTP の root が IIS の DocumentRoot と同一だと、FTP 書込 → `.aspx` webshell 設置 → ブラウザ実行で RCE になる。FTP に見えるファイルが 80 番の返す HTML と一致（同名・同サイズ、`Content-Length` で照合）したら、ファイル精査より先に `../02_Initial_Access/FTP.md` §2 の webroot 判定 → §5 書込テストを実施する。
 
 > **▶ 記録:** ドメイン名・ホスト名・OS バージョンを控える。→ Worksheet 上部「HOSTNAME」「OS」欄。
 

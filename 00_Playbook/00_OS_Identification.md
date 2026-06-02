@@ -58,17 +58,12 @@ ping -c 1 [IP]
 常に実施する。ポート構成だけでほぼ OS が確定する。
 
 ```bash
-nmap -sC -sV [IP]
-# または OS 検出を明示的に有効化
-sudo nmap -O [IP]
-
-# 上記は1コマンドにまとめてよい（OS検出 + バージョン + デフォルトスクリプト）
-sudo nmap -O -sC -sV [IP]
-# -A でもほぼ等価（-O・-sV・-sC・traceroute を一括。出力は増える）
-sudo nmap -A [IP]
+# [Attacker] 初手スキャン（版数 -sV + スクリプト -sC + 全ポート -p- + xml 保存）
+sudo nmap -sC -sV -p- --min-rate 5000 -oA nmap_allports [IP]
+searchsploit --nmap nmap_allports.xml          # 版数付き xml から既知 CVE を一括照合
 ```
 
-> **`-O` と `-sC -sV` を分ける必然性はない。** root 権限さえあれば `-O -sC -sV` を一度に投げてよい。分割例は「OS 検出だけ後から足したい」場合の参考。
+OS フィンガープリント（TCP/IP スタック推定）も欲しいときだけ `-O` を足す（root 権限要）。`-A` は `-O -sV -sC -traceroute` の一括版で出力が増えるだけ。
 
 ### ポートの組み合わせで判断する
 
@@ -92,15 +87,14 @@ Service Info: OS: Windows; CPE: cpe:/o:microsoft:windows
 
 スキャン結果の末尾に OS が明記されることが多い。
 
-### `-O` オプション（OS フィンガープリント）
+### `-O`（OS フィンガープリント）出力の読み方
 
-```bash
-sudo nmap -O [IP]
+着火条件のコマンドに `-O` を足すと、TCP/IP スタックの特性から OS 推定が出る（root 権限要）：
+
+```
 # → Running: Microsoft Windows 2019
 # → Running: Linux 4.X|5.X
 ```
-
-TCP/IP スタックの特性からOSを推定する。root 権限が必要。
 
 **`No exact OS matches` + `TCP/IP fingerprint:` が出たとき：**
 
@@ -116,13 +110,7 @@ TCP/IP スタックの特性からOSを推定する。root 権限が必要。
 
 ### 注意点
 - ファイアウォールで一部ポートが閉じられている場合は判断が難しい
-- **OS が確定した後でも、初期 recon として全ポートスキャン（`-p-`）は必ず1回回す**
-  OS 判定はデフォルトの上位ポートだけでも付くことが多いが、攻撃経路の選択は「全ポートを把握してから」行う。高位ポートに刺さるサービス（非標準ポートの DB・内部サービス・古い SMB 以外の RCE 経路等）を見落とさないため、対応 Playbook へ進む前に `-p-` の結果を揃える。
-  ```bash
-  sudo nmap -p- --min-rate 5000 [IP]
-  # 開いていたポートだけ詳細スキャンし直す
-  sudo nmap -p[OPEN_PORTS] -sC -sV [IP]
-  ```
+- **開いているポートが 2〜3 個でも `searchsploit --nmap` まで必ず行う。** 21 + 80 だけでも `Microsoft IIS 7.5` / `vsftpd x.x` 等の版数から CVE が引ける。`searchsploit` が `ftp` 等を "too general" で飛ばしても、他サービスの版数一致は拾われる。
 
 > **▶ 記録:** 開いたポート一覧を控える（全 Playbook で最初に参照する）。→ Worksheet「PORTS」欄。
 
