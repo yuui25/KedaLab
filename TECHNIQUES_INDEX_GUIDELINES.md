@@ -92,15 +92,15 @@ Technical Guidelines: http://www.pentest-standard.org/index.php/PTES_Technical_G
 
 ### PTES メイン 7 フェーズ ↔ kedalab マッピング
 
-| # | フェーズ | kedalab 対応 |
-|---|---------|------------|
-| 1 | Pre-engagement Interactions | [`06_Concepts/Pentest_Fundamentals.md`](./06_Concepts/Pentest_Fundamentals.md)（事前合意項目） |
-| 2 | Intelligence Gathering | Technical Guidelines セクション表（後述）|
-| 3 | Threat Modeling | kedalab 対象外（攻撃シナリオ設計はスコープ個別）|
-| 4 | Vulnerability Analysis | Technical Guidelines セクション表（後述）|
-| 5 | Exploitation | Technical Guidelines セクション表（後述）|
-| 6 | Post Exploitation | Technical Guidelines セクション表（後述）|
-| 7 | Reporting | kedalab 対象外（[`06_Concepts/CVSS_Scoring.md`](./06_Concepts/CVSS_Scoring.md) でスコア表現のみ）|
+| # | フェーズ | 概要 | kedalab 対応 |
+|---|---------|------|------------|
+| 1 | Pre-engagement Interactions | 開始前の合意形成。スコープ・期間・RoE を確定 | [`06_Concepts/Pentest_Fundamentals.md`](./06_Concepts/Pentest_Fundamentals.md)（事前合意項目） |
+| 2 | Intelligence Gathering | 標的の情報収集。OSINT〜能動偵察で攻撃面を洗い出す | Technical Guidelines セクション表（後述）|
+| 3 | Threat Modeling | 集めた情報から攻撃シナリオ・攻撃ツリーを設計 | kedalab 対象外（攻撃シナリオ設計はスコープ個別）|
+| 4 | Vulnerability Analysis | 攻撃面の脆弱性を特定（スキャン）し実在を検証 | Technical Guidelines セクション表（後述）|
+| 5 | Exploitation | 脆弱性を実際に突いて初期アクセス/コード実行を取る | Technical Guidelines セクション表（後述）|
+| 6 | Post Exploitation | 侵入後の権限昇格・横展開・価値の証明・痕跡管理 | Technical Guidelines セクション表（後述）|
+| 7 | Reporting | 経営層/技術者向けに文書化しリスクと修復を提示 | kedalab 対象外（[`06_Concepts/CVSS_Scoring.md`](./06_Concepts/CVSS_Scoring.md) でスコア表現のみ）|
 
 ### PTES Technical Guidelines セクション ↔ kedalab マッピング
 
@@ -110,18 +110,19 @@ Technical Guidelines: http://www.pentest-standard.org/index.php/PTES_Technical_G
 |---|---|
 | OSINT / Corporate / Individuals | [`01_Reconnaissance/DNS_Enumeration.md`](./01_Reconnaissance/DNS_Enumeration.md)（公開 DNS 情報）/ [`01_Reconnaissance/Metadata_Analysis.md`](./01_Reconnaissance/Metadata_Analysis.md)（文書メタデータ）|
 | Electronic Data / Document leakage / Metadata leakage | [`01_Reconnaissance/Metadata_Analysis.md`](./01_Reconnaissance/Metadata_Analysis.md) |
-| Covert gathering / Physical / Dumpster diving / RF | kedalab 対象外（物理・ワイヤレス現スコープ外）|
+| Covert gathering / Physical security inspections / Dumpster diving / RF / Wireless Frequency scanning | kedalab 対象外（物理・ワイヤレス現スコープ外）|
 | External Footprinting / Identifying IP Ranges / WHOIS | [`01_Reconnaissance/DNS_Enumeration.md`](./01_Reconnaissance/DNS_Enumeration.md) |
-| External Footprinting / Active Reconnaissance / DNS Bruting / Port Scanning / Banner Grabbing | [`00_Playbook/External_Service_Recon_Flow.md`](./00_Playbook/External_Service_Recon_Flow.md) / [`01_Reconnaissance/Network_Scanning.md`](./01_Reconnaissance/Network_Scanning.md) |
+| External Footprinting / Active Footprinting / DNS Bruting / Port Scanning / Banner Grabbing | [`00_Playbook/External_Service_Recon_Flow.md`](./00_Playbook/External_Service_Recon_Flow.md) / [`01_Reconnaissance/Network_Scanning.md`](./01_Reconnaissance/Network_Scanning.md) |
 | Internal Footprinting / Ping Sweeps / Port Scanning / SNMP Sweeps | [`00_Playbook/Internal_LAN_Pentest_Flow.md`](./00_Playbook/Internal_LAN_Pentest_Flow.md) / [`01_Reconnaissance/Network_Scanning.md`](./01_Reconnaissance/Network_Scanning.md) / [`01_Reconnaissance/SNMP_Enumeration.md`](./01_Reconnaissance/SNMP_Enumeration.md) |
-| Internal Footprinting / SMB / Zone Transfers | [`01_Reconnaissance/SMB_Enumeration.md`](./01_Reconnaissance/SMB_Enumeration.md) / [`01_Reconnaissance/DNS_Enumeration.md`](./01_Reconnaissance/DNS_Enumeration.md) |
-| Internal Footprinting / RPC / SAMR / LSAT enumeration | [`01_Reconnaissance/RPC_Enumeration.md`](./01_Reconnaissance/RPC_Enumeration.md)（rpcclient / impacket-lookupsid / impacket-samrdump / nxc --rid-brute） |
+| Internal Footprinting / Zone Transfers | [`01_Reconnaissance/DNS_Enumeration.md`](./01_Reconnaissance/DNS_Enumeration.md)（内部 DNS のゾーン転送） |
+
+> **PTES 未カバー（kedalab 独自補完）:** PTES Technical Guidelines の Internal Footprinting が立項しているのは Ping Sweeps / Port Scanning / SNMP Sweeps / Zone Transfers / Reverse DNS / Banner Grabbing / httprint / VoIP mapping のみで、**SMB 列挙・RPC（SAMR / LSAT）列挙に対応する章を持たない**。以下は kedalab 側で補完している領域であり、PTES のセクション名では引けない（報告書に PTES 参照を併記する際は出典を kedalab 独自項目として明示する）：[`01_Reconnaissance/SMB_Enumeration.md`](./01_Reconnaissance/SMB_Enumeration.md)（共有・NTLM 観点）/ [`01_Reconnaissance/RPC_Enumeration.md`](./01_Reconnaissance/RPC_Enumeration.md)（rpcclient / impacket-lookupsid / impacket-samrdump / nxc --rid-brute）。
 
 #### Vulnerability Analysis
 
 | PTES セクション | kedalab ファイル |
 |---|---|
-| Active / Automated Tools / Network Vulnerability Scanners（OpenVAS）| [`02_Initial_Access/Edge_Appliance_CVEs.md`](./02_Initial_Access/Edge_Appliance_CVEs.md) / [`05_Tools_Reference/Searchsploit.md`](./05_Tools_Reference/Searchsploit.md) / [`05_Tools_Reference/CVE_Notes.md`](./05_Tools_Reference/CVE_Notes.md) |
+| Active / Automated Tools / Network/General Vulnerability Scanners（OpenVAS）| [`02_Initial_Access/Edge_Appliance_CVEs.md`](./02_Initial_Access/Edge_Appliance_CVEs.md) / [`05_Tools_Reference/Searchsploit.md`](./05_Tools_Reference/Searchsploit.md) / [`05_Tools_Reference/CVE_Notes.md`](./05_Tools_Reference/CVE_Notes.md) |
 | Active / Web Application Scanners | [`02_Initial_Access/Web_Vulnerabilities/`](./02_Initial_Access/Web_Vulnerabilities/) 全般 / [`06_Concepts/Web_Pentest_Tooling.md`](./06_Concepts/Web_Pentest_Tooling.md) |
 | Passive Testing | kedalab 対象外（防御側ログ・トラフィック解析主体）|
 
@@ -129,7 +130,7 @@ Technical Guidelines: http://www.pentest-standard.org/index.php/PTES_Technical_G
 
 | PTES セクション | kedalab ファイル |
 |---|---|
-| Precision strike / Exploit Development | [`00_Playbook/Linux_Attack_Flow.md`](./00_Playbook/Linux_Attack_Flow.md) / [`00_Playbook/Windows_AD_Attack_Flow.md`](./00_Playbook/Windows_AD_Attack_Flow.md) / [`02_Initial_Access/`](./02_Initial_Access/) 全般 |
+| Precision strike（既知脆弱性への狙い撃ち）| [`00_Playbook/Linux_Attack_Flow.md`](./00_Playbook/Linux_Attack_Flow.md) / [`00_Playbook/Windows_AD_Attack_Flow.md`](./00_Playbook/Windows_AD_Attack_Flow.md) / [`02_Initial_Access/`](./02_Initial_Access/) 全般 |
 | Countermeasure Bypass（AV / HIPS / DEP / ASLR 等）| PTES 側 `<Contribution Needed>` のため kedalab で別途扱う：[`04_Post_Access_Windows_AD/BYOVD.md`](./04_Post_Access_Windows_AD/BYOVD.md) / [`02_Initial_Access/Web_Vulnerabilities/JS_Obfuscation.md`](./02_Initial_Access/Web_Vulnerabilities/JS_Obfuscation.md) |
 
 #### Post Exploitation
@@ -137,7 +138,8 @@ Technical Guidelines: http://www.pentest-standard.org/index.php/PTES_Technical_G
 | PTES セクション | kedalab ファイル |
 |---|---|
 | Windows Post Exploitation / Blind Files / Non Interactive Command Execution | [`04_Post_Access_Windows_AD/Enumeration_Checklist.md`](./04_Post_Access_Windows_AD/Enumeration_Checklist.md) / [`04_Post_Access_Windows_AD/Credential_Dumping.md`](./04_Post_Access_Windows_AD/Credential_Dumping.md) |
-| Linux Post Exploitation 系 | [`03_Post_Access_Linux/Enumeration_Checklist.md`](./03_Post_Access_Linux/Enumeration_Checklist.md) / [`03_Post_Access_Linux/`](./03_Post_Access_Linux/) 全権限昇格手法 |
+
+> **Linux 側の注記:** PTES Post Exploitation 配下に立項されているのは Windows Post Exploitation のみで、**独立した「Linux Post Exploitation」章は存在しない**。Linux 系の post-exploitation は PTES では Exploitation 章末尾の Pivoting inside（Linux Commands）/ History/Logs（Linux）に断片的に散在するのみ。kedalab 側の対応：[`03_Post_Access_Linux/Enumeration_Checklist.md`](./03_Post_Access_Linux/Enumeration_Checklist.md) / [`03_Post_Access_Linux/`](./03_Post_Access_Linux/) 全権限昇格手法。
 
 #### Reporting
 
