@@ -1300,19 +1300,21 @@ details.qs-tips-acc[open] .qs-tips { animation: coll-slide 0.3s ease; }
 .tri-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-bottom: 18px;
 }
 .tri-btn {
   font-family: var(--mono);
   font-size: 12px;
   font-weight: 600;
-  padding: 8px 18px;
+  padding: 8px 14px;
   border-radius: 4px;
   border: 1px solid var(--acc-g);
   background: rgba(0,255,156,0.08);
   color: var(--acc-g);
   cursor: pointer;
+  white-space: nowrap;
   transition: all 0.15s;
 }
 .tri-btn:hover { background: var(--acc-g); color: var(--bg-0); }
@@ -1599,6 +1601,8 @@ details.qs-tips-acc[open] .qs-tips { animation: coll-slide 0.3s ease; }
 .ws-ref:hover { color: var(--acc-g); }
 .ws-note { width: 100%; }
 .ws-text { width: 100%; min-height: 64px; resize: vertical; line-height: 1.5; }
+.ws-secnote-label { font-family: var(--mono); font-size: 11px; color: var(--acc-y); margin: 10px 0 5px; letter-spacing: 0.04em; }
+.ws-secnote { min-height: 44px; border-style: dashed; }
 
 /* =================================================================
    Workspace page — Triage + Worksheet side-by-side

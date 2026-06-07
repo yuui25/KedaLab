@@ -62,11 +62,12 @@ kedalab のナレッジを実行時に MD パースして表示する SPA。フ�
 #### Worksheet（Workspace 右カラム）— 型 / 作戦ノート
 - HTB/OSCP/ペネトレの「型(メソッド)を固める」記入式チェックリスト兼作戦ノート
 - **テンプレート(型)は `js/worksheet_template.js`(`window.KEDA_WORKSHEET`)に分離**。`app.js` の `wsRender()` が定義を読んでフォームを描画。**型を育てる = テンプレを編集するだけ**(app.js は不変)
-- 定義構造: `meta`(上部の単一行入力) + `sections`(`type:"checklist"` は `items:[{label, file?}]` で各項目に kedalab `↗` リンクと1行メモ欄、`type:"text"` は textarea)。`section.playbook` 指定で見出しに `▶ flow` リンク
+- 定義構造: `meta`(上部の単一行入力) + `sections`(`type:"checklist"` は `items:[{label, file?, hint?}]` で各項目に kedalab `↗` リンクと1行メモ欄、`type:"text"` は textarea)。`section.playbook` 指定で見出しに `▶ flow` リンク。`checklist` 節に `note`(placeholder 文字列)を付けると節末尾に「振り返り/改善メモ」欄(複数行 textarea)が出る
 - **記入/チェックは localStorage(`keda_worksheet_v1`)に自動保存**。リロードしても残る。外部送信なし
 - **チェックは 3 状態トグル**: `·` 未着手 → `✓` 完了 → `–` 対象外（クリックで循環）。状態は `chk:<sec>:<idx>` に `""`/`"done"`/`"na"` で保存
 - **節ごとの一括操作**: 各セクション見出しに `✓全 / –外 / 解除` ボタン（その節の全項目を一括設定）＋ 節別カウント `done/(総数-対象外)`
 - `↓ .md` / `↓ .txt` で書き出し: `.md` は `- [x]`（完了）/ `- [-] … (対象外)` / `- [ ]`（未着手）+ `(パス.md)` で GitHub 互換、`.txt` はプレーン。ファイル名は `worksheet_<target>_<date>.<ext>`
+- **書き出しファイル末尾に機械可読の状態行 `KEDA_WS_STATE:{json}` を埋め込む**（`.md` では HTML コメント内＝ビューア非表示）。`↑ 読み込み` がこの行を `JSON.parse` してフォームを**ロスレス復元**（人間可読部はパースしない）。復元前に全フィールドを空へリセット → 確認ダイアログ後に適用。この行が無いファイルは弾く
 - `クリア（新規）` は確認ダイアログ後に localStorage を破棄(次ターゲット用)
 - ヘッダ件数バッジは `完了/(総数-対象外)`（対象外は分母から除外）
 

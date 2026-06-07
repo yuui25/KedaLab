@@ -124,9 +124,9 @@ nmap で 88(Kerberos)・389(LDAP)・3268(Global Catalog) が開いていない�
 | Step 3.5 | ⚠️ SMB/WinRM が開いていれば有効。ただし `--local-auth` を付ける（ローカルアカウントへのスプレー）|
 | Step 4〜7 | ❌ AD 依存。スタンドアロンではすべてスキップ → `../04_Post_Access_Windows_AD/Enumeration_Checklist.md` の侵入後列挙へ進む |
 
-→ **古い スタンドアロン Windows（SMBv1 / XP・2003・2008）で SMB が開いている場合は、まずリモート SMB CVE を試す**（cred 不要で SYSTEM が取れる初期侵入）: `../02_Initial_Access/SMB_Windows_Exploitation.md`
-→ スタンドアロンでの権限昇格フロー（ローカル CVE・BoF・特権トークン）: `../04_Post_Access_Windows_AD/Enumeration_Checklist.md`
-→ `netstat` でローカルにのみ公開されたサービスを発見し、既知 Buffer Overflow PoC（Exploit-DB）でシェル取得する場合: `../04_Post_Access_Windows_AD/Buffer_Overflow_LocalService.md`
+- **古い スタンドアロン Windows（SMBv1 / XP・2003・2008）で SMB が開いている場合は、まずリモート SMB CVE を試す**（cred 不要で SYSTEM が取れる初期侵入）: `../02_Initial_Access/SMB_Windows_Exploitation.md`
+- スタンドアロンでの権限昇格フロー（ローカル CVE・BoF・特権トークン）: `../04_Post_Access_Windows_AD/Enumeration_Checklist.md`
+- `netstat` でローカルにのみ公開されたサービスを発見し、既知 Buffer Overflow PoC（Exploit-DB）でシェル取得する場合: `../04_Post_Access_Windows_AD/Buffer_Overflow_LocalService.md`
 
 ---
 
@@ -205,8 +205,8 @@ smbclient -N //[IP]/Replication -c "recurse ON; ls" 2>/dev/null
 
 事前認証不要のアカウントがあれば認証情報なしでハッシュを取得できる。ユーザーリストがあれば試す。
 
-→ 詳細: `../04_Post_Access_Windows_AD/Kerberos_Attacks/ASREPRoasting.md`
-→ 認証情報なしでのユーザー列挙: `../01_Reconnaissance/LDAP_Enumeration.md`（匿名バインド確認）
+- 詳細: `../04_Post_Access_Windows_AD/Kerberos_Attacks/ASREPRoasting.md`
+- 認証情報なしでのユーザー列挙: `../01_Reconnaissance/LDAP_Enumeration.md`（匿名バインド確認）
 
 ---
 
@@ -222,10 +222,10 @@ smbclient -N //[IP]/Replication -c "recurse ON; ls" 2>/dev/null
 | Webアプリがある | Webの脆弱性から認証情報取得 |
 | 1433 番ポート（MSSQL）が開いている | MSSQL 経由でDB内ハッシュ取得 → クラック または スプレー |
 
-→ バイナリ解析: `../02_Initial_Access/Binary_Analysis.md`
-→ 認証情報発見: `../02_Initial_Access/Credential_Discovery.md`
-→ MSSQL 経由の詳細手順: `../02_Initial_Access/MSSQL_Exploitation.md`
-→ Web脆弱性はOSに依存しない: `../02_Initial_Access/Web_Vulnerabilities/`（Windows上のWebアプリでも手法は同じ）
+- バイナリ解析: `../02_Initial_Access/Binary_Analysis.md`
+- 認証情報発見: `../02_Initial_Access/Credential_Discovery.md`
+- MSSQL 経由の詳細手順: `../02_Initial_Access/MSSQL_Exploitation.md`
+- Web脆弱性はOSに依存しない: `../02_Initial_Access/Web_Vulnerabilities/`（Windows上のWebアプリでも手法は同じ）
 
 > **ハッシュ取得時点で Step 3.5 のパスワードスプレーも並行で開始する。**
 > ハッシュのクラック完了を待ってから次に進むと数日待ちになることがある。
@@ -359,8 +359,8 @@ impacket-wmiexec -hashes :[NTLM_HASH] '[DOMAIN]/[USER]@[IP]'
 
 > **[HIGH IMPACT]** `impacket-psexec` は ADMIN$ 共有に実行可能ファイルを書き込むため SIEM/EDR で確実に検知される（Event ID 7045 = サービス作成）。本番では事前合意の上で使う。`impacket-wmiexec` はファイルレスのため検知性が低い。演習環境（HTB / OSCP 等）では制約なし。
 
-→ 詳細（プロトコル選択の判断軸・各ツールの動作・Event ID）: `../02_Initial_Access/Impacket_Exec.md`（§3 wmiexec / §4 psexec / §5 smbexec / §6 atexec / §7 dcomexec の使い分け・§8 スプレー連携・§9 Kerberos 経路）
-→ ツールリファレンス: `../05_Tools_Reference/Impacket_Suite.md`（リモート実行）
+- 詳細（プロトコル選択の判断軸・各ツールの動作・Event ID）: `../02_Initial_Access/Impacket_Exec.md`（§3 wmiexec / §4 psexec / §5 smbexec / §6 atexec / §7 dcomexec の使い分け・§8 スプレー連携・§9 Kerberos 経路）
+- ツールリファレンス: `../05_Tools_Reference/Impacket_Suite.md`（リモート実行）
 
 ### シェル取得後の次ステップ
 
@@ -427,9 +427,9 @@ BloodHound で発見した ACE（アクセス制御エントリ）に応じて�
 | SeEnableDelegationPrivilege | Unconstrained Delegation設定 → Printer Bug |
 | LAPS 読み取りグループへの追加権限 | グループ追加 → `ms-Mcs-AdmPwd` 読み取り → ローカル Admin パスワード取得 |
 
-→ ACE濫用の詳細: `../04_Post_Access_Windows_AD/ACE_Abuse/`
-→ ForcePasswordChange: `../04_Post_Access_Windows_AD/ACE_Abuse/ForcePasswordChange.md`
-→ LAPS ダンプ: `../04_Post_Access_Windows_AD/LAPS_Dump.md`
+- ACE濫用の詳細: `../04_Post_Access_Windows_AD/ACE_Abuse/`
+- ForcePasswordChange: `../04_Post_Access_Windows_AD/ACE_Abuse/ForcePasswordChange.md`
+- LAPS ダンプ: `../04_Post_Access_Windows_AD/LAPS_Dump.md`
 
 ### BloodHound 経路が見つからない場合の代替経路
 
@@ -458,8 +458,8 @@ ACE による直接のチェーンが見つからない、または閉じてい�
 3. S4U2Self/S4U2Proxy でAdministratorのチケット取得（`getST.py`）
 4. Pass-The-Ticket でアクセス
 
-→ 詳細: `../04_Post_Access_Windows_AD/Delegation_Attacks/RBCD.md`
-→ チケットの使用（PTT）の手順・Golden Ticket（krbtgt ハッシュ）/ Silver Ticket（サービスアカウントハッシュ）でのチケット偽造: `../04_Post_Access_Windows_AD/Kerberos_Attacks/Pass_The_Ticket.md`
+- 詳細: `../04_Post_Access_Windows_AD/Delegation_Attacks/RBCD.md`
+- チケットの使用（PTT）の手順・Golden Ticket（krbtgt ハッシュ）/ Silver Ticket（サービスアカウントハッシュ）でのチケット偽造: `../04_Post_Access_Windows_AD/Kerberos_Attacks/Pass_The_Ticket.md`
 
 ### Unconstrained Delegation + Printer Bug
 
@@ -488,8 +488,8 @@ ACE による直接のチェーンが見つからない、または閉じてい�
 - ESC8 (NTLM Relay to WebEnrollment) — Coerce + ntlmrelayx で DC$ 証明書取得 → DCSync
 - ESC4 (テンプレート ACE 悪用) — GenericWrite を持つテンプレートを ESC1 化
 
-→ 概要・Certipy の使い方: `../04_Post_Access_Windows_AD/AD_CS/Overview.md`
-→ ESC8 と NTLM Relay の組み合わせ: `../04_Post_Access_Windows_AD/NTLM_Relay/ntlmrelayx.md`
+- 概要・Certipy の使い方: `../04_Post_Access_Windows_AD/AD_CS/Overview.md`
+- ESC8 と NTLM Relay の組み合わせ: `../04_Post_Access_Windows_AD/NTLM_Relay/ntlmrelayx.md`
 
 ### NTLM リレー（Coerce + ntlmrelayx）
 
@@ -500,10 +500,10 @@ ACE による直接のチェーンが見つからない、または閉じてい�
 - mitm6 + ntlmrelayx で LDAPS リレー → ドメインオブジェクト権限取得
 - Coerce（PetitPotam / PrinterBug 等）+ ntlmrelayx で AD CS ESC8 → DC$ 証明書取得
 
-→ ntlmrelayx 詳細: `../04_Post_Access_Windows_AD/NTLM_Relay/ntlmrelayx.md`
-→ Coerce 詳細: `../04_Post_Access_Windows_AD/NTLM_Relay/Coerce.md`
-→ Responder 詳細: `../04_Post_Access_Windows_AD/NTLM_Relay/Responder.md`
-→ mitm6 詳細: `../04_Post_Access_Windows_AD/NTLM_Relay/mitm6.md`
+- ntlmrelayx 詳細: `../04_Post_Access_Windows_AD/NTLM_Relay/ntlmrelayx.md`
+- Coerce 詳細: `../04_Post_Access_Windows_AD/NTLM_Relay/Coerce.md`
+- Responder 詳細: `../04_Post_Access_Windows_AD/NTLM_Relay/Responder.md`
+- mitm6 詳細: `../04_Post_Access_Windows_AD/NTLM_Relay/mitm6.md`
 
 ### 特権トークン悪用（Potato 系 / SeDebug / SeBackup）
 

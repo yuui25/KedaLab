@@ -17,6 +17,8 @@
         file があればその kedalab ファイルへ ↗ リンク(クリックで本文表示)。
         各項目に1行メモ欄が付く。hint があればメモ欄の placeholder
         （「ここに何を書くか」の記載例）になる。省略時は「メモ…」。
+        note があれば節末尾に「振り返り/改善メモ」欄(複数行・自由記述)を出す。
+        値は placeholder（その節で何を振り返るかの記載例）。
      type:"text"      — 自由記述の textarea(placeholder 可)。
      共通: playbook を指定するとセクション見出しに「▶ flow」リンクが出る。
 
@@ -41,6 +43,7 @@ window.KEDA_WORKSHEET = {
       title: "[01] RECON / 列挙",
       type: "checklist",
       playbook: "00_Playbook/00_OS_Identification.md",
+      note: "この節で詰まった所・見落とし・型に足したい列挙項目 / 次回試すこと",
       items: [
         { label: "全ポートスキャン (nmap -p- → 詳細)",   file: "01_Reconnaissance/Network_Scanning.md", hint: "やったか確認: top-1000で止めてないか / -p- 完了。結果一覧は上部 PORTS 欄へ" },
         { label: "サービス/バージョン特定",              file: "01_Reconnaissance/Network_Scanning.md", hint: "例) OpenSSH 8.2 / Apache 2.4.41 / Samba 4.x" },
@@ -59,6 +62,7 @@ window.KEDA_WORKSHEET = {
       title: "[02-W] WEB 脆弱性",
       type: "checklist",
       playbook: "00_Playbook/Web_Vuln_Flow.md",
+      note: "Web で詰まった所・刺さった/外したシグナル・型に足したいチェック",
       items: [
         { label: "Triage で当たりを付ける (.req/.res 照合)", file: "01_Reconnaissance/Web_Response_Triage.md", hint: "例) 当たったシグナル → 見るファイル" },
         { label: "SQLi (エラー/数値パラメータ)",         file: "02_Initial_Access/Web_Vulnerabilities/SQLi.md", hint: "例) 注入点パラメータ / DBMS / 手法" },
@@ -73,6 +77,7 @@ window.KEDA_WORKSHEET = {
       id: "initial",
       title: "[02] INITIAL ACCESS",
       type: "checklist",
+      note: "初期侵入で詰まった所・刺さった経路・型に足したい手法",
       items: [
         { label: "default / 弱い資格情報",               file: "02_Initial_Access/Default_Credentials.md", hint: "例) 試した cred / 成功した組合せ" },
         { label: "資格情報の発見 (露出/再利用)",         file: "02_Initial_Access/Credential_Discovery.md", hint: "例) 入手元 / 値 / 使い回し先" },
@@ -86,6 +91,7 @@ window.KEDA_WORKSHEET = {
       title: "[03] POST / PRIVESC — Linux",
       type: "checklist",
       playbook: "00_Playbook/Linux_Attack_Flow.md",
+      note: "Linux 昇格で詰まった所・型に足したいチェック / 次回試すこと",
       items: [
         { label: "シェル安定化 (TTY/PATH)",              file: "03_Post_Access_Linux/Shell_Stabilization.md", hint: "例) PTY化済 / PATH / SHELL設定" },
         { label: "列挙 (linpeas/手動チェックリスト)",    file: "03_Post_Access_Linux/Enumeration_Checklist.md", hint: "例) 気になった点(sudo/SUID/cron/書込先)" },
@@ -100,6 +106,7 @@ window.KEDA_WORKSHEET = {
       title: "[04] POST / PRIVESC — Windows / AD",
       type: "checklist",
       playbook: "00_Playbook/Windows_AD_Attack_Flow.md",
+      note: "Windows/AD 昇格で詰まった所・型に足したい手法 / 次回試すこと",
       items: [
         { label: "ドメイン列挙 (BloodHound 等)",         file: "04_Post_Access_Windows_AD/Enumeration_Checklist.md", hint: "例) 最短経路 / 狙う ACE" },
         { label: "資格情報ダンプ",                       file: "04_Post_Access_Windows_AD/Credential_Dumping.md", hint: "例) 取得した hash / 平文 / チケット" },
@@ -117,8 +124,6 @@ window.KEDA_WORKSHEET = {
     { id: "proof",    title: "PROOF", type: "text",
       placeholder: "低権限ユーザー取得確認 (id):\nroot / SYSTEM 取得確認 (id):" },
     { id: "next",     title: "NEXT / 中断メモ (再開時の一手)", type: "text",
-      placeholder: "中断時に「次の一手」をここへ。再開はここから読む。\n例) 明日: FTP anon 書込テスト → webroot同一の疑い(689一致) → .aspx webshell 設置\n例) feroxbuster 結果を回収 / searchsploit IIS FTP は DoS のみ=RCE無し(再検索不要)" },
-    { id: "notes",    title: "NOTES / 振り返り (型の改善メモ)", type: "text",
-      placeholder: "詰まった所・次回試すこと・このテンプレに足したい項目\n[確認] コマンドの IP / ポートが TARGET と一致しているか送信前に照合" }
+      placeholder: "中断時に「次の一手」をここへ。再開はここから読む。\n例) 明日: FTP anon 書込テスト → webroot同一の疑い(689一致) → .aspx webshell 設置\n例) feroxbuster 結果を回収 / searchsploit IIS FTP は DoS のみ=RCE無し(再検索不要)\n[確認] コマンドの IP / ポートが TARGET と一致しているか送信前に照合" }
   ]
 };
