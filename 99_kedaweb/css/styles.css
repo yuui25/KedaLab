@@ -1578,7 +1578,7 @@ details.qs-tips-acc[open] .qs-tips { animation: coll-slide 0.3s ease; }
   color: var(--fg-0);
   line-height: 1.4;
 }
-.ws-item[data-state="done"] .ws-item-label { color: var(--fg-2); text-decoration: line-through; }
+.ws-item[data-state="done"] .ws-item-label { color: var(--fg-2); }
 .ws-item[data-state="na"] .ws-item-label { color: var(--fg-2); opacity: 0.5; text-decoration: line-through dotted; }
 .ws-legend {
   font-family: var(--mono);

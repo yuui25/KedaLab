@@ -145,10 +145,19 @@ nmap の `-sC` スクリプトスキャン結果から：
 
 > 原理（なぜ IP では Kerberos / LDAP / TLS が動かないのか・どのドメイン名を登録すべきか・原状回復） → `../06_Concepts/Hosts_File_For_AD.md`
 
-**FTP（21）がスキャン結果に含まれる場合は並行確認する** → `../02_Initial_Access/FTP.md`
-**SSH（22）がスキャン結果に含まれる場合は並行確認する** → `../02_Initial_Access/SSH.md`
+スキャン結果に他サービスが含まれる場合は、AD 列挙と並行して確認する：
 
-> **FTP（21）+ IIS/Web（80/443）の同居は定番の侵入経路。** 匿名 FTP の root が IIS の DocumentRoot と同一だと、FTP 書込 → `.aspx` webshell 設置 → ブラウザ実行で RCE になる。FTP に見えるファイルが 80 番の返す HTML と一致（同名・同サイズ、`Content-Length` で照合）したら、ファイル精査より先に `../02_Initial_Access/FTP.md` §2 の webroot 判定 → §5 書込テストを実施する。
+| サービス | 並行確認先 |
+|---------|-----------|
+| FTP（21） | `../02_Initial_Access/FTP.md` |
+| SSH（22） | `../02_Initial_Access/SSH.md` |
+
+> **FTP（21）+ IIS/Web（80/443）の同居は定番の侵入経路。**
+>
+> 匿名 FTP の root が IIS の DocumentRoot と同一なら、FTP 書込 → `.aspx` webshell 設置 → ブラウザ実行で RCE になる。
+>
+> - **判定:** FTP に見えるファイルが 80 番の返す HTML と一致（同名・同サイズを `Content-Length` で照合）
+> - **次の一手:** 一致したらファイル精査より先に `../02_Initial_Access/FTP.md` の §2 webroot 判定 → §5 書込テスト
 
 > **▶ 記録:** ドメイン名・ホスト名・OS バージョンを控える。→ Worksheet 上部「HOSTNAME」「OS」欄。
 

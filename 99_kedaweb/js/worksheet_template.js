@@ -23,7 +23,7 @@
    file / playbook のパスは kedalab ルート相対。実在すること。
    ============================================================= */
 window.KEDA_WORKSHEET = {
-  version: "2026-06-03",
+  version: "2026-06-07",
 
   meta: [
     { id: "target",   label: "TARGET",   placeholder: "[TARGET_IP]" },
@@ -42,9 +42,9 @@ window.KEDA_WORKSHEET = {
       type: "checklist",
       playbook: "00_Playbook/00_OS_Identification.md",
       items: [
-        { label: "全ポートスキャン (nmap -p- → 詳細)",   file: "01_Reconnaissance/Network_Scanning.md", hint: "例) -p- 済 / open: 22,80,445" },
+        { label: "全ポートスキャン (nmap -p- → 詳細)",   file: "01_Reconnaissance/Network_Scanning.md", hint: "やったか確認: top-1000で止めてないか / -p- 完了。結果一覧は上部 PORTS 欄へ" },
         { label: "サービス/バージョン特定",              file: "01_Reconnaissance/Network_Scanning.md", hint: "例) OpenSSH 8.2 / Apache 2.4.41 / Samba 4.x" },
-        { label: "OS版数/ビルド特定",                    file: "00_Playbook/00_OS_Identification.md", hint: "例) Windows 7 / 2008 R2 → 古いほど昇格CVE" },
+        { label: "OS版数/ビルド特定",                    file: "00_Playbook/00_OS_Identification.md", hint: "やったか確認: 版数まで詰めたか(古いほど昇格CVE)。確定値は上部 OS 欄へ" },
         { label: "FTP/サービス別 enum (21/22 等)",       file: "02_Initial_Access/FTP.md", hint: "例) anon可? 書込可? iisstart等=webroot疑い" },
         { label: "Web 列挙 (80/443)",                    file: "01_Reconnaissance/Web_Enumeration.md", hint: "例) CMS名・版 / 当たりのパス(/admin,/backup)。" },
         { label: "Web レスポンス精査 (ヘッダ/エラー)",   file: "01_Reconnaissance/Web_Response_Triage.md", hint: "例) Server/X-Powered-By / TRACE等の危険メソッド / スタックトレース" },

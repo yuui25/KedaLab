@@ -2092,7 +2092,7 @@
         a.className = "md-auto";
         a.href = "#";
         a.dataset.md = resolved;
-        a.textContent = raw;
+        a.textContent = raw.split("/").pop();  // show basename only; full path on hover (title)
         a.title = "→ " + resolved;
         frag.appendChild(a);
         lastIdx = m.index + raw.length;
