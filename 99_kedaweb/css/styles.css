@@ -1603,6 +1603,26 @@ details.qs-tips-acc[open] .qs-tips { animation: coll-slide 0.3s ease; }
 .ws-text { width: 100%; min-height: 64px; resize: vertical; line-height: 1.5; }
 .ws-secnote-label { font-family: var(--mono); font-size: 11px; color: var(--acc-y); margin: 10px 0 5px; letter-spacing: 0.04em; }
 .ws-secnote { min-height: 44px; border-style: dashed; }
+/* ⤢ open-in-modal button on each section header */
+.ws-expand {
+  flex: none;
+  background: none;
+  border: 1px solid var(--line-hi);
+  color: var(--fg-1);
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1;
+  padding: 3px 7px;
+  cursor: pointer;
+}
+.ws-expand:hover { border-color: var(--acc-c); color: var(--acc-c); }
+/* a worksheet section opened large inside the MD modal */
+.ws-modal { max-width: 920px; margin: 0 auto; padding: 4px 2px 24px; }
+.ws-modal .ws-section { border: none; background: none; padding: 0; }
+.ws-modal .ws-secnote, .ws-modal .ws-text { min-height: 340px; font-size: 13px; }
+.ws-modal .ws-note { font-size: 13px; padding: 9px 11px; }
+.ws-modal .ws-items { gap: 10px; }
+.ws-modal-hint { font-size: 11px; color: var(--fg-2); font-weight: 400; margin-left: 8px; }
 
 /* =================================================================
    Workspace page — Triage + Worksheet side-by-side

@@ -1613,6 +1613,60 @@
     if (li) li.dataset.state = v;
   }
 
+  // Build the HTML for one section (used by the side panel and the expand modal).
+  // inModal=true omits the ⤢ button so the modal copy can't re-expand itself.
+  function wsSectionHtml(sec, inModal) {
+    const isCheck = sec.type === "checklist";
+    const pb = sec.playbook
+      ? ` <a class="ws-flow" data-file="${escapeHtml(sec.playbook)}" title="${escapeHtml(sec.playbook)}">▶ flow</a>`
+      : "";
+    const bulk = isCheck
+      ? `<span class="ws-sec-count" data-sec-count="${sec.id}">0/0</span>` +
+        `<span class="ws-sec-bulk">` +
+        `<button type="button" data-bulk="done" data-sec="${sec.id}" title="この節を全部 完了に">✓全</button>` +
+        `<button type="button" data-bulk="na" data-sec="${sec.id}" title="この節を全部 対象外に">–外</button>` +
+        `<button type="button" data-bulk="" data-sec="${sec.id}" title="この節を全部 未着手に">解除</button>` +
+        `</span>`
+      : "";
+    const exp = inModal
+      ? ""
+      : ` <button type="button" class="ws-expand" data-sec="${sec.id}" title="大きいウィンドウで開いて編集">⤢</button>`;
+    const h = [];
+    h.push(`<div class="ws-section" data-sec="${sec.id}">`);
+    h.push(`<div class="ws-sec-h"><span class="ws-sec-title">${escapeHtml(sec.title)}</span>${pb}${bulk}${exp}</div>`);
+    if (isCheck) {
+      h.push(`<ul class="ws-items">`);
+      (sec.items || []).forEach((it, i) => {
+        const ref = it.file
+          ? `<a class="ws-ref" data-file="${escapeHtml(it.file)}" title="${escapeHtml(it.file)}">↗</a>`
+          : "";
+        h.push(
+          `<li class="ws-item" data-state="">` +
+          `<button type="button" class="ws-tri" data-k="chk:${sec.id}:${i}" data-v="" title="クリックで切替: 未着手 → 完了 → 対象外">·</button>` +
+          `<span class="ws-item-label">${escapeHtml(it.label)}</span>` +
+          ref +
+          `<input type="text" class="ws-note" data-k="note:${sec.id}:${i}" placeholder="${escapeHtml(it.hint || 'メモ…')}" title="${escapeHtml(it.hint || '')}" autocomplete="off" spellcheck="false" />` +
+          `</li>`
+        );
+      });
+      h.push(`</ul>`);
+      if (sec.note) {
+        h.push(
+          `<div class="ws-secnote-label">✎ 振り返り / 改善メモ</div>` +
+          `<textarea class="ws-text ws-secnote" data-k="secnote:${sec.id}" spellcheck="false" ` +
+          `placeholder="${escapeHtml(sec.note)}"></textarea>`
+        );
+      }
+    } else {
+      h.push(
+        `<textarea class="ws-text" data-k="text:${sec.id}" spellcheck="false" ` +
+        `placeholder="${escapeHtml(sec.placeholder || "")}"></textarea>`
+      );
+    }
+    h.push(`</div>`);
+    return h.join("");
+  }
+
   // Read the live form DOM → flat { dataKey: value|state } map.
   function wsReadDom() {
     const form = document.getElementById("wsForm");
@@ -1682,50 +1736,7 @@
     html.push(`</div>`);
     // sections
     for (const sec of (WS.sections || [])) {
-      const isCheck = sec.type === "checklist";
-      const pb = sec.playbook
-        ? ` <a class="ws-flow" data-file="${escapeHtml(sec.playbook)}" title="${escapeHtml(sec.playbook)}">▶ flow</a>`
-        : "";
-      const bulk = isCheck
-        ? `<span class="ws-sec-count" data-sec-count="${sec.id}">0/0</span>` +
-          `<span class="ws-sec-bulk">` +
-          `<button type="button" data-bulk="done" data-sec="${sec.id}" title="この節を全部 完了に">✓全</button>` +
-          `<button type="button" data-bulk="na" data-sec="${sec.id}" title="この節を全部 対象外に">–外</button>` +
-          `<button type="button" data-bulk="" data-sec="${sec.id}" title="この節を全部 未着手に">解除</button>` +
-          `</span>`
-        : "";
-      html.push(`<div class="ws-section" data-sec="${sec.id}">`);
-      html.push(`<div class="ws-sec-h"><span class="ws-sec-title">${escapeHtml(sec.title)}</span>${pb}${bulk}</div>`);
-      if (isCheck) {
-        html.push(`<ul class="ws-items">`);
-        (sec.items || []).forEach((it, i) => {
-          const ref = it.file
-            ? `<a class="ws-ref" data-file="${escapeHtml(it.file)}" title="${escapeHtml(it.file)}">↗</a>`
-            : "";
-          html.push(
-            `<li class="ws-item" data-state="">` +
-            `<button type="button" class="ws-tri" data-k="chk:${sec.id}:${i}" data-v="" title="クリックで切替: 未着手 → 完了 → 対象外">·</button>` +
-            `<span class="ws-item-label">${escapeHtml(it.label)}</span>` +
-            ref +
-            `<input type="text" class="ws-note" data-k="note:${sec.id}:${i}" placeholder="${escapeHtml(it.hint || 'メモ…')}" title="${escapeHtml(it.hint || '')}" autocomplete="off" spellcheck="false" />` +
-            `</li>`
-          );
-        });
-        html.push(`</ul>`);
-        if (sec.note) {
-          html.push(
-            `<div class="ws-secnote-label">✎ 振り返り / 改善メモ</div>` +
-            `<textarea class="ws-text ws-secnote" data-k="secnote:${sec.id}" spellcheck="false" ` +
-            `placeholder="${escapeHtml(sec.note)}"></textarea>`
-          );
-        }
-      } else {
-        html.push(
-          `<textarea class="ws-text" data-k="text:${sec.id}" spellcheck="false" ` +
-          `placeholder="${escapeHtml(sec.placeholder || "")}"></textarea>`
-        );
-      }
-      html.push(`</div>`);
+      html.push(wsSectionHtml(sec, false));
     }
     form.innerHTML = html.join("");
 
@@ -1748,6 +1759,9 @@
       }));
     // autosave on text input (meta / note / textarea)
     form.addEventListener("input", () => { wsSave(); });
+    // ⤢ open this section in the large modal for comfortable note-writing
+    $$(".ws-expand", form).forEach(b =>
+      b.addEventListener("click", () => openWsSection(b.dataset.sec)));
 
     wsApply(wsLoad());
     wsUpdateCount();
@@ -2042,6 +2056,72 @@
     modalBody.innerHTML = "";
     docStack.length = 0;
     updateBackButton();
+  }
+
+  // Open one worksheet section in the large modal for comfortable note-writing.
+  // Modal inputs are bound by data-k and synced live into #wsForm (the single
+  // source of truth) + autosaved, so the side panel and modal never diverge and
+  // closing needs no commit step. Header [⛶] still toggles fullscreen.
+  function openWsSection(secId) {
+    const sec = (WS.sections || []).find(s => s.id === secId);
+    if (!sec) return;
+    const mainForm = document.getElementById("wsForm");
+    if (!mainForm) return;
+    modal.classList.add("open");
+    const backBtn = $("#modalBack"); if (backBtn) backBtn.hidden = true;
+    const navBtn = $("#modalNav"); if (navBtn) navBtn.hidden = true;
+    docStack.length = 0;
+    modalPath.innerHTML =
+      `<span class="seg-acc">📝 ${escapeHtml(sec.title)}</span>` +
+      `<span class="ws-modal-hint">編集は自動保存（× で閉じる）</span>`;
+    modalBody.innerHTML =
+      `<div class="ws-modal"><div id="wsModalForm" class="ws-form">${wsSectionHtml(sec, true)}</div></div>`;
+    const mform = document.getElementById("wsModalForm");
+
+    const sel = k => mainForm.querySelector('[data-k="' + k + '"]');
+    // populate modal fields from the live main form
+    $$("[data-k]", mform).forEach(el => {
+      const main = sel(el.dataset.k);
+      if (!main) return;
+      if (el.classList.contains("ws-tri")) wsSetTri(el, main.dataset.v || "");
+      else el.value = main.value;
+    });
+    const syncToMain = el => {
+      const main = sel(el.dataset.k);
+      if (!main) return;
+      if (el.classList.contains("ws-tri")) wsSetTri(main, el.dataset.v || "");
+      else main.value = el.value;
+    };
+    const refreshModalCount = () => {
+      const span = mform.querySelector("[data-sec-count]");
+      if (!span) return;
+      const st = $$('.ws-tri[data-k^="chk:' + sec.id + ':"]', mform);
+      const d = st.filter(b => b.dataset.v === "done").length;
+      const n = st.filter(b => b.dataset.v === "na").length;
+      span.textContent = `${d}/${st.length - n}`;
+    };
+    // mirror of wsRender's wiring, scoped to the modal copy
+    $$(".ws-ref, .ws-flow", mform).forEach(a =>
+      a.addEventListener("click", e => { e.preventDefault(); openMD(a.dataset.file); }));
+    $$(".ws-tri", mform).forEach(btn =>
+      btn.addEventListener("click", () => {
+        const next = WS_TRI[(WS_TRI.indexOf(btn.dataset.v || "") + 1) % WS_TRI.length];
+        wsSetTri(btn, next); syncToMain(btn); wsSave(); wsUpdateCount(); refreshModalCount();
+      }));
+    $$(".ws-sec-bulk button", mform).forEach(b =>
+      b.addEventListener("click", () => {
+        const v = b.dataset.bulk;
+        $$('.ws-tri[data-k^="chk:' + sec.id + ':"]', mform).forEach(t => { wsSetTri(t, v); syncToMain(t); });
+        wsSave(); wsUpdateCount(); refreshModalCount();
+      }));
+    mform.addEventListener("input", e => {
+      const el = e.target;
+      if (el && el.dataset && el.dataset.k) { syncToMain(el); wsSave(); }
+    });
+    refreshModalCount();
+    // focus the memo (or first field) for immediate writing
+    const memo = mform.querySelector(".ws-secnote") || mform.querySelector("textarea, input");
+    if (memo) setTimeout(() => { memo.focus(); }, 60);
   }
 
   async function openMD(file, isBack = false, restoreScroll = 0) {
