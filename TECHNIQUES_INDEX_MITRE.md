@@ -92,7 +92,7 @@ ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
 | T1098.005 | Account Manipulation: Device Registration（Shadow Credentials） | `04_Post_Access_Windows_AD/ACE_Abuse/GenericAll.md` |
 | T1136.001 | Create Account: Local Account | `02_Initial_Access/WinRM.md`（§9.3 net user /add によるバックドア用ローカルアカウント追加） |
 | T1136.002 | Create Account: Domain Account | `04_Post_Access_Windows_AD/Delegation_Attacks/Unconstrained.md`（マシンアカウント作成） |
-| T1505.003 | Server Software Component: Web Shell | `02_Initial_Access/Web_Vulnerabilities/File_Upload.md` / `02_Initial_Access/PostgreSQL_Exploitation.md`（§7 lo_export で Web ルートに .php 書込・shell.php 経由 RCE） / `02_Initial_Access/Web_Vulnerabilities/SQLi.md`（§11 sqlmap --os-shell が内部で xp_cmdshell / COPY FROM PROGRAM / INTO OUTFILE webshell を試行） |
+| T1505.003 | Server Software Component: Web Shell | `02_Initial_Access/Web_Vulnerabilities/Web_Shells.md`（サーバ技術→言語選択・入手元・設置と実行確認） / `02_Initial_Access/Web_Vulnerabilities/File_Upload.md` / `02_Initial_Access/PostgreSQL_Exploitation.md`（§7 lo_export で Web ルートに .php 書込・shell.php 経由 RCE） / `02_Initial_Access/Web_Vulnerabilities/SQLi.md`（§11 sqlmap --os-shell が内部で xp_cmdshell / COPY FROM PROGRAM / INTO OUTFILE webshell を試行） |
 | T1037.003 | Boot or Logon Initialization Scripts: Network Logon Script | `01_Reconnaissance/SMB_Enumeration.md`（NETLOGON 列挙視点） / `04_Post_Access_Windows_AD/ACE_Abuse/GenericWrite.md`（logon script 設定） |
 
 ---

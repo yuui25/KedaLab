@@ -93,6 +93,9 @@
 | 画像再エンコード生存 payload（EXIF コメント・PLTE/Global Color Table チャンク埋め込み） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/File_Upload.md` |
 | NTFS ADS によるアップロード拡張子バイパス（filename:stream / ::$DATA・IIS/Windows） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/File_Upload.md` |
 | 画像・動画変換ライブラリ経由 RCE/任意ファイル読取（ImageTragick CVE-2016-3714 / CVE-2022-44268 / FFmpeg HLS） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/File_Upload.md` |
+| Web Shell §1 サーバ技術→言語選択（IIS=aspx / Apache+PHP=php / Tomcat=jsp/war・拡張子はランタイムが解釈できる言語に合わせる・言語不一致は平文表示/404） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/Web_Shells.md` |
+| Web Shell §2 入手元（ディストリ同梱 /usr/share/webshells・/usr/share/laudanum・SecLists Web-Shells・msfvenom 生成 -f aspx/php/war・LHOST/許可IP 編集・バックドア混入目視） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/Web_Shells.md` |
+| Web Shell §3 設置と実行確認（最小 cmd 実行 webshell で whoami 疎通 → リバース昇格・平文表示=言語不一致の切り分け） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/Web_Shells.md` |
 | 難読化JavaScript解析（eval/Packer形式・console.log置換・de4js） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/JS_Obfuscation.md` |
 | ROT13 / Base64 APIレスポンスのデコード | Initial Access | `02_Initial_Access/Web_Vulnerabilities/JS_Obfuscation.md` |
 | 多重エンコードの自動検出・再帰デコード（URL / Base64 / JWT / gzip / Hex 等、decode_layers）（WSTG-INPV-01） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/JS_Obfuscation.md` |
@@ -465,7 +468,7 @@
 | Certipy（AD CS 列挙・証明書申請・PKINIT 認証・CA 管理の統合ツール。find / req / auth / ca / template / forge / relay） | `05_Tools_Reference/Certipy.md` |
 | GOAD（AD攻撃練習ラボ）の構築（VMware Workstation + WSL / Vagrant + ansible。host-only vmnet 手動IP・WSL1・version選択等の注意点） | `05_Tools_Reference/GOAD_Lab_Setup.md` |
 | Linux ペネトレ用ワンライナー集（テキスト処理 grep/awk/sed・ファイル検索 find -perm・プロセス/ネット観察 ss/ps・文字列/バイナリ調査 strings/xxd・エンコード base64/openssl・ファイル転送 HTTP/nc//dev/tcp/base64・リスナー受信 python3/nc/socat） | `05_Tools_Reference/Linux_Pentest_OneLiners.md` |
-| Windows ペネトレ用ワンライナー集（テキスト処理 Select-String/findstr・ファイル検索 Get-ChildItem/icacls/Unquoted Service Path・プロセス/ネット観察 Get-CimInstance/netstat -ano・バイナリ調査 Format-Hex/Get-AuthenticodeSignature・エンコード Base64/certutil・ファイル転送 iwr/certutil -urlcache/SMB/base64 コピペ・LOLBAS/CLM 代替） | `05_Tools_Reference/Windows_Pentest_OneLiners.md` |
+| Windows ペネトレ用ワンライナー集（§0 基礎コマンド whoami/dir/cd/type と Linux→cmd→PowerShell 対応表・net user/localgroup・テキスト処理 Select-String/findstr・ファイル検索 Get-ChildItem/icacls/Unquoted Service Path・プロセス/ネット観察 Get-CimInstance/netstat -ano・バイナリ調査 Format-Hex/Get-AuthenticodeSignature・エンコード Base64/certutil・ファイル転送 iwr/certutil -urlcache/SMB/base64 コピペ・LOLBAS/CLM 代替） | `05_Tools_Reference/Windows_Pentest_OneLiners.md` |
 
 ---
 

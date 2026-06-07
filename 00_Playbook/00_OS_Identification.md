@@ -143,9 +143,25 @@ curl -sI https://[IP]/ -k
 curl -sI http://[IP]/ | grep -i "server\|x-powered-by\|x-aspnet"
 ```
 
+### IIS バージョン → Windows バージョン対応（版数まで絞り込む）
+
+`Server: Microsoft-IIS/x.x` は OS が Windows というだけでなく、**IIS のメジャー版が Windows 版と固定対応している**ため、版数（クライアント/サーバ・世代）まで絞り込める。FTP の `Remote system type is Windows_NT` 等と突き合わせるとさらに確度が上がる。
+
+| IIS バージョン | 対応 Windows |
+|---|---|
+| `IIS/6.0` | Windows Server 2003 / XP Pro x64 |
+| `IIS/7.0` | Windows Vista / Server 2008 |
+| `IIS/7.5` | Windows 7 / Server 2008 R2 |
+| `IIS/8.0` | Windows 8 / Server 2012 |
+| `IIS/8.5` | Windows 8.1 / Server 2012 R2 |
+| `IIS/10.0` | Windows 10 / 11 / Server 2016 / 2019 / 2022 |
+
+> **次のアクション:** 版数が絞れたら、その世代に該当する既知 CVE・privesc 経路を検討する材料になる（例：古い IIS 版 ＝ EoL 寄りの OS で、対応する権限昇格手法の候補が変わる）。クライアント OS（Win7/8/10）かサーバ OS（2008R2/2012/2016）かは IIS 版だけでは一意に決まらないので、他シグナル（SMB バナー・ポート構成・`Server` の追加文字列）で補完する。
+
 ### 注意点
 - `Server` ヘッダーは無効化・偽装できる（セキュリティ設定済み環境では空になる）
 - Apache は Windows でも動く。`(Debian)` 等のディストリ名が含まれていれば Linux 確定
+- IIS 版対応表は「既定の組み合わせ」。再頒布や特殊構成で例外はあり得るが、一次絞り込みには十分
 
 ---
 

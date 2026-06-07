@@ -126,6 +126,8 @@ curl -sI "http://[TARGET]/upload/[UPLOADED_FILE]" | grep -iE "content-type|x-con
 
 ## 1. 基本的な webshell アップロード〜RCE
 
+> **どの webshell を置くか（言語選択・入手元）:** サーバ技術に合った言語を選ぶ（IIS=aspx / Apache+PHP=php / Tomcat=jsp）。同梱 webshell の場所・msfvenom 生成・実行確認の切り分けは `Web_Shells.md` を参照。**IIS に `.php` を置いても実行されない**等の言語不一致はここで判断する。
+
 **事前準備（必須）:**
 
 ```bash
@@ -529,6 +531,7 @@ searchsploit -x [PATH_FROM_RESULTS]
 
 - 前：Web アプリのフレームワーク・アプリ名の特定 → `../../01_Reconnaissance/Web_Enumeration.md`
 - 前：searchsploit で「unauthenticated file upload」を確認 → `../../05_Tools_Reference/Searchsploit.md`
+- 後：webshell の言語選択・入手元・実行確認 → `Web_Shells.md`
 - 後：webshell からリバースシェルへの昇格 → `Command_Injection.md`（リバースシェル配信セクション）
 - 後：Windows で初期シェル取得後の列挙 → `../../04_Post_Access_Windows_AD/Enumeration_Checklist.md`
 - 関連：SVG 経由 XSS の詳細 → `XSS.md`

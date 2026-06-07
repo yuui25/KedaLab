@@ -78,12 +78,16 @@ ftp [TARGET_IP]
 # Password: anonymous@   ← 任意の文字列で良い（空 Enter でも通ることが多い）
 
 # [Attacker] 認証直後にサーバ情報・対応コマンドを列挙
-ftp> SYST              # サーバー OS / 実装情報
-ftp> HELP              # サポートコマンド一覧
-ftp> STAT              # サーバー設定・接続状態
+# ※標準 Linux ftp クライアントは大文字の生 FTP verb（SYST / HELP / STAT）を
+#   クライアントコマンドとして解釈できず "?Invalid command" を返す。生 verb は quote で送る。
+ftp> quote SYST        # サーバー OS / 実装情報（接続時の "Remote system type is ..." と同じ）
+ftp> remotehelp        # サーバの HELP（対応コマンド一覧）
+ftp> rstatus           # サーバの STAT（サーバー設定・接続状態）
 ftp> pwd               # カレントディレクトリ（chroot されているか確認）
 ftp> ls -la            # 隠しファイル含めて確認
 ```
+
+> **注意（クライアント差）:** `ftp> SYST` のように大文字 verb を直接打つと、**サーバではなくローカルの `ftp` クライアントが弾いて `?Invalid command` を返す**（サーバには届いていない）。生の FTP verb を送るには `quote <VERB>`（`quote STAT` 等）を使う。`SYST` 相当の情報はログイン時に `Remote system type is Windows_NT` として既に出ていることが多い。なお制御接続が idle や無効コマンド連発の後に `421 Service not available, remote server has closed connection` で落ちることがあるが、これはクラッシュではなく一度切れただけなので**再接続すれば回復する**。
 
 **観測される出力 → 次のアクション:**
 
@@ -239,7 +243,7 @@ curl -X "DELE probe.txt" ftp://anonymous:@[TARGET_IP]/  # 削除
 > - `uploads/` が `https://[TARGET]/uploads/` でアクセスできる
 > - PHP / JSP / ASPX 実行が有効
 >
-> 上記が揃えば `webshell.php` を `put` → ブラウザ経由実行で RCE 成立。**事前合意がある環境のみで実施**。`./Web_Vulnerabilities/File_Upload.md` も参照（同じ「アップロード → 実行」モデル）。
+> 上記が揃えば webshell を `put` → ブラウザ経由実行で RCE 成立。**事前合意がある環境のみで実施**。**置く webshell の言語はサーバ技術に合わせる**（IIS なら `.php` ではなく `.aspx`）。言語選択・入手元・実行確認は `./Web_Vulnerabilities/Web_Shells.md`、アップロード経路一般は `./Web_Vulnerabilities/File_Upload.md` を参照。
 
 > **注意:** 書込権限の確認だけでも `auth.log` / FTP ログには `STOR` リクエストが残る。テストファイルは小さく無害なものにし、確認後に `DELE` で削除する。
 
@@ -515,7 +519,8 @@ nmap -b anonymous:anonymous@[FTP_PROXY_IP] -p 80,443,3389 [INTERNAL_TARGET_IP]
 - 前：製品出荷時のデフォルト認証情報試行 → `Default_Credentials.md`
 - 後：取得ファイルのメタデータ確認（exiftool） → `../01_Reconnaissance/Metadata_Analysis.md`
 - 後：取得バイナリ・`.msg`・OLE2 解析 → `Binary_Analysis.md`
-- 後：§5 書込 + Web 経由 webshell 実行 → `./Web_Vulnerabilities/File_Upload.md`
+- 後：§5 書込 + Web 経由 webshell 実行（webshell の言語選択・入手元） → `./Web_Vulnerabilities/Web_Shells.md`
+- 後：アップロード経路一般のバイパス手法 → `./Web_Vulnerabilities/File_Upload.md`
 - 後：§8 で取得した root シェル後の Linux 列挙 → `../03_Post_Access_Linux/Enumeration_Checklist.md`
 - 後：FTPS / AUTH TLS の TLS 構成監査 → `../01_Reconnaissance/TLS_Audit.md`
 - 関連：FTP で取得した cred の他プロトコル使い回し → `SSH.md` / `Mail_Services.md` / `WinRM.md` / `Impacket_Exec.md`（Impacket exec）/ `../01_Reconnaissance/RPC_Enumeration.md`（RPC §8 認証後再列挙）
