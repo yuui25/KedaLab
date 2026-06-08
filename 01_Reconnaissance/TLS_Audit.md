@@ -44,6 +44,33 @@
 
 ---
 
+## 0. レガシー TLS への到達性確保（ツールが接続できないとき）
+
+**監査の前に「そもそもツールが TLS を張れない」ことがある。** 古い Apache / IIS・組み込み機器・レガシー製品は TLS1.0 / SSLv3 しか喋らず、OpenSSL 3.x（現代の Kali 等）は既定で `MinProtocol = TLSv1.2` のため接続段階で蹴られる。**これは「サービスが無い」ではなく「自分のクライアント設定の問題」** — nmap の `ssl-cert` / `http-title` でページが見えているなら対象は生きている。
+
+**症状（このエラーが出たら本節）:**
+
+```
+curl: (35) ... error:0A000102:SSL routines::unsupported protocol   # curl
+Could not connect ... due to SSL errors (run with --insecure ...)  # feroxbuster 等
+```
+
+> `unsupported protocol`（`error:0A000102`）は **プロトコルバージョン**が原因（cipher 強度＝SECLEVEL の話ではない）。`--ciphers DEFAULT@SECLEVEL=0` だけでは直らない。`-k` / `--insecure` も**証明書検証を飛ばすだけでプロトコル floor は下げない**。
+
+**到達性を確保する手段:**
+
+| 手段 | 方法 | 効く範囲 |
+|---|---|---|
+| ① システム openssl.cnf の floor 引き下げ（最も確実）| `/etc/ssl/openssl.cnf` の `[system_default_sect]` に `MinProtocol = TLSv1.0` と `CipherString = DEFAULT@SECLEVEL=0` を設定 | curl / openssl / python(ssl) 等 **openssl にリンクした全ツール** |
+| ② openssl s_client で直接確認 | `openssl s_client -connect [TARGET]:443`（ディストリ build で `-tls1` が無効なら §4 の fallback 経路）| 手動確認・証明書取得 |
+| ③ socat / stunnel でローカルに平文ブリッジ | 旧 TLS を喋れる中継を立て、ローカルの平文ポートにツールを向ける | 中継自身が旧 TLS を張れる場合のみ |
+
+> **rustls 系ツール（feroxbuster 等）は TLS1.2 未満を一切張れない。** openssl.cnf を直しても効かない（rustls は openssl.cnf を読まない）。レガシー TLS 相手のディレクトリ列挙は **libcurl ベース（`dirb` / `curl` ループ）に切替えて ① 実施後に回す**。そもそも `http-title` の製品名から既知 CVE（LFI / RCE 等）の入口が取れているなら、ディレクトリ列挙を貫通させる必要は無いことが多い → `../05_Tools_Reference/Searchsploit.md`
+
+> **原状回復（自分の端末）:** `openssl.cnf` を編集したら、調査終了後に元に戻す（他の調査で意図せず弱い TLS を許容しないため）。
+
+---
+
 ## 1. nmap での簡易確認（最初の一手）
 
 **コマンド:**

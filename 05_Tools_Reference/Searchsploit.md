@@ -115,7 +115,8 @@ searchsploit -m multiple/webapps/50581.py
 
 ```bash
 # Nmap は版数込みで XML を出力（-oA で .xml/.nmap/.gnmap を同時出力）
-sudo nmap -sC -sV -p- --min-rate 5000 -oA nmap_allports TARGET_IP   # [Attacker]
+sudo nmap -sC -sV -p- -oA nmap_allports TARGET_IP                       # [Attacker] 本番（既定・素）
+sudo nmap -sC -sV -p- --min-rate 5000 -oA nmap_allports TARGET_IP      # [Attacker] 演習・時間制約時のみ（高負荷・IDS 注意）
 
 # 出力した XML に対して searchsploit を実行
 searchsploit --nmap nmap_allports.xml   # [Attacker]
@@ -161,6 +162,23 @@ PHP-FPM + Nginx - Remote Code Exec | php/webapps/47553.md
 | `[-] Skipping term: http` | "http" も同様にスキップ | `searchsploit nginx 1.18` のように Web サーバー名で検索 |
 | `[i] /usr/bin/searchsploit -t openssh` | openssh として検索中 | バージョン文字列が長い場合は完全一致しないこともある |
 | 結果が大量に出る | バージョン範囲が広いヒット | NVD でバージョン一致確認が必要 |
+
+**`--nmap` が拾わないもの（最重要の落とし穴）：**
+
+`searchsploit --nmap` は nmap が **`service` / `version` フィールドに格納したバナー**（例: `Apache httpd 2.2.3`）だけを検索キーにする。**`http-title` / `ssl-cert` / `http-server-header` などスクリプト出力に出た「製品名」は一切クエリされない。** ログインページのタイトルに製品名が出る Web アプリ（PBX / グループウェア / 管理コンソール等）は、サービス欄が generic な `Apache` / `nginx` のままなので `--nmap` の結果には現れず、**「`--nmap` が空振り＝脆弱性なし」と誤判断する**典型パターンになる。
+
+```bash
+# [Attacker] nmap の -sC 出力からアプリ名候補を拾って手で投げる
+# 例: |_http-title: [製品名] - Login page  → その製品名をそのまま検索
+searchsploit [製品名]
+searchsploit [製品名] [バージョン]
+```
+
+| nmap 出力の場所 | 拾うべき文字列 | アクション |
+|---|---|---|
+| `http-title:` | ログインページ等のタイトルに出る製品名 | `searchsploit [製品名]` を手動実行 |
+| `ssl-cert:` の CN / organizationName | 製品・組織名のヒント | 同上 + `../01_Reconnaissance/TLS_Audit.md` §5 |
+| `http-server-header:` の付帯文字列 | フレームワーク・ディストリ名 | 同上 |
 
 **`--nmap` の出力が大量に出たとき / 0 件のときの対処：**
 

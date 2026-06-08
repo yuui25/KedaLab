@@ -138,6 +138,8 @@ nmap -sV -p 22 --script ssh2-enum-algos [TARGET_IP]
 
 > **注意:** Terrapin は MitM 前提のため、攻撃側経路に MitM を持ち込めない通常のテストでは audit finding 扱いが現実的。`kex-strict-*` の存在で patch 適用済みか判定できる。
 
+> **接続のために重要（finding 止まりにしない）:** 弱い KEX（`diffie-hellman-group1-sha1` 等）/ `ssh-rsa`・`ssh-dss` ホスト鍵 / CBC 暗号しか無い古い OpenSSH は、**現代の ssh クライアントが既定で接続を拒否する**（`Unable to negotiate ... no matching key exchange method found`）。ここで見た弱アルゴ一覧は audit 記録であると同時に、**後で cred を入手して §5 で接続する際に、どのレガシーアルゴリズムを明示すべきか**の手掛かりになる（§5 のレガシー接続例を参照）。
+
 ---
 
 ## 5. 認証情報での直接ログイン
@@ -158,6 +160,13 @@ ssh -i [KEY_FILE] [USER]@[TARGET_IP]
 
 # [Attacker] 保存済み鍵を抑止して指定鍵のみで試行
 ssh -i [KEY_FILE] -o IdentitiesOnly=yes [USER]@[TARGET_IP]
+
+# [Attacker] 古い OpenSSH（弱い KEX / ssh-rsa・ssh-dss 鍵 / CBC のみ）へ接続する場合
+# §4 の ssh2-enum-algos で diffie-hellman-group1-sha1 / ssh-dss / *-cbc しか無い相手
+ssh -oKexAlgorithms=+diffie-hellman-group1-sha1 \
+    -oHostKeyAlgorithms=+ssh-rsa,ssh-dss \
+    -c aes128-cbc [USER]@[TARGET_IP]
+# 公開鍵認証も拒否されるなら -oPubkeyAcceptedKeyTypes=+ssh-rsa も追加
 ```
 
 **観測される出力 → 次のアクション:**
@@ -170,6 +179,7 @@ ssh -i [KEY_FILE] -o IdentitiesOnly=yes [USER]@[TARGET_IP]
 | `UNPROTECTED PRIVATE KEY FILE!` | 鍵パーミッションが緩い | `chmod 600 [KEY_FILE]` してから再試行 |
 | `Too many authentication failures` | `MaxAuthTries` 到達、または保存鍵が複数試行されている | `-o IdentitiesOnly=yes -o PubkeyAuthentication=no -o NumberOfPasswordPrompts=1` で 1 回ずつ |
 | ログイン直後にすぐ切断 | `ForceCommand` 設定 | §11 port forwarding 専用に切替（`ssh -N` でシェル不要）|
+| `Unable to negotiate ... no matching key exchange method found` / `no matching host key type` / `no matching cipher` | 古い OpenSSH でレガシー KEX/鍵/暗号のみ（§4 の弱アルゴと符合）| `-oKexAlgorithms=+diffie-hellman-group1-sha1 -oHostKeyAlgorithms=+ssh-rsa,ssh-dss -c aes128-cbc` を付けて再接続 |
 
 **注意:**
 
@@ -540,6 +550,7 @@ ssh [USER]@[INTERNAL_TARGET_IP]
 | 状況 | 推定原因 | 代替手段 |
 |---|---|---|
 | `ssh -v` で認証方式が返らない | StrictModes / fail2ban で接続自体拒否 | 接続元を変える / 時間をおいて再試行 |
+| `no matching key exchange method found` 等で接続不可 | 古い OpenSSH にレガシーアルゴ明示が必要（現代クライアントが既定で拒否）| `-oKexAlgorithms=+diffie-hellman-group1-sha1 -oHostKeyAlgorithms=+ssh-rsa,ssh-dss -c aes128-cbc`（§4 / §5）|
 | 辞書攻撃で全 cred が拒否 | パスワード認証無効 | 秘密鍵取得経路 → `Credential_Discovery.md` / Debian PRNG (§10) / authorized_keys 書込 (§11) |
 | CVE-2018-15473 PoC で全 invalid | OpenSSH 7.7+ にパッチ済み | LDAP / SMTP VRFY / SMB / OSINT (`.keys`) で別経路 |
 | デフォルト認証情報で 1 件も通らない | 出荷時 cred が変更済み | `Default_Credentials.md` の製品別早見表で別組合せ |

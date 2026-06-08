@@ -17,6 +17,8 @@
 - **レート制限・自動 IP ブロックの有無**: `robots.txt` 本文・トップページに「DoS protection」「we ban bad IPs」等の記載があれば、ディレクトリ列挙ツールを控える（§4 参照）。大量リクエストで自 IP がブロックされると以降のアクセスが全遮断される
 - **手動把握とファジングの分離**: まず手動でサイト構造・アプリ名を把握（§1〜§3）→ ファジングはバックグラウンド走行（§4）。ロードバランサー配下ではファジング中の手動操作はセッションが切れる前提
 - **vhost ごとの別コンテンツ**: `robots.txt` やアプリが vhost で異なることがある。vhost を発見したら `/etc/hosts` に登録して再調査
+- **「繋がらない / 何も返らない」をサービス無しと誤判断しない**: `curl -s` が無出力なら **`-s` を外してエラーを読む**。`curl: (35) ... unsupported protocol` 系は古い TLS（TLS1.0 / SSLv3）しか喋らないサーバに現代の curl/ツールが繋げていないだけで、**nmap の `http-title` でページが見えているなら Web は存在する**。到達性の確保（openssl.cnf の floor 引き下げ・rustls 系ツールの限界）→ `TLS_Audit.md`
+- **HTTP が全パス `302 → https` なら以降の列挙は HTTPS 側で行う**: `curl -sI http://[TARGET]/` が `Location: https://...` を返すなら、robots・アプリ識別・ディレクトリ列挙すべて `https://` + `--insecure`(`-k`) を対象にする（HTTP 側を列挙し続けても 302 しか返らず空振りする）
 
 **攻撃者の思考トレース:** Web は「バージョンが分かれば既知 CVE が最短経路」になることが多い。だからファジングより先に「何のアプリの何版か」を手動 + whatweb で確定させ、CVE 検索を回す。ファジングは IP ブロックのリスクがあるため、防御告知を確認してから最後に回す。
 
@@ -43,6 +45,7 @@ curl -s http://[TARGET]/robots.txt | grep -i "disallow\|allow"
 | `Disallow: /` のみ | 全ブロックで情報量が少ない | §4 ディレクトリ列挙へ |
 | 「DoS protection」「we ban bad IPs」等の文言 | IP ベースの自動ブロック（fail2ban / WAF） | **ディレクトリ列挙を行わず**、Disallow パス・HTML コメント・JS 内エンドポイントから手動把握 |
 | nmap `-sC` の `http-robots.txt: 1 disallowed entry` | スキャンで自動取得済み | その内容を起点に手動確認 |
+| `robots.txt` 含む全パスが `302 Found` + `Location: https://...` | HTTP→HTTPS 強制リダイレクト | 以降の取得を `https://[TARGET]/...` + `-k` に切替（HTTP では中身が取れない）|
 
 **注意:** 警告文言が出ていても「ガード自体は弱い」と決めつけない。試行は手動で 1 リクエストずつ、404 を連発させない。サブドメイン・vhost では `/robots.txt` が別になるため vhost ごとに確認する。
 
@@ -183,6 +186,17 @@ ffuf -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt:FUZZ \
 gobuster dir -u http://[IP] -w [WORDLIST] -t 5 --delay 200ms -o gobuster_lowrate.txt
 ```
 
+**拡張子の選び方（`-x` は検出した server 技術に合わせる）：**
+
+| 検出した技術（`Server:` / X-Powered-By / 既存パスの拡張子）| `-x` に足す拡張子 |
+|---|---|
+| Apache + PHP（PBX / CMS 系に多い）| `php,php3,php5,phtml,cgi,pl,inc` |
+| IIS / ASP.NET | `asp,aspx,ashx,asmx,config` |
+| Java（Tomcat / JBoss）| `jsp,jspx,do,action` |
+| 技術不明・共通で当てる | `html,txt,bak,old,zip,tar.gz,~,swp,conf` |
+
+> 拡張子を増やすほどリクエスト数は線形に増える。**まず §2 で技術を特定してから絞った拡張子で回す**のが、IP ブロックリスクと時間の両面で有利。
+
 **観測される出力 → 次のアクション:**
 
 | 出力 | 示唆 | 次のアクション |
@@ -195,7 +209,7 @@ gobuster dir -u http://[IP] -w [WORDLIST] -t 5 --delay 200ms -o gobuster_lowrate
 | 一定回数失敗で IP ブロック | WAF / IPS の自動遮断 | 停止。IP ローテーション・遅延を検討。検知証跡として記録 |
 | ログインフォームを発見 | 認証突破の入口 | `../02_Initial_Access/Web_Vulnerabilities/SQLi.md` / `../02_Initial_Access/Account_Lockout_Recon.md` |
 
-**注意:** `--append-domain` の挙動はバージョン依存。**v3.1 以前**は自動結合、**v3.2〜v3.5** は `--append-domain` で結合、**v3.6 以降**はデフォルトで「ワードリストをそのまま Host: 値にセット」。把握していないと「裸の文字列が送られて全件失敗」する。`gobuster --version` で確認し、新環境では 1 件で挙動確認するか ffuf を使う。HTTPS は `-k`、サイズ一致ノイズは `--exclude-length` でフィルタ。
+**注意:** `--append-domain` の挙動はバージョン依存。**v3.1 以前**は自動結合、**v3.2〜v3.5** は `--append-domain` で結合、**v3.6 以降**はデフォルトで「ワードリストをそのまま Host: 値にセット」。把握していないと「裸の文字列が送られて全件失敗」する。`gobuster --version` で確認し、新環境では 1 件で挙動確認するか ffuf を使う。HTTPS は `-k`／`--insecure` 必須（自己署名証明書）、サイズ一致ノイズは `--exclude-length` でフィルタ。**ただし古い TLS（TLS1.0 のみ等）の相手には feroxbuster 等の rustls 系は `--insecure` を付けても接続できない**（`-k` は証明書検証を飛ばすだけでプロトコル floor は下げない）→ `dirb` / `curl` ベースに切替えるか、到達性の確保は `TLS_Audit.md` を参照。
 
 ---
 
@@ -249,6 +263,8 @@ python cookie_classify.py request.txt --show-thirdparty
 | アプリ名がどこにも見つからない | ヘッダー・フッターに露出なし | `/wp-admin`・`/admin`・`/phpmyadmin` 等の CMS 固有パスから推定（§4） |
 | searchsploit にヒットしない | DB 未収録 | Google で `"[製品名] exploit"` / `CVE-[年]-[番号]` を検索 |
 | ファジングで何も出ない | ワードリスト不適合 / WAF | 別ワードリスト（raft / SecLists）に変更、`-s` でステータスフィルタ調整 |
+| `curl -s` が無出力 / ツールが「SSL errors」で接続不可 | 古い TLS しか喋らないサーバに繋げていない | `-s` を外しエラー確認 → `unsupported protocol` なら `TLS_Audit.md` の到達性確保（openssl.cnf floor 引き下げ）|
+| HTTP 側を列挙しても `302` ばかりで中身が無い | 全パスが HTTPS へ強制リダイレクト | 列挙対象を `https://` + `-k` に切替 |
 | Cookie が 1〜2 本で third-party 混在なし | 小規模アプリ | 全件をそのままテスト対象にする |
 | ドメイン直下に Cookie がない（CDN / SPA） | トークンが別ストア | `localStorage` / `sessionStorage` を DevTools で確認 |
 | IP ブロックされた | WAF / IPS 自動遮断 | 停止して回避策（IP ローテーション・遅延）。検知証跡として記録 |
@@ -259,7 +275,7 @@ python cookie_classify.py request.txt --show-thirdparty
 
 - gobuster は `--timeout` と `-t`（スレッド数）の調整でスキャンが安定する。レスポンスサイズ一致が大量なら `--exclude-length` でフィルタ
 - vhost ファジングでは必ずベースドメインを `/etc/hosts` に登録してから実施する
-- HTTPS は `-k` で証明書チェックをスキップ
+- HTTPS は `-k` で証明書チェックをスキップ。**ただし `-k` はプロトコルバージョンの floor を下げない** — 相手が TLS1.0 / SSLv3 のみだと現代の curl/ツールは `unsupported protocol` で接続自体に失敗する。到達性の確保（openssl.cnf の `MinProtocol` 引き下げ・rustls 系ツールの限界）→ `TLS_Audit.md`
 - CVE がなくても「設定ファイルのデフォルト認証情報（admin:admin 等）」を試すことを忘れない
 
 > **個別ブロック固有の注意は各 §N の「注意:」を参照。**

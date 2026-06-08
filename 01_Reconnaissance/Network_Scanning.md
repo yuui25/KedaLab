@@ -82,10 +82,13 @@ sudo nmap -A --reason -oA nmap_aggressive [TARGET_IP]
 
 ```bash
 # [Attacker] 初手スキャン（版数 -sV + スクリプト -sC + 全 65535 ポート + xml 保存）
+# 本番（既定）: レート指定なし（抑えめ・IDS を踏みにくい）
+sudo nmap -sC -sV -p- -oA nmap_allports [TARGET_IP]
+# 演習・時間制約時のみ（高負荷・IDS 発火注意）: 送信レート下限を上げて高速化
 sudo nmap -sC -sV -p- --min-rate 5000 -oA nmap_allports [TARGET_IP]
-# -sC -sV         : デフォルトスクリプト + 版数検出（open ポートにのみ走る）
-# -p-             : 全 65535 ポート
-# --min-rate 5000 : スキャン速度を上げる（本番では事前合意による）
+# -sC -sV    : デフォルトスクリプト + 版数検出（open ポートにのみ走る）
+# -p-        : 全 65535 ポート
+# --min-rate : 毎秒の最低送信パケット数の「下限」。ウェイトではなく高速化（高 latency 相手は取りこぼし注意）
 # （根拠を残したい場合は --reason を追加）
 ```
 
@@ -118,7 +121,7 @@ sudo nmap -sC -sV --reason -p $ports -oA nmap_via_masscan [TARGET_IP]
 | 全ポート `filtered` | FW / IDS でスキャン全体がブロック | 「刺さらなかったとき」へ |
 | 接続が途中で切られる | IPS のレート制限発動 | `--min-rate` を下げる（1000 以下）、`--scan-delay 1s` で間欠化 |
 
-**注意:** `--min-rate 5000` は対象システムに負荷をかけ、IDS の異常トラフィックシグネチャを発動させやすい。本番では事前合意のうえ、抑えた値（`--min-rate 1000` 以下）または `-T3` などのタイミングテンプレートを使う。
+**注意:** `--min-rate 5000` は対象システムに負荷をかけ、IDS の異常トラフィックシグネチャを発動させやすい。本番では事前合意のうえ、抑えた値（`--min-rate 1000` 以下）または `-T3` などのタイミングテンプレートを使う。**高 latency（RTT 100ms 超）の相手に高い `--min-rate` をかけると逆効果**：`Warning: ... giving up on port because retransmission cap hit` が出て、本来 open なポートが落ちたり、`smtp?` / `pop3?` のようにサービスが未確定（`?`）のまま残ったり、多数が誤って `filtered` 判定になる。この警告が出たら **`--min-rate` を下げて（または外して）再スキャン**し、`?` のままのポートは `nmap -sV -p [PORT] --version-intensity 9` で個別に確定させる。
 
 ---
 
@@ -251,6 +254,7 @@ searchsploit --nmap nmap_allports.xml
 | 全ポート閉じているように見える | テスター側の到達経路に問題 | `ip a` で到達可能インターフェース確認、`ip r` でルーティングテーブル確認、必要なら別経路から再試行 |
 | UDP スキャンが何も返さない | ほとんどの UDP サービスは応答しない仕様 | `--top-ports 50 --open` で絞る、SNMP（161）/ DNS（53）/ NTP（123）等の特定ポートに対して `nmap -sU -sV` を個別実施 |
 | `--min-rate` 高設定で IPS 発火 → 以降 IP ブロック | レート制限・パターン検知 | スキャン元 IP を変更、`-T2` / `--scan-delay 1s` で間欠スキャンに切替 |
+| `retransmission cap hit` 警告 + サービスが `?` 多発 / 想定外の `filtered` | 高 latency に対し `--min-rate` が高すぎてプローブを取りこぼしている | `--min-rate` を下げる/外して再スキャン、`?` ポートは `-sV -p [PORT] --version-intensity 9` で個別確定 |
 
 ## 注意点・落とし穴
 

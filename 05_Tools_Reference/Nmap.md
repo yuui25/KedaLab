@@ -12,7 +12,9 @@
 ## 基本スキャンセット（毎回使う）
 
 ```bash
-# [Attacker] 初手スキャン（版数 -sV + スクリプト -sC + 全ポート -p- + xml 保存）
+# [Attacker] 本番（既定）: レート指定なし（抑えめ・IDS を踏みにくい）
+sudo nmap -sC -sV -p- -oA nmap_allports [IP]
+# [Attacker] 演習・時間制約時のみ（高負荷・IDS 発火注意）: --min-rate で送信レート下限を上げ高速化
 sudo nmap -sC -sV -p- --min-rate 5000 -oA nmap_allports [IP]
 searchsploit --nmap nmap_allports.xml          # 版数付き xml から既知 CVE を一括照合
 ```
@@ -22,8 +24,8 @@ searchsploit --nmap nmap_allports.xml          # 版数付き xml から既知 C
 任意の追加オプション（必要時のみ付ける）:
 
 ```bash
-nmap -sC -sV -p- --min-rate 5000 --reason -oA nmap_allports [IP]   # --reason: 各判定の根拠を残す
-nmap -sC -sV -p- --min-rate 5000 -Pn     -oA nmap_allports [IP]    # -Pn: ICMP ブロック環境でホスト発見をスキップ
+nmap -sC -sV -p- --reason -oA nmap_allports [IP]   # --reason: 各判定の根拠を残す（演習で速くするなら --min-rate 5000 を追加）
+nmap -sC -sV -p- -Pn      -oA nmap_allports [IP]   # -Pn: ICMP ブロック環境でホスト発見をスキップ
 ```
 
 ## よく使うオプション
@@ -34,7 +36,7 @@ nmap -sC -sV -p- --min-rate 5000 -Pn     -oA nmap_allports [IP]    # -Pn: ICMP �
 | `-sV` | バージョン検出 |
 | `-sU` | UDPスキャン（低速） |
 | `-p-` | 全65535ポートをスキャン |
-| `--min-rate 5000` | 毎秒最低5000パケット送信（高速化） |
+| `--min-rate 5000` | 毎秒最低5000パケット送信の「下限」指定＝**高速化**（ウェイトではない）。高負荷・IDS 発火・高 latency での取りこぼしに注意。本番は事前合意のうえで |
 | `-T4` | タイミングテンプレート（高速） |
 | `-oA [basename]` | .nmap / .gnmap / .xml の3形式で保存 |
 | `-oN [file]` | テキスト形式で保存 |

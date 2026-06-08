@@ -29,13 +29,17 @@
 | OS判定（TTL・ポート構成・HTTPヘッダー・SMBバナー・SSH バナー） | Reconnaissance | `00_Playbook/00_OS_Identification.md` |
 | robots.txt からの隠しパス発見 | Reconnaissance | `01_Reconnaissance/Web_Enumeration.md` |
 | サービスバージョン検出 | Reconnaissance | `01_Reconnaissance/Network_Scanning.md` |
+| 高 latency での --min-rate 過大による取りこぼし（retransmission cap hit → サービス `?` / 誤 filtered）と再スキャン判断 | Reconnaissance | `01_Reconnaissance/Network_Scanning.md` |
 | IPレンジからDockerコンテナを特定（172.17.0.x） | Reconnaissance | `01_Reconnaissance/Network_Scanning.md` |
 | Webディレクトリファジング中のレート制限・WAF throttle 対処（gobuster -t / --delay 調整） | Reconnaissance | `01_Reconnaissance/Web_Enumeration.md` |
 | コンテナ環境の確認（/.dockerenv / /etc/hosts / ip addr） | Post Access Linux | `03_Post_Access_Linux/Enumeration_Checklist.md` |
 | Webディレクトリ列挙（gobuster） | Reconnaissance | `01_Reconnaissance/Web_Enumeration.md` |
 | vhostファジング | Reconnaissance | `01_Reconnaissance/Web_Enumeration.md` |
 | Webアプリバージョン特定（/api/health 等） | Reconnaissance | `01_Reconnaissance/Web_Enumeration.md` |
+| HTTP→HTTPS 全リダイレクト時の列挙 scheme 切替・`curl -s` 無出力をサービス無しと誤判断しない・拡張子を server 技術で選ぶ | Reconnaissance | `01_Reconnaissance/Web_Enumeration.md` |
 | searchsploit による CVE 検索 | Reconnaissance | `05_Tools_Reference/Searchsploit.md` |
+| searchsploit --nmap の死角（http-title / ssl-cert のアプリ名は手動検索が必要）| Reconnaissance | `05_Tools_Reference/Searchsploit.md` |
+| レガシー TLS（TLS1.0 / SSLv3 のみ）へツールが接続できないときの到達性確保（openssl.cnf floor 引き下げ・rustls 系の限界・socat ブリッジ）| Reconnaissance | `01_Reconnaissance/TLS_Audit.md` |
 | SMB匿名アクセス | Reconnaissance | `01_Reconnaissance/SMB_Enumeration.md` |
 | SMB ゲストアカウント有効確認（netexec smb -u 'guest' -p ''） | Reconnaissance | `01_Reconnaissance/SMB_Enumeration.md` |
 | NETLOGON 共有のログオンスクリプト確認（平文パスワード埋め込み検出） | Reconnaissance | `01_Reconnaissance/SMB_Enumeration.md` |
@@ -214,6 +218,7 @@
 | SSH §2 対応認証方式の列挙（`ssh -v -o PreferredAuthentications=none` で `publickey,password,keyboard-interactive,gssapi-with-mic` 判定） | Initial Access | `02_Initial_Access/SSH.md` |
 | SSH §3 ホスト鍵 fingerprint 捕捉（ssh-keyscan / ssh-keygen -lf）と鍵使い回し横展開検出 | Initial Access | `02_Initial_Access/SSH.md` |
 | SSH §4 アルゴリズム・暗号スイート列挙（nmap --script ssh2-enum-algos / 弱い KEX・Cipher 検出 / CVE-2023-48795 Terrapin prefix truncation 判定） | Initial Access | `02_Initial_Access/SSH.md` |
+| SSH §5 レガシー OpenSSH への接続（弱い KEX / ssh-rsa・ssh-dss 鍵 / CBC のみの相手に `-oKexAlgorithms=+...` / `-oHostKeyAlgorithms=+...` / `-c aes128-cbc` を明示・no matching key exchange method 対処）| Initial Access | `02_Initial_Access/SSH.md` |
 | SSH §5 agent forwarding（`ssh -A`）の逆方向リスクと侵入先ホストでの鍵乗っ取り観点 | Initial Access | `02_Initial_Access/SSH.md` |
 | SSH §6 制限シェル（rbash / lshell）の脱出（vi / ed エディタ経由・`ssh -t '/bin/bash'`・PATH 復元） | Initial Access | `02_Initial_Access/SSH.md` |
 | SSH §6 SCP / SFTP のみ許可された制限アカウントからのファイル読み取り（/etc/passwd / .bash_history / .ssh/ 系） | Initial Access | `02_Initial_Access/SSH.md` |

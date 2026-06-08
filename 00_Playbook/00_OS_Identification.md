@@ -58,10 +58,14 @@ ping -c 1 [IP]
 常に実施する。ポート構成だけでほぼ OS が確定する。
 
 ```bash
-# [Attacker] 初手スキャン（版数 -sV + スクリプト -sC + 全ポート -p- + xml 保存）
+# [Attacker] 本番（既定）: レート指定なし（抑えめ・IDS を踏みにくい）
+sudo nmap -sC -sV -p- -oA nmap_allports [IP]
+# [Attacker] 演習・時間制約時のみ（高負荷・IDS 発火注意）: --min-rate で送信レート下限を上げ高速化
 sudo nmap -sC -sV -p- --min-rate 5000 -oA nmap_allports [IP]
 searchsploit --nmap nmap_allports.xml          # 版数付き xml から既知 CVE を一括照合
 ```
+
+> **`searchsploit --nmap` は `http-title` / `ssl-cert` のアプリ名を拾わない（見落とし最多の地点）。** ログインページのタイトル等に製品名が出ていたら、`--nmap` の結果が空でも手で `searchsploit [製品名]` を回す → `../05_Tools_Reference/Searchsploit.md` §5。
 
 OS フィンガープリント（TCP/IP スタック推定）も欲しいときだけ `-O` を足す（root 権限要）。`-A` は `-O -sV -sC -traceroute` の一括版で出力が増えるだけ。
 
@@ -258,7 +262,7 @@ nmap -p 22 -sV [IP]
 
 ## 判定できない場合の深掘り手順
 
-全ポートスキャン（`sudo nmap -p- --min-rate 5000 [IP]`）後も判定できない場合は以下を順に試す。
+全ポートスキャン（`sudo nmap -p- [IP]`）後も判定できない場合は以下を順に試す。
 
 **1. OS fingerprint を強制取得**
 

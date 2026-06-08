@@ -59,10 +59,14 @@ Linux と確定した上でこのファイルのStep 1以降を進める。
 > OS判定（`00_OS_Identification.md`）で `nmap_allports`（`-sC -sV -p-`）を取得済みなら、それをそのまま使う（**再実行不要**）。未取得ならここで回す。
 
 ```bash
-# [Attacker] 初手スキャン（版数 -sV + スクリプト -sC + 全ポート -p- + xml 保存）
+# [Attacker] 本番（既定）: レート指定なし（抑えめ・IDS を踏みにくい）
+sudo nmap -sC -sV -p- -oA nmap_allports [TARGET_IP]
+# [Attacker] 演習・時間制約時のみ（高負荷・IDS 発火注意）: --min-rate で送信レート下限を上げ高速化
 sudo nmap -sC -sV -p- --min-rate 5000 -oA nmap_allports [TARGET_IP]
 searchsploit --nmap nmap_allports.xml          # 版数付き xml から既知 CVE を一括照合
 ```
+
+> **`searchsploit --nmap` は `http-title` / `ssl-cert` のアプリ名を拾わない（見落とし最多の地点）。** ログインページのタイトル等に製品名が出ていたら（例: `|_http-title: [製品名] - Login page`）、`--nmap` の結果が空でも手で `searchsploit [製品名]` を回す → `../05_Tools_Reference/Searchsploit.md` §5。
 
 → 高速化（RustScan / Masscan）・UDP スキャンの詳細: `../01_Reconnaissance/Network_Scanning.md`
 
