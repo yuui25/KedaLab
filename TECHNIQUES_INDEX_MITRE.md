@@ -101,7 +101,7 @@ ATT&CK Navigator: https://mitre-attack.github.io/attack-navigator/
 
 | Technique ID | 技術名 | kedalab ファイル |
 |------|-------|--------|
-| T1068 | Exploitation for Privilege Escalation | `03_Post_Access_Linux/Kernel_Exploits.md` / `04_Post_Access_Windows_AD/Buffer_Overflow_LocalService.md` / `04_Post_Access_Windows_AD/BYOVD.md` |
+| T1068 | Exploitation for Privilege Escalation | `03_Post_Access_Linux/Kernel_Exploits.md` / `04_Post_Access_Windows_AD/Buffer_Overflow_LocalService.md` / `04_Post_Access_Windows_AD/BYOVD.md` / `05_Tools_Reference/Metasploit.md`（§7 local_exploit_suggester でローカル昇格候補を列挙 → exploit/windows/local 実行） |
 | T1548.001 | Abuse Elevation Control: Setuid and Setgid | `03_Post_Access_Linux/SUID_SGID.md` |
 | T1548.002 | Abuse Elevation Control: Bypass UAC | `04_Post_Access_Windows_AD/Enumeration_Checklist.md`（Step 1.3 UAC バイパス） |
 | T1548.003 | Abuse Elevation Control: Sudo and Sudo Caching | `03_Post_Access_Linux/Sudo_Misconfig.md` |

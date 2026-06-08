@@ -459,7 +459,11 @@
 | Impacket スイート全般 | `05_Tools_Reference/Impacket_Suite.md` |
 | hashcat | `05_Tools_Reference/Hashcat.md` |
 | Metasploit Framework（モジュール探索 search → use → info → show options → set → run・LHOST 明示・handler vs nc・エラー読み分け） | `05_Tools_Reference/Metasploit.md` |
+| Metasploit §3.1-3.2 multi/handler で自前ペイロード受信 + staged/stageless（payload 区切り `/` vs `_`・nc で staged meterpreter を受けられない理由・shell_reverse_tcp なら nc 可・`Sending stage` が受信成功の目印・handler は msfvenom と payload/LHOST/LPORT 完全一致） | `05_Tools_Reference/Metasploit.md` |
+| Metasploit §5 3 プロンプトの取り違え（msfconsole プロンプトで打つ未知コマンドは手元のローカルシェルで実行＝`whoami` が自分のユーザー名・`dir` が手元ディレクトリ・`getuid` は Unknown command・ターゲットは `sessions -i` 後の meterpreter で触る） | `05_Tools_Reference/Metasploit.md` |
 | Meterpreter セッション基礎（getuid / sysinfo / getsystem / hashdump / shell / background / sessions -i・`id`/`whoami` は meterpreter コマンドではない罠・古い Windows の `whoami` 不在と echo %USERNAME% 代替） | `05_Tools_Reference/Metasploit.md` |
+| Metasploit §6 Meterpreter のパス指定 `\\` エスケープ（`\` はエスケープ文字で `c:\\..\\` 二重 or `c:/../` スラッシュ・`ls` で実名確認してから `cat`・手順書のパス盲信回避） | `05_Tools_Reference/Metasploit.md` |
+| Metasploit §7 セッションからの権限昇格探索（post/multi/recon/local_exploit_suggester・sysinfo arch は x86 信頼/x64 低・`appears vulnerable` は候補で要総当り・exploit/windows/local は SESSION 指定・bypassuac は管理者前提・書込不可 cwd は %TEMP% へ cd） | `05_Tools_Reference/Metasploit.md` |
 | searchsploit（バージョン検索・ファイル操作・Nmap XML連携） | `05_Tools_Reference/Searchsploit.md` |
 | 複数CVE候補からの絞り込み基準（バージョン一致・OS一致・パッチ前確認・前提条件） | `05_Tools_Reference/Searchsploit.md` |
 | Exploit-DB Web・NVD・GitHub PoC の使い分け | `05_Tools_Reference/Searchsploit.md` |

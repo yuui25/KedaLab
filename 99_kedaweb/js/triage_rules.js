@@ -34,7 +34,7 @@
    UI のフッタ表示で「いつ時点のルールか」が分かる。
    ============================================================= */
 window.KEDA_TRIAGE = {
-  version: "2026-06-03",
+  version: "2026-06-08",
   rules: [
     /* ── tech-stack:レスポンスから判定できる土台技術 ───────────── */
     {
@@ -51,11 +51,13 @@ window.KEDA_TRIAGE = {
     },
     {
       id: "stack-aspnet",
-      label: "ASP.NET アプリケーション",
+      label: "ASP.NET / IIS アプリケーション",
       category: "tech-stack",
       weight: 2,
-      pattern: [/x-powered-by:\s*asp\.net/i, /x-aspnet-version/i, /\basp\.net_sessionid\b/i, /\.aspx?(\?|\b)/i, /__viewstate/i],
+      pattern: [/x-powered-by:\s*asp\.net/i, /x-aspnet-version/i, /\basp\.net_sessionid\b/i, /\.aspx?(\?|\b)/i, /__viewstate/i, /server:\s*microsoft-iis/i],
       targets: [
+        { file: "00_Playbook/00_OS_Identification.md", why: "Server: Microsoft-IIS/x.x は Windows 確定 + IIS 版数から OS 版数を絞れる(7.5=Win7/2008R2 等)" },
+        { file: "02_Initial_Access/Web_Vulnerabilities/Web_Shells.md", why: "IIS なら webshell は .php でなく .aspx を選ぶ(言語不一致だと実行されない)" },
         { file: "02_Initial_Access/Web_Vulnerabilities/Path_Traversal.md", why: "IIS/ASP.NET のパス正規化バグ・短縮名(8.3)列挙を確認" },
         { file: "01_Reconnaissance/Web_Enumeration.md", why: "ViewState・既定エンドポイント・トレース有効化など列挙の起点" }
       ]

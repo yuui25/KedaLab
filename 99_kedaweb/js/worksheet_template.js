@@ -25,7 +25,7 @@
    file / playbook のパスは kedalab ルート相対。実在すること。
    ============================================================= */
 window.KEDA_WORKSHEET = {
-  version: "2026-06-07",
+  version: "2026-06-08",
 
   meta: [
     { id: "target",   label: "TARGET",   placeholder: "[TARGET_IP]" },
@@ -111,6 +111,7 @@ window.KEDA_WORKSHEET = {
         { label: "ドメイン列挙 (BloodHound 等)",         file: "04_Post_Access_Windows_AD/Enumeration_Checklist.md", hint: "例) 最短経路 / 狙う ACE" },
         { label: "資格情報ダンプ",                       file: "04_Post_Access_Windows_AD/Credential_Dumping.md", hint: "例) 取得した hash / 平文 / チケット" },
         { label: "特権トークン",                         file: "04_Post_Access_Windows_AD/Privilege_Tokens.md", hint: "例) whoami /priv の有効特権" },
+        { label: "ローカル昇格 (Meterpreter: suggester→kernel/local exploit)", file: "05_Tools_Reference/Metasploit.md", hint: "例) sysinfo arch → local_exploit_suggester → 効いた exploit / 書込可能 cwd へ cd" },
         { label: "DPAPI / ブラウザ資格情報",             file: "04_Post_Access_Windows_AD/DPAPI_Browser_Creds.md", hint: "例) 復号できた資格情報" }
       ]
     },

