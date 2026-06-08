@@ -444,6 +444,42 @@ window.KEDA_TRIAGE = {
       targets: [
         { file: "02_Initial_Access/Mail_Services.md", why: "VRFY/EXPN によるユーザ列挙・認証・既知 CVE を確認" }
       ]
+    },
+
+    /* ── infra-service:nmap 出力からの OS lean / 死角の補正 ───────── */
+    {
+      id: "os-lean-linux",
+      label: "OS は Linux 濃厚（バナー文字列）",
+      category: "infra-service",
+      weight: 1,
+      /* 識別子付きディストリ名・OpenSSH の OS サフィックス・Samba(Unix)・protocol 行に限定して拾う */
+      pattern: [/\((?:CentOS|Ubuntu|Debian|Red\s?Hat|RHEL|Fedora|SUSE|Gentoo)\)/i, /OpenSSH[_\s][\d.]+p?\d*[^\n]*(?:Ubuntu|Debian|FreeBSD)/i, /Linux;\s*protocol/i, /Unix\s*\(Samba/i],
+      targets: [
+        { file: "00_Playbook/00_OS_Identification.md", why: "(CentOS)/(Ubuntu)/OpenSSH…Debian/Unix(Samba) 等のバナー = Linux 濃厚。ポート構成と合わせて確証度を上げ Linux_Attack_Flow へ" }
+      ]
+    },
+    {
+      id: "os-lean-windows",
+      label: "OS は Windows 濃厚（バナー/ポート）",
+      category: "infra-service",
+      weight: 1,
+      pattern: [/\bmicrosoft-ds\b/i, /\bms-wbt-server\b/i, /Windows\s+Server\s+\d{4}/i, /server:\s*microsoft-iis/i, /\bmsrpc\b/i],
+      targets: [
+        { file: "00_Playbook/00_OS_Identification.md", why: "microsoft-ds(445)/ms-wbt-server(3389)/IIS/msrpc(135)/Windows Server 文字列 = Windows 濃厚。ポート構成と合わせ Windows_AD_Attack_Flow へ" }
+      ]
+    },
+    {
+      id: "nmap-http-title-appname",
+      label: "http-title / ssl-cert に製品名（searchsploit --nmap の死角）",
+      category: "infra-service",
+      weight: 2,
+      /* 「製品名 - Login page」型・ログイン/管理画面語・証明書の CN/Org を拾う。
+         --nmap は service バナーしか検索しないため、ここに出た製品名は手で searchsploit する必要がある */
+      pattern: [/_?http-title:\s*[^\n]*(?:login|sign[\s-]?in|dashboard|portal|console|admin|管理)/i, /_?http-title:\s*[\w][\w .()/-]+\s+-\s+\S/i, /ssl-cert:[\s\S]{0,200}?(?:commonName|organizationName)=/i],
+      targets: [
+        { file: "05_Tools_Reference/Searchsploit.md", why: "http-title/ssl-cert のアプリ名は searchsploit --nmap が拾わない（死角）。製品名を手で searchsploit [名前] に渡す（§5）" },
+        { file: "01_Reconnaissance/Web_Enumeration.md", why: "製品名が出たら版数特定 → CVE 検索が最短経路。ログインページのフッター/タイトルで版数を確認" }
+      ]
     }
   ]
 };

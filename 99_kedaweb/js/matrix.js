@@ -29,7 +29,7 @@
   }
 
   function draw() {
-    ctx.fillStyle = "rgba(6, 8, 12, 0.08)";
+    ctx.fillStyle = "rgba(6, 8, 12, 0.15)";
     ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
 
     ctx.font = fontSize + "px JetBrains Mono, Consolas, monospace";
@@ -56,8 +56,8 @@
       const y = drops[i] * fontSize;
 
       if (isEgg) {
-        // Bright pink-ish accent so the egg pops without being garish.
-        ctx.fillStyle = "rgba(255, 180, 220, 0.95)";
+        // Vivid pink accent so the egg clearly pops out of the green rain.
+        ctx.fillStyle = "rgba(255, 165, 214, 1)";
       } else if (Math.random() > 0.975) {
         ctx.fillStyle = "rgba(220, 255, 230, 0.9)";
       } else {

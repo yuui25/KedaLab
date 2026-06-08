@@ -2013,6 +2013,16 @@
     enterNavMode();
     setTimeout(() => setNavFocus(entry.file), 200);
   });
+  $("#modalPin").addEventListener("click", () => {
+    const entry = docStack[docStack.length - 1];
+    if (!entry) return;             // only when a real file is open (not worksheet section)
+    pinToDock(entry.file);
+    closeModal();
+  });
+  const dockCloseBtn = $("#dockClose");
+  if (dockCloseBtn) dockCloseBtn.addEventListener("click", closeDock);
+  const dockExpandBtn = $("#dockExpand");
+  if (dockExpandBtn) dockExpandBtn.addEventListener("click", () => { if (dockFile) openMD(dockFile); });
 
   function wireSearchClear(inputId, clearId) {
     const input = $("#" + inputId);
@@ -2070,6 +2080,7 @@
     modal.classList.add("open");
     const backBtn = $("#modalBack"); if (backBtn) backBtn.hidden = true;
     const navBtn = $("#modalNav"); if (navBtn) navBtn.hidden = true;
+    const pinBtn = $("#modalPin"); if (pinBtn) pinBtn.hidden = true;
     docStack.length = 0;
     modalPath.innerHTML =
       `<span class="seg-acc">📝 ${escapeHtml(sec.title)}</span>` +
@@ -2134,6 +2145,8 @@
     updateBackButton();
     const navBtn = $("#modalNav");
     if (navBtn) navBtn.hidden = !D.techniques.some(t => t.f === file);
+    const pinBtn = $("#modalPin");
+    if (pinBtn) pinBtn.hidden = false;
     // breadcrumb-like path
     const parts = file.split("/");
     modalPath.innerHTML = parts.map((p, i) =>
@@ -2164,30 +2177,8 @@
       const res = await fetch(url, { cache: "no-cache" });  // revalidate; see fetchMd note
       if (!res.ok) throw new Error("HTTP " + res.status);
       const text = await res.text();
-      modalBody.innerHTML = `<div class="md">${markdown(text)}</div>`;
+      hydrateMd(modalBody, text, file);
       modalBody.scrollTop = restoreScroll;
-      const baseDir = file.split("/").slice(0, -1).join("/");
-      // linkify plain-text .md paths in the body (tables, code, sentences)
-      linkifyMdPaths(modalBody, baseDir);
-      // intercept explicit markdown links to open in modal
-      $$("a", modalBody).forEach(a => {
-        if (a.classList.contains("md-auto")) return; // already wired
-        const href = a.getAttribute("href");
-        if (href && href.endsWith(".md") && !href.startsWith("http")) {
-          a.addEventListener("click", e => {
-            e.preventDefault();
-            let resolved;
-            if (href.startsWith("./") || href.startsWith("../")) {
-              resolved = resolvePath(baseDir, href);
-            } else if (href.includes("/")) {
-              resolved = href;
-            } else {
-              resolved = baseDir ? baseDir + "/" + href : href;
-            }
-            openMD(resolved);
-          });
-        }
-      });
     } catch (err) {
       modalBody.innerHTML = `
         <div class="modal-error">
@@ -2197,6 +2188,63 @@
         </div>
       `;
     }
+  }
+
+  // Render fetched MD text into a container + linkify + wire .md links to openMD.
+  // Shared by the modal viewer (openMD) and the pinned side dock (pinToDock),
+  // so dock content behaves exactly like modal content (links open in the modal).
+  function hydrateMd(container, text, file) {
+    container.innerHTML = `<div class="md">${markdown(text)}</div>`;
+    const baseDir = file.split("/").slice(0, -1).join("/");
+    linkifyMdPaths(container, baseDir);
+    $$("a", container).forEach(a => {
+      if (a.classList.contains("md-auto")) return; // already wired
+      const href = a.getAttribute("href");
+      if (href && href.endsWith(".md") && !href.startsWith("http")) {
+        a.addEventListener("click", e => {
+          e.preventDefault();
+          let resolved;
+          if (href.startsWith("./") || href.startsWith("../")) resolved = resolvePath(baseDir, href);
+          else if (href.includes("/")) resolved = href;
+          else resolved = baseDir ? baseDir + "/" + href : href;
+          openMD(resolved);
+        });
+      }
+    });
+  }
+
+  // ── Pinned side dock: keep one file (e.g. a playbook) open while browsing/searching ──
+  let dockFile = null;
+  async function pinToDock(file) {
+    if (!file) return;
+    dockFile = file;
+    document.body.classList.add("has-dock");
+    const dockBody = $("#dockBody");
+    const dockPath = $("#dockPath");
+    const parts = file.split("/");
+    if (dockPath) dockPath.innerHTML = parts.map((p, i) =>
+      i === parts.length - 1 ? `<span class="seg-acc">${p}</span>` : p
+    ).join(" / ");
+    if (!dockBody) return;
+    if (location.protocol === "file:") {
+      dockBody.innerHTML = `<div class="modal-error">⚠ file:// では fetch が制限されます。HTTP サーバ経由で開いてください。</div>`;
+      return;
+    }
+    dockBody.innerHTML = `<div class="modal-loading">› fetching <code>${file}</code> …</div>`;
+    try {
+      const res = await fetch("../" + file, { cache: "no-cache" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      hydrateMd(dockBody, await res.text(), file);
+      dockBody.scrollTop = 0;
+    } catch (err) {
+      dockBody.innerHTML = `<div class="modal-error">✕ 読み込み失敗: ${escapeHtml(String(err))}<br><code>${file}</code></div>`;
+    }
+  }
+  function closeDock() {
+    document.body.classList.remove("has-dock");
+    const dockBody = $("#dockBody");
+    if (dockBody) dockBody.innerHTML = "";
+    dockFile = null;
   }
 
   // walk text nodes, replace ".md" path strings with clickable anchors
