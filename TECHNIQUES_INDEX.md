@@ -61,6 +61,11 @@
 | openssl s_client によるプロトコル別接続・SNI 指定・mTLS 判定 | Reconnaissance | `01_Reconnaissance/TLS_Audit.md` |
 | 名前付き TLS 脆弱性確認（Heartbleed / POODLE / FREAK / Logjam / ROBOT / DROWN / Sweet32 / Ticketbleed） | Reconnaissance | `01_Reconnaissance/TLS_Audit.md` |
 | HSTS / セキュリティヘッダー確認（Strict-Transport-Security / CSP / X-Frame-Options） | Reconnaissance | `01_Reconnaissance/TLS_Audit.md` |
+| CDN/WAF §1 配下判定（CNAME チェーン edgekey/edgesuite/akamaiedge・Server: AkamaiGHost・cf-ray・x-served-by・wafw00f・観測値はエッジでありオリジンでない切り分け） | Reconnaissance | `01_Reconnaissance/CDN_WAF_Edge_Recon.md` |
+| CDN/WAF §2 製品の見分け（Bot 対策 Cookie `_abck`/`bm_sv`/`ak_bmsc`=Akamai・`cf_clearance`=Cloudflare・`incap_ses_*`=Imperva・whatweb 補完・ffuf/nuclei が急に 403/challenge になる原因切り分け） | Reconnaissance | `01_Reconnaissance/CDN_WAF_Edge_Recon.md` |
+| CDN/WAF §3 Akamai デバッグヘッダ（`Pragma: akamai-x-get-cache-key` 等で X-Cache-Key/X-True-Cache-Key 露出・要実機検証/現代既定は無効化・キャッシュ汚染偵察に接続） | Reconnaissance | `01_Reconnaissance/CDN_WAF_Edge_Recon.md` |
+| CDN/WAF §4 クライアント IP ヘッダ詐称によるアクセス制御バイパス（True-Client-IP=Akamai 既定・X-Forwarded-For/X-Real-IP・IP ベース ACL/地理制限/レート制限の回避） | Reconnaissance | `01_Reconnaissance/CDN_WAF_Edge_Recon.md` |
+| CDN/WAF §5 オリジン IP 特定でエッジ迂回（apex A 直書き露出・CDN レンジ外サブドメイン・Host ヘッダ付き直叩き・証明書 SAN/履歴 DNS/SSRF 反射経路・オリジン側 エッジ IP ACL で不発判定） | Reconnaissance | `01_Reconnaissance/CDN_WAF_Edge_Recon.md` |
 | .git / .svn / .hg ディレクトリ露出検出と git-dumper によるリポジトリ復元 | Reconnaissance | `01_Reconnaissance/Exposed_Files.md` |
 | .env / config.php / wp-config.php 等の設定ファイル誤公開 | Reconnaissance | `01_Reconnaissance/Exposed_Files.md` |
 | バックアップファイル列挙（.bak / .old / ~ / .swp / .tar.gz / .zip / .sql） | Reconnaissance | `01_Reconnaissance/Exposed_Files.md` |

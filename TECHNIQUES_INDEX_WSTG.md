@@ -32,6 +32,7 @@ OWASP Web Security Testing Guide v4.2 のテストカテゴリ・テストケー
 | WSTG-INFO-06 | Identify Application Entry Points | `01_Reconnaissance/Web_Enumeration.md` |
 | WSTG-INFO-08 | Fingerprint Web Application Framework | `01_Reconnaissance/Web_Enumeration.md`（Cookie 名 / Server ヘッダー / generator メタ） / `01_Reconnaissance/Web_Response_Triage.md`（tracestate ベンダキーからの observability スタック特定） |
 | WSTG-INFO-09 | Fingerprint Web Application | `01_Reconnaissance/Web_Enumeration.md`（/api/health 等） |
+| WSTG-INFO-10 | Map Application Architecture | `01_Reconnaissance/CDN_WAF_Edge_Recon.md`（CDN / WAF / リバースプロキシの前段特定・製品フィンガープリント・エッジ vs オリジンの切り分け・オリジン IP 特定） |
 
 ---
 
