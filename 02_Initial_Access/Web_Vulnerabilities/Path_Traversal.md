@@ -207,3 +207,4 @@ searchsploit CVE-2021-43798
 - 後：Grafana ハッシュのクラック（PBKDF2-HMAC-SHA256）→ `../../05_Tools_Reference/Hashcat.md`
 - 後（UNC パス NTLMv2 steal 成立時）：NTLM Relay / クラック → `../../04_Post_Access_Windows_AD/NTLM_Relay/Responder.md` / `../../05_Tools_Reference/Hashcat.md`（mode 5600）
 - 関連：「URL を入力してファイルを取得する」系の脆弱性（SSRF と表裏）→ `SSRF.md`
+- 後（読めたファイルが PHP として実行された＝ include sink だった場合）：wrapper / log poisoning / filter chain による RCE 昇格 → `LFI.md`

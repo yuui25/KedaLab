@@ -170,6 +170,7 @@ python sensitive_scan.py request.txt --no-low
 | **状態変更（メール/パスワード変更・送金・設定変更）が Cookie だけで認証され、CSRF トークンが無い / 欠落時に検証されない / 値が検証されない** | CSRF（SameSite 別成立条件・GET 化・Content-Type/JSON 回避 → PoC で被害者操作を偽造） | `../02_Initial_Access/Web_Vulnerabilities/CSRF.md` |
 | **認証済みの機微データ（個人情報・APIキー・トークン）を返す API のレスポンスに `Access-Control-Allow-Origin` が動的反射 / `Allow-Credentials: true` が付く** | CORS 設定不備（Origin 反射 / null origin / 部分一致 allowlist → クロスオリジンで認証済みレスポンス窃取） | `../02_Initial_Access/Web_Vulnerabilities/CORS.md` |
 | ファイルダウンロード機能 | パストラバーサル・IDOR | `../02_Initial_Access/Web_Vulnerabilities/Path_Traversal.md` |
+| **`?page=` `?file=` `?template=` `?lang=` 等で値を変えるとページ全体が切り替わる / 末尾に `.php` を補完する 404 が出る** | LFI（include sink）。`php://filter/convert.base64-encode/resource=index` で base64 が返れば include 確定 → wrapper / log・session poisoning / filter chain で RCE 昇格。生ソース表示ならパストラバーサル側へ | `../02_Initial_Access/Web_Vulnerabilities/LFI.md` |
 | ユーザー入力がページに反映される | XSS（反射型・格納型） | `../02_Initial_Access/Web_Vulnerabilities/XSS.md` |
 | **反映される入力に `{{7*7}}` / `${7*7}` / `#{7*7}` を入れると `49` が表示される（式が評価される）** | SSTI（エンジン特定 → エンジン別 RCE）。`49` でなく文字列のままなら XSS 側へ | `../02_Initial_Access/Web_Vulnerabilities/SSTI.md` |
 | **XSS が刺さったが Cookie が HTTPOnly で `document.cookie` が空** | localStorage / sessionStorage トークン窃取・キーロギング・保存パスワード autofill 窃取（HTTPOnly 保護外の窃取面） | `../02_Initial_Access/Web_Vulnerabilities/XSS.md`（§4 Cookie 以外の窃取） |

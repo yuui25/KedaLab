@@ -130,6 +130,11 @@
 | ベイティング（感染USB放置・偽ダウンロードリンク） | Initial Access | `02_Initial_Access/Social_Engineering.md` |
 | パストラバーサル（ディレクトリトラバーサル） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/Path_Traversal.md` |
 | Grafana パストラバーサル CVE-2021-43798 | Initial Access | `02_Initial_Access/Web_Vulnerabilities/Path_Traversal.md` |
+| LFI §1-2 検出と read/include 切り分け（`php://filter/convert.base64-encode` でソース開示 → base64 が返れば include sink・生ソース表示なら traversal）・設定ファイル/DB 認証情報の開示（実行を伴わず痕跡なし）| Initial Access | `02_Initial_Access/Web_Vulnerabilities/LFI.md` |
+| LFI §3 PHP wrapper 直接 RCE（`data://` / `php://input` / `expect://`・`allow_url_include=On` 前提・現代既定 Off で不発が普通）| Initial Access | `02_Initial_Access/Web_Vulnerabilities/LFI.md` |
+| LFI §4-5 log poisoning / session poisoning → RCE（access/auth/mail/proc ログへ UA・ユーザー名で PHP 注入後 include / `sess_[PHPSESSID]` へ制御値注入・痕跡残るため原状回復対象）| Initial Access | `02_Initial_Access/Web_Vulnerabilities/LFI.md` |
+| LFI §6 php://filter chain → RCE（synacktiv generator・`allow_url_include`/書込権限 不要・LFI 単体から RCE 到達の現代主力・URL エンコード必須）| Initial Access | `02_Initial_Access/Web_Vulnerabilities/LFI.md` |
+| LFI §7-8 RFI（外部 URL include・`allow_url_include=On`・SMB/ftp 経路・SSRF 表裏）・拡張子 append バイパス（null byte は PHP 5.3.4 未満のみ・現代は wrapper 優先）| Initial Access | `02_Initial_Access/Web_Vulnerabilities/LFI.md` |
 | IDOR（連番ID・オブジェクト直接参照） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/IDOR.md` |
 | SQLi §1 検出（manual probing・single quote / numeric vs string context boolean / time-based confirm / comment-induced behavior change・URL `--+` `-- -` `--%20` 等の末尾コメントエスケープ・WAF で `'` 403 時の `%2527` 二重 URL encode / `0x27` / `CHAR(39)`） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/SQLi.md` |
 | SQLi §2 DB 横断 cheat sheet（comment 記号・文字列連結 (CONCAT / + / \|\|)・version 関数・current_user / current_database・information_schema vs sys.tables vs sqlite_master・SUBSTRING / SUBSTR 比較・ASCII / ORD / UNICODE・stacked queries 既定可否・OOB 経路（LOAD_FILE / xp_dirtree / dblink / UTL_HTTP）・error 誘発関数（EXTRACTVALUE / CONVERT / CAST / XMLType）の MySQL / MSSQL / PostgreSQL / Oracle / SQLite 比較） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/SQLi.md` |

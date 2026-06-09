@@ -74,7 +74,7 @@ OWASP Web Security Testing Guide v4.2 のテストカテゴリ・テストケー
 
 | WSTG ID | テスト項目 | kedalab ファイル |
 |---------|-----------|--------|
-| WSTG-ATHZ-01 | Testing Directory Traversal File Include | `02_Initial_Access/Web_Vulnerabilities/Path_Traversal.md` |
+| WSTG-ATHZ-01 | Testing Directory Traversal File Include | `02_Initial_Access/Web_Vulnerabilities/Path_Traversal.md` / `02_Initial_Access/Web_Vulnerabilities/LFI.md` |
 | WSTG-ATHZ-02 | Testing for Bypassing Authorization Schema | `02_Initial_Access/Web_Vulnerabilities/IDOR.md` / `02_Initial_Access/Web_Vulnerabilities/Command_Injection.md`（is_admin=1） |
 | WSTG-ATHZ-03 | Testing for Privilege Escalation | `02_Initial_Access/Web_Vulnerabilities/Command_Injection.md`（API パラメータ改ざん） |
 | WSTG-ATHZ-04 | Testing for Insecure Direct Object References | `02_Initial_Access/Web_Vulnerabilities/IDOR.md` |
