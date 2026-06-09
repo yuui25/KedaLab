@@ -88,6 +88,7 @@
 | リクエスト/レスポンスの機微情報・設定不備一括スキャン（sensitive_scan / WSTG-INFO） | Reconnaissance | `01_Reconnaissance/Web_Response_Triage.md` |
 | セキュリティヘッダー欠落確認（CSP / HSTS / X-Content-Type-Options / Referrer-Policy / Permissions-Policy 等） | Reconnaissance | `01_Reconnaissance/Web_Response_Triage.md` |
 | Cookie 属性不備確認（HttpOnly / Secure / SameSite 欠落・超長期 Expires）（WSTG-SESS-02） | Reconnaissance | `01_Reconnaissance/Web_Response_Triage.md` |
+| 分散トレーシングヘッダの偵察（traceparent / tracestate / traceresponse / baggage の露出 → observability スタック特定・ベンダ判別・内部相関 ID 露出・tracestate/baggage の信頼境界違反・sampled flag DoS）（WSTG-INFO-05/08） | Reconnaissance | `01_Reconnaissance/Web_Response_Triage.md` |
 | **Server ヘッダーからの Python WSGI 系識別（Werkzeug / gunicorn / uWSGI / Tornado / Django runserver）と非標準ポート観点** | Reconnaissance | `01_Reconnaissance/Web_Enumeration.md` |
 | HTML `<meta name="generator">` 著作権年範囲からのバージョン推定 | Reconnaissance | `01_Reconnaissance/Web_Enumeration.md` |
 | DoS 保護・自動 IP ブロック前提のディレクトリ列挙抑制（robots.txt・トップページの警告文を読む） | Reconnaissance | `01_Reconnaissance/Web_Enumeration.md` |

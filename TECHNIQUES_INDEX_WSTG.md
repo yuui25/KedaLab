@@ -28,9 +28,9 @@ OWASP Web Security Testing Guide v4.2 のテストカテゴリ・テストケー
 | WSTG-INFO-02 | Fingerprint Web Server | `01_Reconnaissance/Web_Enumeration.md` |
 | WSTG-INFO-03 | Review Webserver Metafiles for Information Leakage | `01_Reconnaissance/Web_Enumeration.md`（robots.txt） / `01_Reconnaissance/Exposed_Files.md` |
 | WSTG-INFO-04 | Enumerate Applications on Webserver | `01_Reconnaissance/Web_Enumeration.md`（vhost ファジング） |
-| WSTG-INFO-05 | Review Webpage Content for Information Leakage | `01_Reconnaissance/Web_Enumeration.md`（フッター・HTML ソース） |
+| WSTG-INFO-05 | Review Webpage Content for Information Leakage | `01_Reconnaissance/Web_Enumeration.md`（フッター・HTML ソース） / `01_Reconnaissance/Web_Response_Triage.md`（分散トレーシングヘッダの trace-id 反射＝内部相関 ID 露出） |
 | WSTG-INFO-06 | Identify Application Entry Points | `01_Reconnaissance/Web_Enumeration.md` |
-| WSTG-INFO-08 | Fingerprint Web Application Framework | `01_Reconnaissance/Web_Enumeration.md`（Cookie 名 / Server ヘッダー / generator メタ） |
+| WSTG-INFO-08 | Fingerprint Web Application Framework | `01_Reconnaissance/Web_Enumeration.md`（Cookie 名 / Server ヘッダー / generator メタ） / `01_Reconnaissance/Web_Response_Triage.md`（tracestate ベンダキーからの observability スタック特定） |
 | WSTG-INFO-09 | Fingerprint Web Application | `01_Reconnaissance/Web_Enumeration.md`（/api/health 等） |
 
 ---

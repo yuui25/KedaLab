@@ -34,7 +34,7 @@
    UI のフッタ表示で「いつ時点のルールか」が分かる。
    ============================================================= */
 window.KEDA_TRIAGE = {
-  version: "2026-06-08",
+  version: "2026-06-09",
   rules: [
     /* ── tech-stack:レスポンスから判定できる土台技術 ───────────── */
     {
@@ -71,6 +71,16 @@ window.KEDA_TRIAGE = {
       targets: [
         { file: "02_Initial_Access/Web_Vulnerabilities/Java_Deserialization_Bypass.md", why: "Java スタックは ois.readObject() 経由のデシリアライズ RCE が刺さりやすい" },
         { file: "02_Initial_Access/Web_Vulnerabilities/XXE.md", why: "Java の XML パーサは既定で外部実体を解決しがち" }
+      ]
+    },
+    {
+      id: "trace-distributed",
+      label: "分散トレーシングヘッダ (traceparent/tracestate/baggage)",
+      category: "tech-stack",
+      weight: 1,
+      pattern: [/^traceparent:/im, /^tracestate:/im, /^traceresponse:/im, /^baggage:/im],
+      targets: [
+        { file: "01_Reconnaissance/Web_Response_Triage.md", why: "分散トレーシングヘッダ露出 → 観測スタック特定・ベンダ判別(tracestate)・内部相関ID露出。baggage/tracestateにidentityが載るなら信頼境界違反も確認(§5)" }
       ]
     },
     {

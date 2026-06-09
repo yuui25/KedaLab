@@ -33,6 +33,7 @@
 | Cookie 属性不備 | HttpOnly / Secure / SameSite 欠落 / 超長期 Expires | MEDIUM |
 | CORS 設定不備 | `Access-Control-Allow-Origin` の動的反射 / `null` 許可 / `Access-Control-Allow-Credentials: true` | MEDIUM |
 | 内部識別子 | UUID / ObjectId / プライベート IP / 内部ホスト名 / Windows パス | MEDIUM |
+| 分散トレーシングヘッダ | `traceparent` / `tracestate` / `traceresponse` / `baggage` の露出 → observability スタック特定・ベンダ判別・内部相関 ID 露出 | LOW |
 | HTML フォーム値 | `input` の value 属性 / `select` の selected / `textarea` の中身 | MEDIUM |
 | HTML コメント | `<!-- TODO -->` / 開発者コメント | LOW |
 | 外部スクリプト読み込み | 外部 CDN / 不審なドメインからの JS | LOW |
@@ -199,6 +200,46 @@ nuclei -u https://[TARGET] -t http/exposures/ -t http/misconfiguration/ \
 | 管理者ロールで他ユーザーのトークン | 権限分離不備 | IDOR / 認可不備として深堀り → `../02_Initial_Access/Web_Vulnerabilities/IDOR.md` |
 
 **注意:** 未認証スキャンだけで「問題なし」と結論を出さない。最低でも一般ユーザーと管理者の 2 ロールで再キャプチャする。
+
+---
+
+## 5. 分散トレーシングヘッダの偵察（observability スタック特定）
+
+W3C Trace Context（W3C Recommendation, 2021）と W3C Baggage が定義する伝播ヘッダ。マイクロサービス間でリクエストを相関させるためのもので、**認証・認可機構ではない**。リクエスト/レスポンスに出ていたら「観測基盤の採用」「観測ベンダの判別」「内部相関 ID 体系の露出」が拾える。価値はスタック特定と情報露出が主体（Cookie 名や `Server:` ヘッダーからのフィンガープリンティングと同じ粒度）。
+
+**手順（Burp / DevTools 目視 or grep）:**
+
+```
+リクエスト・レスポンス両方で確認（伝播ヘッダなので両方向に出る）:
+  traceparent / tracestate / traceresponse / baggage
+
+形式の読み方:
+  traceparent: 00-<32hex trace-id>-<16hex span-id>-<2hex flags>
+               │  trace-id            span-id         flags(下位bit 01=sampled)
+               version
+  tracestate:  <vendorkey>=<value>,...   ← ベンダキーで観測 SaaS / 実装を特定
+  baggage:     key=value,...             ← アプリ任意文脈(KV)をサービス間で伝播
+
+grep 例:
+  grep -iE '^(traceparent|tracestate|traceresponse|baggage):' captured.txt
+```
+
+**観測される出力 → 次のアクション:**
+
+| 観測内容 | 示唆 | 次のアクション |
+|---------|------|-------------|
+| `traceparent` / `traceresponse` が存在 | OTel / Jaeger / Zipkin 系の分散トレーシング採用が確定 | 観測 UI（Jaeger / Zipkin / Grafana 等）が外部公開されていないか確認 → `Exposed_Files.md`（管理コンソール誤公開） |
+| `tracestate` のベンダキー（`dd=` / `b3` / 独自キー） | 観測 SaaS / 実装の特定（`dd=`→Datadog、`b3`→Zipkin/B3 系 等） | スタック情報として記録。製品別の既定エンドポイント・露出 UI を確認 |
+| `trace-id` がエラー画面 / レスポンス本文に反射 | 内部相関 ID 体系の露出 | 情報露出 finding 候補。反射するなら `tracestate` 無検証時の注入も確認 |
+| `baggage` / `tracestate` に `user` / `tenant` / `role` 等の identity 相当 | 信頼境界違反の疑い（下流が値を信頼すると認可不備に直結） | 値を差し替えてテナント越境 / 権限昇格を確認 → `../02_Initial_Access/Web_Vulnerabilities/IDOR.md` |
+
+**注意:**
+
+- `traceparent` 単体は認証・認可トークンではないので、これ自体で侵入はできない。実利は **(1) 観測スタック特定（フィンガープリンティング）** と **(2) 内部相関 ID 露出（情報漏洩）**。
+- `tracestate` / `baggage` は値の文字種が緩く、**無検証で収集 → トレース閲覧 UI に表示**する実装だと log injection → 観測 UI のストアド XSS の媒体になりうる。成立は観測基盤側のサニタイズ不備が前提で、実装依存。
+- `baggage` にアプリが identity / tenant / role を載せ、下流サービスがそれを信頼して認可判断に使うアンチパターンでは、値の改竄が**なりすまし・権限昇格・テナント越境**に直結する（外部信頼境界を越えて素通しする構成が前提）。〔この経路の成立条件・PoC は実装依存。明確な公開出典は未確認〕
+- sampled flag（`01`）を大量送信すると観測パイプラインの負荷・トレースストレージ・従量課金 SaaS の課金額が膨らむ DoS レバーになりうる。負荷を伴うテストは合意範囲内で。
+- これらは外部レスポンスに出ていなくても内部では伝播していることが多い。**外部に漏れていること自体**が情報露出 finding。
 
 ---
 
