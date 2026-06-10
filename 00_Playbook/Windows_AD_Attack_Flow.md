@@ -189,10 +189,16 @@ smbclient -L //[IP] -N
 
 **非標準の共有名に注目。** `ADMIN$`, `C$`, `IPC$`, `NETLOGON`, `SYSVOL` 以外の共有があればアクセスを試みる。
 
-### SYSVOL / Replication の匿名アクセス
+### SYSVOL / Replication へのアクセス（原則：任意の認証済みドメインユーザー）
+
+> **これは「認証情報ゼロ」の手順ではない。** modern AD（Server 2012 R2 以降）では anonymous/null セッションは既定で `Everyone` に含まれず、**SYSVOL の読み取りには任意の認証済みドメインユーザーが必要**。GPP `cpassword`（MS14-025）も「any authenticated user」であって匿名ではない。**Step 3 で初期認証情報を1つでも得たら最優先でここに戻る。** 古い・誤設定の DC や演習環境（HTB / OSCP 等）では `-N`（null）が通ることもあるので、その場合のみ下記を認証情報なしで試す。
 
 ```bash
-# SYSVOL または Replication 共有を再帰的に列挙
+# [Attacker] 認証済みドメインユーザーで再帰列挙（基本はこちら）
+smbclient -U '[DOMAIN]\[USER]%[PASSWORD]' //[IP]/SYSVOL -c "recurse ON; ls" 2>/dev/null
+smbclient -U '[DOMAIN]\[USER]%[PASSWORD]' //[IP]/Replication -c "recurse ON; ls" 2>/dev/null
+
+# [Attacker] 古い・誤設定 DC / 演習環境のみ：null セッションで通るか試す
 smbclient -N //[IP]/SYSVOL -c "recurse ON; ls" 2>/dev/null
 smbclient -N //[IP]/Replication -c "recurse ON; ls" 2>/dev/null
 ```

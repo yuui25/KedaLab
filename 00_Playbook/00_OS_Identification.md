@@ -3,8 +3,8 @@
 スキャン開始前・スキャン中・Web確認時など、複数の段階でOSを特定する手がかりが得られる。
 得られた情報を重ね合わせて確度を上げていく。
 
-> **認証情報（ID/パスワード）が提供済みの場合**：SSH（22番）またはRDP（3389番）への接続を先に試すと、
-> ログイン後のプロンプト形式（`$` → Linux 系、`>` → Windows 系）でOSが即確定する。
+> **認証情報（ID/パスワード）が提供済みの場合**：SSH（22番）またはRDP（3389番）への接続を先に試すと即 OS が確定する。
+> SSH ならログイン後のプロンプト形式（`$`/`#` → Linux 系シェル、`C:\>` → Windows 系）、RDP なら接続後の GUI デスクトップ（Windows）で判別できる。
 > TTL確認やnmapより速い。接続できた時点でOS判定は完了とし、対応Playbookの「開始条件の確認」テーブルへ進む。
 
 > **記録しながら進める**：判定した OS・ホスト名・開いたポートは、この後のどの Playbook でも最初に参照する。控えておく（kedaweb の Workspace ＞ Worksheet 上部「OS」「HOSTNAME」欄・「PORTS」欄が対応）。kedaweb を使わない場合も手元のノートに残す。
@@ -137,7 +137,7 @@ curl -sI https://[IP]/ -k
 | `Server` | `Microsoft-IIS/10.0` | Windows |
 | `Server` | `Apache/2.4.41 (Ubuntu)` | Linux |
 | `Server` | `Apache/2.4.25 (Debian)` | Linux |
-| `Server` | `nginx/1.18.0` | Linux 寄り（WindowsのIISでも nginx は動くが稀） |
+| `Server` | `nginx/1.18.0` | Linux 寄り（nginx は Windows でも動作するが稀。IIS とは別製品） |
 | `X-Powered-By` | `ASP.NET` | Windows |
 | `X-Powered-By` | `PHP/7.4.3` | どちらも可能 |
 | `X-AspNet-Version` | 何でも | Windows（ASP.NET）|

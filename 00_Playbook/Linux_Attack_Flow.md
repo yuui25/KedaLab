@@ -131,7 +131,7 @@ searchsploit --nmap nmap_allports.xml          # 版数付き xml から既知 C
    - レスポンスヘッダーで使用言語・ライブラリを確認（`X-Runtime: Ruby` / `X-Powered-By` 等）
    - 生成物（PDF・画像等）のメタデータからライブラリ名・バージョンを確認（`exiftool` / strings）
    - バージョンが特定できたら即 `searchsploit [ライブラリ名] [バージョン]` で CVE を検索
-   - **PDFKit 0.8.6 以下なら CVE-2022-25765（バックティック URL 注入 → RCE）が有効**
+   - **PDFKit 0.8.6 未満なら CVE-2022-25765（バックティック URL 注入 → RCE）が有効**（修正版は 0.8.6。0.8.6 自体はパッチ済みなので除外）
    - SSRF として内部ネットワーク探索にも使える可能性がある
    → `../02_Initial_Access/Web_Vulnerabilities/Command_Injection.md`（PDFKit セクション）
 
