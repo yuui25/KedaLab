@@ -29,6 +29,8 @@ curl -s "http://[TARGET]/index.php?page=php://filter/convert.base64-encode/resou
 
 **(3) 拡張子が末尾に付与されるか:** `?page=foo` が `foo.php` を探して `failed to open stream: .../foo.php` 等を出すなら append あり。§8 の append バイパスが必要になる。
 
+**(4) LFI の射程＝Web プロセスユーザの読める範囲:** include/read は Web サーバプロセス（`apache` / `www-data` / サービス専用ユーザ等）の権限で動く。そのユーザが読めないファイル（`/root/` 配下 0700・`/etc/shadow` 0640 root:shadow・他ユーザの機微ファイル等）は取得できず**空が返る**（脆弱性が無いのではなく権限境界）。root 専有ファイルや root 所有の証跡を読みたいなら、LFI 単体では届かず**昇格・実ユーザ権限の取得が前提**。現実的な動線は「サービスユーザが読める設定ファイルから認証情報を抜く → 使い回し検証 → 実ユーザ/管理権限へ横展開」（`../Credential_Discovery.md`）。
+
 **攻撃者の思考トレース:** まず `/etc/passwd` で LFI 成立を確認 → `php://filter` で `index.php` / `config.php` のソースを抜き、include の sink・DB 認証情報・他パラメータを把握 → RCE 経路を環境設定で選ぶ（`allow_url_include=On` なら §3 が最速、Off ならログ書込権限があれば §4/§5、何も書けなくても §6 filter chain は通ることが多い）。
 
 ---

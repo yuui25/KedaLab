@@ -25,7 +25,7 @@
    file / playbook のパスは kedalab ルート相対。実在すること。
    ============================================================= */
 window.KEDA_WORKSHEET = {
-  version: "2026-06-08",
+  version: "2026-06-14",
 
   meta: [
     { id: "target",   label: "TARGET",   placeholder: "[TARGET_IP]" },
@@ -51,6 +51,8 @@ window.KEDA_WORKSHEET = {
         { label: "FTP/サービス別 enum (21/22 等)",       file: "02_Initial_Access/FTP.md", hint: "例) anon可? 書込可? iisstart等=webroot疑い" },
         { label: "Web 列挙 (80/443)",                    file: "01_Reconnaissance/Web_Enumeration.md", hint: "例) CMS名・版 / 当たりのパス(/admin,/backup)。" },
         { label: "Web レスポンス精査 (ヘッダ/エラー)",   file: "01_Reconnaissance/Web_Response_Triage.md", hint: "例) Server/X-Powered-By / TRACE等の危険メソッド / スタックトレース" },
+        { label: "レガシ TLS 到達性確認 (curl 無反応≠サービス無し)", file: "01_Reconnaissance/TLS_Audit.md", hint: "curl が空 / unsupported protocol でも nikto等が返るなら TLS floor 問題 → §0 でスタック別に下げる(OPENSSL_CONF / Firefox security.tls.version.min)" },
+        { label: "http-title の製品名を手動 searchsploit (--nmap の死角)", file: "05_Tools_Reference/Searchsploit.md", hint: "nmap http-title / ssl-cert の製品名は searchsploit --nmap が拾わない → 製品名を手で searchsploit [名前]" },
         { label: "SMB 列挙 (139/445)",                   file: "01_Reconnaissance/SMB_Enumeration.md", hint: "例) 共有名 / null可否 / SMBv1 / 署名" },
         { label: "SNMP 列挙 (161/udp)",                  file: "01_Reconnaissance/SNMP_Enumeration.md", hint: "例) community名 / 取得できたMIB" },
         { label: "LDAP/AD 列挙 (389/636)",               file: "01_Reconnaissance/LDAP_Enumeration.md", hint: "例) ドメイン名 / ユーザ / SPN" },

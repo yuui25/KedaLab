@@ -61,9 +61,39 @@ Could not connect ... due to SSL errors (run with --insecure ...)  # feroxbuster
 
 | 手段 | 方法 | 効く範囲 |
 |---|---|---|
-| ① システム openssl.cnf の floor 引き下げ（最も確実）| `/etc/ssl/openssl.cnf` の `[system_default_sect]` に `MinProtocol = TLSv1.0` と `CipherString = DEFAULT@SECLEVEL=0` を設定 | curl / openssl / python(ssl) 等 **openssl にリンクした全ツール** |
-| ② openssl s_client で直接確認 | `openssl s_client -connect [TARGET]:443`（ディストリ build で `-tls1` が無効なら §4 の fallback 経路）| 手動確認・証明書取得 |
-| ③ socat / stunnel でローカルに平文ブリッジ | 旧 TLS を喋れる中継を立て、ローカルの平文ポートにツールを向ける | 中継自身が旧 TLS を張れる場合のみ |
+| ① システム openssl.cnf の floor 引き下げ（最も確実）| `/etc/ssl/openssl.cnf` の `[system_default_sect]` に `MinProtocol = TLSv1.0` と `CipherString = DEFAULT@SECLEVEL=0` を設定。**グローバルを汚したくなければ同内容の cnf を別ファイルに作り `export OPENSSL_CONF=[PATH]` で「そのシェル以降に起動する openssl 系ツールにこの cnf を読ませる」（後始末は `unset OPENSSL_CONF` だけ・原状回復不要）** | curl / openssl / python(ssl) 等 **openssl にリンクした全ツール** |
+| ② ブラウザ（NSS スタック）の floor 引き下げ | Firefox: `about:config` → `security.tls.version.min` を `1` に（値は `1`/`2`/`3`/`4` = TLS1.0/1.1/1.2/1.3、既定 `3`）。SSLv3 のみの相手は pref では到達不可 | **Firefox**（ログインフォーム・管理画面を手で操作したいとき）。openssl.cnf とは独立。Chrome 系は最小 TLS 起動フラグ廃止のため実用的でない |
+| ③ openssl s_client で直接確認 | `openssl s_client -connect [TARGET]:443`（ディストリ build で `-tls1` が無効なら §4 の fallback 経路）| 手動確認・証明書取得 |
+| ④ socat / stunnel でローカルに平文ブリッジ | 旧 TLS を喋れる中継を立て、ローカルの平文ポートにツールを向ける | 中継自身が旧 TLS を張れる場合のみ |
+
+**手順（①の最小手数版 — グローバル非汚染の `OPENSSL_CONF`）:**
+
+```bash
+# [Attacker] ① 一時 cnf を作る（floor を TLS1.0 / SECLEVEL=0 まで下げる）
+cat > /tmp/legacy_ssl.cnf <<'EOF'
+openssl_conf = openssl_init
+[openssl_init]
+ssl_conf = ssl_sect
+[ssl_sect]
+system_default = system_default_sect
+[system_default_sect]
+MinProtocol = TLSv1.0
+CipherString = DEFAULT@SECLEVEL=0
+EOF
+
+# [Attacker] ② このシェル以降に起動する openssl 系ツールに上の cnf を読ませる
+export OPENSSL_CONF=/tmp/legacy_ssl.cnf
+
+# [Attacker] ③ これで curl 等が TLS1.0 の相手に通る
+curl -sk https://[TARGET]/
+
+# [Attacker] ④ 後始末（このシェルだけ・システムは無改変なので原状回復不要）
+unset OPENSSL_CONF
+```
+
+> グローバル恒久でやる場合は同じ `[...]` 連鎖を `/etc/ssl/openssl.cnf` に直接書く（調査後に戻すこと）。`OPENSSL_CONF` は **その `export` 以降に起動するプロセスだけ**に効き、Firefox(NSS) / rustls 系には効かない（下記「スタック独立」）。
+
+> **TLS スタックはツールごとに独立で相互非干渉。** 「`whatweb` / `nikto` は応答を返すのに `curl` だけ無反応」は典型例で、前者は緩い既定の独自スタック、後者は OpenSSL を使うため挙動が割れる。**1 つでも応答を返したなら対象は生きている**（サービス無しと誤判断しない）。openssl.cnf を直しても Firefox(NSS) には効かず、`security.tls.version.min` を下げても curl は直らない。使う系統ごとに floor を下げること。
 
 > **rustls 系ツール（feroxbuster 等）は TLS1.2 未満を一切張れない。** openssl.cnf を直しても効かない（rustls は openssl.cnf を読まない）。レガシー TLS 相手のディレクトリ列挙は **libcurl ベース（`dirb` / `curl` ループ）に切替えて ① 実施後に回す**。そもそも `http-title` の製品名から既知 CVE（LFI / RCE 等）の入口が取れているなら、ディレクトリ列挙を貫通させる必要は無いことが多い → `../05_Tools_Reference/Searchsploit.md`
 

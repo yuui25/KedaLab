@@ -34,7 +34,7 @@
    UI のフッタ表示で「いつ時点のルールか」が分かる。
    ============================================================= */
 window.KEDA_TRIAGE = {
-  version: "2026-06-09",
+  version: "2026-06-14",
   rules: [
     /* ── tech-stack:レスポンスから判定できる土台技術 ───────────── */
     {
@@ -489,6 +489,28 @@ window.KEDA_TRIAGE = {
       targets: [
         { file: "05_Tools_Reference/Searchsploit.md", why: "http-title/ssl-cert のアプリ名は searchsploit --nmap が拾わない（死角）。製品名を手で searchsploit [名前] に渡す（§5）" },
         { file: "01_Reconnaissance/Web_Enumeration.md", why: "製品名が出たら版数特定 → CVE 検索が最短経路。ログインページのフッター/タイトルで版数を確認" }
+      ]
+    },
+    {
+      id: "tls-legacy-unreachable",
+      label: "レガシ TLS でツールが接続不可（unsupported protocol）",
+      category: "infra-service",
+      weight: 2,
+      /* curl/openssl(OpenSSL 3.x) が TLS1.0/SSLv3 のみの相手を蹴る。自ツール設定の問題でありサービス無しではない */
+      pattern: [/unsupported protocol/i, /error:0A000102/i, /sslv3 alert handshake failure/i, /no protocols available/i],
+      targets: [
+        { file: "01_Reconnaissance/TLS_Audit.md", why: "TLS1.0/SSLv3 のみの相手を curl/openssl が蹴っている＝到達性問題（サービス有り）。§0 で floor をスタック別に引き下げる（OpenSSL=openssl.cnf/OPENSSL_CONF・Firefox=NSS の security.tls.version.min・rustls 系は不可）" }
+      ]
+    },
+    {
+      id: "ssh-legacy-nego-fail",
+      label: "レガシ SSH のアルゴリズム交渉失敗（no matching ...）",
+      category: "infra-service",
+      weight: 2,
+      /* 現代 OpenSSH が旧 KEX/HostKey/Cipher を既定無効化して交渉段階で失敗。相手 offer を + で足す */
+      pattern: [/no matching key exchange method found/i, /no matching host key type found/i, /no matching cipher found/i, /Unable to negotiate with [\d.]+ port 22/i],
+      targets: [
+        { file: "02_Initial_Access/SSH.md", why: "旧 OpenSSH の KEX/HostKey/Cipher を現代クライアントが既定無効化。エラーが出す相手の offer を見て -oKexAlgorithms=+ / -oHostKeyAlgorithms=+ssh-rsa / -c aes128-cbc を明示（§5）" }
       ]
     }
   ]

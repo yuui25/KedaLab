@@ -36,10 +36,11 @@
 | Webディレクトリ列挙（gobuster） | Reconnaissance | `01_Reconnaissance/Web_Enumeration.md` |
 | vhostファジング | Reconnaissance | `01_Reconnaissance/Web_Enumeration.md` |
 | Webアプリバージョン特定（/api/health 等） | Reconnaissance | `01_Reconnaissance/Web_Enumeration.md` |
+| アプリ名は出るがバージョンが取れないとき適用可否を直接判定（候補 PoC を `-x` で読む → 叩く endpoint の存在 200/404 ＋ 二次シグナル PHP バージョン→null byte 適用可否 で絞る）| Reconnaissance | `01_Reconnaissance/Web_Enumeration.md` |
 | HTTP→HTTPS 全リダイレクト時の列挙 scheme 切替・`curl -s` 無出力をサービス無しと誤判断しない・拡張子を server 技術で選ぶ | Reconnaissance | `01_Reconnaissance/Web_Enumeration.md` |
 | searchsploit による CVE 検索 | Reconnaissance | `05_Tools_Reference/Searchsploit.md` |
 | searchsploit --nmap の死角（http-title / ssl-cert のアプリ名は手動検索が必要）| Reconnaissance | `05_Tools_Reference/Searchsploit.md` |
-| レガシー TLS（TLS1.0 / SSLv3 のみ）へツールが接続できないときの到達性確保（openssl.cnf floor 引き下げ・rustls 系の限界・socat ブリッジ）| Reconnaissance | `01_Reconnaissance/TLS_Audit.md` |
+| レガシー TLS（TLS1.0 / SSLv3 のみ）へツールが接続できないときの到達性確保（TLS スタックはツール毎に独立＝nikto/whatweb は通るのに curl だけ失敗・OpenSSL 側 openssl.cnf/`OPENSSL_CONF`・Firefox=NSS の `security.tls.version.min`・rustls 系の限界・socat ブリッジ）| Reconnaissance | `01_Reconnaissance/TLS_Audit.md` |
 | SMB匿名アクセス | Reconnaissance | `01_Reconnaissance/SMB_Enumeration.md` |
 | SMB ゲストアカウント有効確認（netexec smb -u 'guest' -p ''） | Reconnaissance | `01_Reconnaissance/SMB_Enumeration.md` |
 | NETLOGON 共有のログオンスクリプト確認（平文パスワード埋め込み検出） | Reconnaissance | `01_Reconnaissance/SMB_Enumeration.md` |
@@ -135,12 +136,13 @@
 | ベイティング（感染USB放置・偽ダウンロードリンク） | Initial Access | `02_Initial_Access/Social_Engineering.md` |
 | パストラバーサル（ディレクトリトラバーサル） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/Path_Traversal.md` |
 | Grafana パストラバーサル CVE-2021-43798 | Initial Access | `02_Initial_Access/Web_Vulnerabilities/Path_Traversal.md` |
-| LFI §1-2 検出と read/include 切り分け（`php://filter/convert.base64-encode` でソース開示 → base64 が返れば include sink・生ソース表示なら traversal）・設定ファイル/DB 認証情報の開示（実行を伴わず痕跡なし）| Initial Access | `02_Initial_Access/Web_Vulnerabilities/LFI.md` |
+| LFI §1-2 検出と read/include 切り分け（`php://filter/convert.base64-encode` でソース開示 → base64 が返れば include sink・生ソース表示なら traversal）・設定ファイル/DB 認証情報の開示（実行を伴わず痕跡なし）・LFI の射程＝Web プロセスユーザ権限まで（/root 0700 等は読めず空・root 専有ファイルは昇格/認証情報再利用後）| Initial Access | `02_Initial_Access/Web_Vulnerabilities/LFI.md` |
 | LFI §3 PHP wrapper 直接 RCE（`data://` / `php://input` / `expect://`・`allow_url_include=On` 前提・現代既定 Off で不発が普通）| Initial Access | `02_Initial_Access/Web_Vulnerabilities/LFI.md` |
 | LFI §4-5 log poisoning / session poisoning → RCE（access/auth/mail/proc ログへ UA・ユーザー名で PHP 注入後 include / `sess_[PHPSESSID]` へ制御値注入・痕跡残るため原状回復対象）| Initial Access | `02_Initial_Access/Web_Vulnerabilities/LFI.md` |
 | LFI §6 php://filter chain → RCE（synacktiv generator・`allow_url_include`/書込権限 不要・LFI 単体から RCE 到達の現代主力・URL エンコード必須）| Initial Access | `02_Initial_Access/Web_Vulnerabilities/LFI.md` |
 | LFI §7-8 RFI（外部 URL include・`allow_url_include=On`・SMB/ftp 経路・SSRF 表裏）・拡張子 append バイパス（null byte は PHP 5.3.4 未満のみ・現代は wrapper 優先）| Initial Access | `02_Initial_Access/Web_Vulnerabilities/LFI.md` |
 | LFI 他言語での file inclusion（PHP=include 実行が特異／Perl require・2引数 open / Node 動的 require / JSP `c:import`=SSRF 寄り / .NET・Python=read 中心・読み取りは Path_Traversal・テンプレ実行は SSTI・アップロード設置は File_Upload/Web_Shells へ振り分け）| Initial Access | `02_Initial_Access/Web_Vulnerabilities/LFI.md` |
+| Shellshock §1-3 bash 環境変数インジェクション（CVE-2014-6271 系・CGI 経由 `() { :; };` をヘッダに注入・time-based `sleep` 検出 → 手動 RCE → MSF apache_mod_cgi_bash_env_exec・実行は Web プロセス権限止まり）| Initial Access | `02_Initial_Access/Shellshock.md` |
 | IDOR（連番ID・オブジェクト直接参照） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/IDOR.md` |
 | ビジネスロジック §1 データ検証不備（hidden field 価格改ざん・負数/極大数量・整数オーバーフロー・通貨混同・「応答 echo≠課金反映」の切り分け）| Initial Access | `02_Initial_Access/Web_Vulnerabilities/Business_Logic.md` |
 | ビジネスロジック §2-3 リクエスト偽造・Mass Assignment（UI 非表示の値/隠しパラメータ直送・保護属性 role/balance/email_verified 注入・確定後の status/total 書き換え・クーポン再適用）| Initial Access | `02_Initial_Access/Web_Vulnerabilities/Business_Logic.md` |
