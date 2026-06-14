@@ -142,6 +142,12 @@
 | LFI §7-8 RFI（外部 URL include・`allow_url_include=On`・SMB/ftp 経路・SSRF 表裏）・拡張子 append バイパス（null byte は PHP 5.3.4 未満のみ・現代は wrapper 優先）| Initial Access | `02_Initial_Access/Web_Vulnerabilities/LFI.md` |
 | LFI 他言語での file inclusion（PHP=include 実行が特異／Perl require・2引数 open / Node 動的 require / JSP `c:import`=SSRF 寄り / .NET・Python=read 中心・読み取りは Path_Traversal・テンプレ実行は SSTI・アップロード設置は File_Upload/Web_Shells へ振り分け）| Initial Access | `02_Initial_Access/Web_Vulnerabilities/LFI.md` |
 | IDOR（連番ID・オブジェクト直接参照） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/IDOR.md` |
+| ビジネスロジック §1 データ検証不備（hidden field 価格改ざん・負数/極大数量・整数オーバーフロー・通貨混同・「応答 echo≠課金反映」の切り分け）| Initial Access | `02_Initial_Access/Web_Vulnerabilities/Business_Logic.md` |
+| ビジネスロジック §2-3 リクエスト偽造・Mass Assignment（UI 非表示の値/隠しパラメータ直送・保護属性 role/balance/email_verified 注入・確定後の status/total 書き換え・クーポン再適用）| Initial Access | `02_Initial_Access/Web_Vulnerabilities/Business_Logic.md` |
+| ビジネスロジック §4 レースコンディション/TOCTOU（並列多重送信で二重出金/在庫超過/上限突破・curl & wait vs Burp single-packet attack(HTTP/2)・一意制約/行ロックで不発）| Initial Access | `02_Initial_Access/Web_Vulnerabilities/Business_Logic.md` |
+| ビジネスロジック §5 回数制限不備（OTP/PIN 総当り・メール正規化漏れ +tag/ドットで特典無限化・クーポンの別アカウント再利用・リセットトークン無効化漏れ）| Initial Access | `02_Initial_Access/Web_Vulnerabilities/Business_Logic.md` |
+| ビジネスロジック §6 ワークフロー順序迂回（支払いステップ飛ばし・決済 callback 偽装 status=success・メール未確認で保護機能到達・forced browsing のロジック版）| Initial Access | `02_Initial_Access/Web_Vulnerabilities/Business_Logic.md` |
+| ビジネスロジック §7-8 不正利用防御欠如・前提の悪用（レート制限/在庫枯渇検知の有無・型崩し "1e3"/null/配列・末尾空白でユーザー一意衝突・暗黙仮定の崩し方一覧）| Initial Access | `02_Initial_Access/Web_Vulnerabilities/Business_Logic.md` |
 | SQLi §1 検出（manual probing・single quote / numeric vs string context boolean / time-based confirm / comment-induced behavior change・URL `--+` `-- -` `--%20` 等の末尾コメントエスケープ・WAF で `'` 403 時の `%2527` 二重 URL encode / `0x27` / `CHAR(39)`） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/SQLi.md` |
 | SQLi §2 DB 横断 cheat sheet（comment 記号・文字列連結 (CONCAT / + / \|\|)・version 関数・current_user / current_database・information_schema vs sys.tables vs sqlite_master・SUBSTRING / SUBSTR 比較・ASCII / ORD / UNICODE・stacked queries 既定可否・OOB 経路（LOAD_FILE / xp_dirtree / dblink / UTL_HTTP）・error 誘発関数（EXTRACTVALUE / CONVERT / CAST / XMLType）の MySQL / MSSQL / PostgreSQL / Oracle / SQLite 比較） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/SQLi.md` |
 | SQLi §3 認証バイパス（WHERE 句注入・`admin' --` / `' OR '1'='1' --` / UNION で偽 cred 投影 / コメント記号変種でのWAF回避） | Initial Access | `02_Initial_Access/Web_Vulnerabilities/SQLi.md` |

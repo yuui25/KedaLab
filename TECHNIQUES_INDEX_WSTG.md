@@ -17,7 +17,7 @@ OWASP Web Security Testing Guide v4.2 のテストカテゴリ・テストケー
 | 報告書に WSTG-INPV-05 のような ID 併記したい | 該当手順実施後、本表で kedalab ファイル → WSTG ID を逆引き |
 | 対象組織 RFP に「WSTG-ATHN を全項目」とある | 該当カテゴリの行から kedalab ファイルへ飛ぶ |
 
-> **網羅していない領域の扱い**: WSTG-BUSL（ビジネスロジック）はファイルアップロード関連（BUSL-08/09）のみ収載。それ以外の BUSL 項目と WSTG-APIT（API テスト）等は kedalab の現スコープ外。手動テスト・スコープ個別対応とする。
+> **網羅していない領域の扱い**: WSTG-BUSL（ビジネスロジック）は BUSL-01〜07 を `Business_Logic.md`、BUSL-08/09 を `File_Upload.md` で収載。WSTG-APIT（API テスト）等は kedalab の現スコープ外で、手動テスト・スコープ個別対応とする。
 
 ---
 
@@ -130,6 +130,13 @@ OWASP Web Security Testing Guide v4.2 のテストカテゴリ・テストケー
 
 | WSTG ID | テスト項目 | kedalab ファイル |
 |---------|-----------|--------|
+| WSTG-BUSL-01 | Test Business Logic Data Validation | `02_Initial_Access/Web_Vulnerabilities/Business_Logic.md`（§1 hidden field 価格改ざん・負数/極大数量・整数オーバーフロー・通貨混同） |
+| WSTG-BUSL-02 | Test Ability to Forge Requests | `02_Initial_Access/Web_Vulnerabilities/Business_Logic.md`（§2 UI 非表示の値/隠しパラメータ直送・クライアント側のみ検証のバイパス） |
+| WSTG-BUSL-03 | Test Integrity Checks | `02_Initial_Access/Web_Vulnerabilities/Business_Logic.md`（§3 Mass Assignment・確定後の status/total 書き換え・クーポン再適用） |
+| WSTG-BUSL-04 | Test for Process Timing | `02_Initial_Access/Web_Vulnerabilities/Business_Logic.md`（§4 レースコンディション/TOCTOU・single-packet attack） |
+| WSTG-BUSL-05 | Test Number of Times a Function Can be Used Limits | `02_Initial_Access/Web_Vulnerabilities/Business_Logic.md`（§5 OTP 総当り・メール正規化漏れ・クーポン再利用） / `02_Initial_Access/Account_Lockout_Recon.md` |
+| WSTG-BUSL-06 | Testing for the Circumvention of Work Flows | `02_Initial_Access/Web_Vulnerabilities/Business_Logic.md`（§6 支払いスキップ・callback 偽装・ステップ飛ばし） |
+| WSTG-BUSL-07 | Test Defenses Against Application Misuse | `02_Initial_Access/Web_Vulnerabilities/Business_Logic.md`（§7 レート制限/在庫枯渇検知の有無） |
 | WSTG-BUSL-08 | Test Upload of Unexpected File Types | `02_Initial_Access/Web_Vulnerabilities/File_Upload.md`（拡張子/MIME ホワイトリスト外の受理・型判定 3 箇所モデル） |
 | WSTG-BUSL-09 | Test Upload of Malicious Files | `02_Initial_Access/Web_Vulnerabilities/File_Upload.md`（webshell / polyglot / 再エンコード生存 / 変換ライブラリ CVE） |
 
